@@ -197,4 +197,4 @@ Contributions are welcome! Fork the repository, create a feature branch, make yo
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) file for details.
+Apache License 2.0 — see [LICENSE](LICENSE) file for details.

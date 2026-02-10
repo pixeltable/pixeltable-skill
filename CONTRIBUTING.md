@@ -71,3 +71,7 @@ The Claude Skills specification forbids XML angle brackets (`<` `>`) in skill fi
 ## Code of Conduct
 
 Be respectful and constructive. We follow the [Pixeltable Code of Conduct](https://github.com/pixeltable/pixeltable/blob/main/CODE_OF_CONDUCT.md).
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the Apache License 2.0.

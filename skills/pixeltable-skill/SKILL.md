@@ -10,7 +10,7 @@ description: >
   asks "how do I use Pixeltable" or wants to build a RAG pipeline, multimodal
   search, or data processing workflow. Do NOT use for general Python questions
   unrelated to Pixeltable or for database administration of PostgreSQL directly.
-license: MIT
+license: Apache-2.0
 metadata:
   author: Pixeltable
   version: 1.0.0

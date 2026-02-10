@@ -1,0 +1,11 @@
+{
+  "name": "pixeltable-skill",
+  "version": "1.0.0",
+  "description": "Claude Code Skill for building multimodal AI applications with Pixeltable. Provides expertise on tables, computed columns, views, embedding indexes, similarity search, UDFs, and 15+ AI provider integrations.",
+  "author": "pixeltable",
+  "license": "MIT",
+  "repository": "https://github.com/pixeltable/pixeltable-skill",
+  "skills": [
+    "skills/pixeltable-skill"
+  ]
+}

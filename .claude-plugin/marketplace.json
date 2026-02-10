@@ -1,0 +1,9 @@
+{
+  "name": "pixeltable-skill",
+  "display_name": "Pixeltable",
+  "description": "Build multimodal AI applications with Pixeltable — tables, computed columns, views, embedding search, UDFs, and 15+ AI provider integrations.",
+  "categories": ["data-infrastructure", "ai", "multimodal"],
+  "tags": ["pixeltable", "multimodal", "rag", "embeddings", "vector-search", "udf", "openai", "anthropic", "huggingface", "video", "audio", "images", "documents"],
+  "homepage": "https://pixeltable.com",
+  "documentation": "https://docs.pixeltable.com"
+}

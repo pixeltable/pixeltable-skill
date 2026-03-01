@@ -8,14 +8,15 @@ description: >
   or documents, or integrate with AI providers like OpenAI, Anthropic, Gemini,
   Hugging Face, Together, Fireworks, Ollama, and more. Also use when the user
   asks "how do I use Pixeltable" or wants to build a RAG pipeline, multimodal
-  search, or data processing workflow. Do NOT use for general Python questions
-  unrelated to Pixeltable or for database administration of PostgreSQL directly.
+  search, data processing workflow, or tool-calling agent. Do NOT use for
+  general Python questions unrelated to Pixeltable or for database administration
+  of PostgreSQL directly.
 license: Apache-2.0
 metadata:
   author: Pixeltable
-  version: 1.0.0
+  version: 2.0.0
   category: data-infrastructure
-  tags: [multimodal, ai, data, tables, embeddings, rag, udf, video, audio, images, documents]
+  tags: [multimodal, ai, data, tables, embeddings, rag, udf, video, audio, images, documents, agents, tools, fastapi]
   documentation: https://docs.pixeltable.com/
   support: https://github.com/pixeltable/pixeltable/discussions
 ---
@@ -54,6 +55,20 @@ t = pxt.create_table('my_project.documents', {
 
 Available types: `String`, `Int`, `Float`, `Bool`, `Image`, `Video`, `Audio`, `Document`, `Json`, `Array`, `Timestamp`, `Date`, `UUID`, `Binary`. Use `pxt.Required[pxt.String]` for non-nullable.
 
+### Tables with Auto-Generated Keys
+
+Use `uuid7()` for auto-generated primary keys (recommended for production):
+
+```python
+from pixeltable.functions.uuid import uuid7
+
+t = pxt.create_table('my_project.items', {
+    'content': pxt.String,
+    'uuid': uuid7(),           # auto-generated on insert
+    'timestamp': pxt.Timestamp,
+}, primary_key=['uuid'], if_exists='ignore')
+```
+
 ### Inserting Data
 
 ```python
@@ -68,6 +83,15 @@ t.insert(title='Doc 3', content='Another doc', score=0.75)
 
 # From file
 t.insert(source='path/to/data.csv')
+
+# From a Pydantic model (great for FastAPI integration)
+from pydantic import BaseModel
+class ItemRow(BaseModel):
+    title: str
+    content: str
+    score: float
+
+t.insert([ItemRow(title='Doc 4', content='From Pydantic', score=0.9)])
 ```
 
 ### Computed Columns
@@ -96,15 +120,27 @@ results = t.where(t.score > 0.8).select(t.title, t.content).collect()
 results = t.order_by(t.score, asc=False).limit(10).select(t.title).collect()
 count = t.count()
 df = t.select(t.title, t.score).collect().to_pandas()
+
+# Convert results to Pydantic models (great for API responses)
+from pydantic import BaseModel
+class SearchResult(BaseModel):
+    title: str
+    score: float
+
+items = list(
+    t.select(title=t.title, score=t.score).collect().to_pydantic(SearchResult)
+)
 ```
 
 ### Views and Iterators
 
-Views split rows into multiple sub-rows. Essential for document chunking and video frame extraction.
+Views split rows into multiple sub-rows. Essential for document chunking, video frame extraction, audio splitting, and text splitting.
 
 ```python
 from pixeltable.functions.document import document_splitter
 from pixeltable.functions.video import frame_iterator
+from pixeltable.functions.string import string_splitter
+from pixeltable.functions.audio import audio_splitter
 
 # Chunk documents into 300-token pieces
 chunks = pxt.create_view(
@@ -119,12 +155,32 @@ frames = pxt.create_view(
     iterator=frame_iterator(t.video, fps=1.0),
     if_exists='ignore'
 )
+
+# Split text into sentences
+sentences = pxt.create_view(
+    'my_project.sentences', t,
+    iterator=string_splitter(t.content, separators='sentence'),
+    if_exists='ignore'
+)
+
+# Split audio into 30-second chunks
+audio_chunks = pxt.create_view(
+    'my_project.audio_chunks', t,
+    iterator=audio_splitter(audio=t.audio, duration=30.0),
+    if_exists='ignore'
+)
+
+# Filtered view (no iterator needed)
+active = pxt.create_view(
+    'my_project.active', t.where(t.is_active == True),
+    if_exists='ignore'
+)
 ```
 
 ### Embedding Indexes and Similarity Search
 
 ```python
-from pixeltable.functions.huggingface import clip
+from pixeltable.functions.huggingface import clip, sentence_transformer
 
 embed_fn = clip.using(model_id='openai/clip-vit-base-patch32')
 t.add_embedding_index('content', embedding=embed_fn, if_exists='ignore')
@@ -136,6 +192,27 @@ results = t.order_by(sim, asc=False).limit(5).select(t.title, t.content, sim).co
 # Image search with text (multimodal CLIP)
 sim = t.image.similarity(string='a photo of a cat')
 results = t.order_by(sim, asc=False).limit(5).select(t.image, sim).collect()
+```
+
+### Built-in Image and Video Functions
+
+```python
+from pixeltable.functions import image as pxt_image
+from pixeltable.functions.video import extract_audio
+
+# Image thumbnails and encoding
+t.add_computed_column(
+    thumbnail=pxt_image.b64_encode(
+        pxt_image.thumbnail(t.image, size=(320, 320))
+    ),
+    if_exists='ignore'
+)
+
+# Extract audio from video
+t.add_computed_column(
+    audio=extract_audio(t.video, format='mp3'),
+    if_exists='ignore'
+)
 ```
 
 ### User-Defined Functions (UDFs)
@@ -154,6 +231,8 @@ t.add_computed_column(cleaned=clean_text(t.content))
 
 ### Query Functions
 
+Reusable query functions that can also be used as agent tools:
+
 ```python
 @pxt.query
 def search_documents(query_text: str, limit: int = 10):
@@ -163,6 +242,75 @@ def search_documents(query_text: str, limit: int = 10):
 results = search_documents('machine learning').collect()
 ```
 
+## Tool-Calling Agent Pipeline
+
+Pixeltable can orchestrate a full tool-calling agent as a chain of computed columns. Inserting a row triggers the entire pipeline automatically.
+
+```python
+import pixeltable as pxt
+from pixeltable.functions.anthropic import messages, invoke_tools
+
+# 1. Define tools from UDFs and @pxt.query functions
+tools = pxt.tools(
+    web_search,            # @pxt.udf
+    search_documents,      # @pxt.query
+)
+
+# 2. Create the agent table
+agent = pxt.create_table('my_project.agent', {
+    'prompt': pxt.String,
+    'timestamp': pxt.Timestamp,
+    'system_prompt': pxt.String,
+    'max_tokens': pxt.Int,
+}, if_exists='ignore')
+
+# 3. Initial LLM call with tools
+agent.add_computed_column(
+    initial_response=messages(
+        model='claude-sonnet-4-20250514',
+        messages=[{'role': 'user', 'content': agent.prompt}],
+        tools=tools,
+        tool_choice=tools.choice(required=True),
+        max_tokens=agent.max_tokens,
+        model_kwargs={'system': agent.system_prompt},
+    ),
+    if_exists='ignore',
+)
+
+# 4. Execute the tools the LLM chose
+agent.add_computed_column(
+    tool_output=invoke_tools(tools, agent.initial_response),
+    if_exists='ignore',
+)
+
+# 5. RAG context retrieval
+agent.add_computed_column(
+    doc_context=search_documents(agent.prompt),
+    if_exists='ignore',
+)
+
+# 6. Final LLM call with all context
+agent.add_computed_column(
+    final_response=messages(
+        model='claude-sonnet-4-20250514',
+        messages=assemble_messages(agent.prompt, agent.tool_output, agent.doc_context),
+        max_tokens=agent.max_tokens,
+    ),
+    if_exists='ignore',
+)
+
+# 7. Extract answer
+agent.add_computed_column(
+    answer=agent.final_response.content[0].text,
+    if_exists='ignore',
+)
+
+# Usage: insert a row to trigger the full pipeline
+agent.insert([{'prompt': 'What is quantum computing?', 'timestamp': datetime.now(),
+               'system_prompt': 'You are a helpful assistant.', 'max_tokens': 1024}])
+result = agent.where(agent.prompt == 'What is quantum computing?').select(agent.answer).collect()
+```
+
 ## AI Provider Integrations
 
 Built-in functions for 15+ providers in `pixeltable.functions.*`:
@@ -170,7 +318,7 @@ Built-in functions for 15+ providers in `pixeltable.functions.*`:
 | Provider | Module | Key Functions |
 |----------|--------|---------------|
 | OpenAI | `openai` | `chat_completions`, `embeddings`, `image_generations`, `speech`, `transcriptions`, `vision` |
-| Anthropic | `anthropic` | `messages` |
+| Anthropic | `anthropic` | `messages`, `invoke_tools` |
 | Gemini | `gemini` | `generate_content` |
 | Hugging Face | `huggingface` | `clip`, `sentence_transformer`, `detr_for_object_detection` |
 | Together | `together` | `chat_completions`, `embeddings`, `image_generations` |
@@ -191,6 +339,10 @@ Built-in functions for 15+ providers in `pixeltable.functions.*`:
 # From CSV / Parquet
 t = pxt.create_table('dir.from_csv', source='data.csv')
 t = pxt.create_table('dir.from_parquet', source='data.parquet')
+
+# With schema overrides (remap columns to media types)
+t = pxt.create_table('dir.data', source='data.csv',
+    schema_overrides={'image_col': pxt.Image, 'doc_col': pxt.Document})
 
 # From Hugging Face
 from pixeltable.io import import_huggingface_dataset
@@ -235,8 +387,39 @@ pxt.drop_table('my_project.my_table')
 pxt.drop_dir('my_project', force=True)
 t.describe()
 t.columns()
+
+# Snapshots (point-in-time copy)
+snap = pxt.create_snapshot('my_project.snapshot_v1', t, if_exists='ignore')
+
+# Update and delete
+t.update({'score': 1.0}, where=t.category == 'important')
+t.delete(where=t.is_active == False)
 ```
+
+## Building Apps with Pixeltable
+
+When building production applications (e.g., FastAPI + React), follow these patterns:
+
+**Pixeltable IS the data layer** — no ORM, no SQLAlchemy. Pixeltable handles storage, indexing, transformation, and retrieval.
+
+**Schema-as-code** — Define the entire data model in a single setup file. Run once to initialize.
+
+**Sync endpoints** — FastAPI endpoints should use `def` (not `async def`). Pixeltable operations are synchronous; Uvicorn runs them in a thread pool automatically.
+
+**Thin routers** — Business logic lives in `@pxt.udf` and `@pxt.query` functions, not in endpoint handlers. Routers just insert rows, collect results, and return responses.
+
+**`to_pydantic()` for responses** — Convert Pixeltable query results directly to Pydantic models for type-safe API responses.
+
+**Insert-triggers-pipeline** — For the agent pattern, inserting a row triggers the entire computed column chain. The endpoint just inserts and reads back the answer.
+
+For a complete reference implementation, see the [Pixeltable App Template](https://github.com/pixeltable/pixeltable-app-template).
+
+## Companion Resources
+
+- **App Template** — [pixeltable/pixeltable-app-template](https://github.com/pixeltable/pixeltable-app-template): Full-stack FastAPI + React reference app with multimodal search, document/image/video pipelines, and a tool-calling agent.
+- **MCP Server** — [pixeltable/mcp-server-pixeltable-developer](https://github.com/pixeltable/mcp-server-pixeltable-developer): Interactive exploration of Pixeltable tables, queries, and Python REPL via Model Context Protocol.
+- **Core AGENTS.md** — [pixeltable/pixeltable/AGENTS.md](https://github.com/pixeltable/pixeltable/blob/main/AGENTS.md): Full SDK reference for contributing to Pixeltable itself.
 
 ## Additional Reference
 
-For complete API signatures, all provider examples, and end-to-end workflow templates (RAG, video analysis, image classification, audio transcription, multi-provider comparison), see `API_REFERENCE.md` in this skill directory. Claude will load it automatically when needed.
+For complete API signatures, all provider examples, and end-to-end workflow templates (RAG, video analysis, image classification, audio transcription, multi-provider comparison, tool-calling agents, FastAPI apps), see `API_REFERENCE.md` in this skill directory. Claude will load it automatically when needed.

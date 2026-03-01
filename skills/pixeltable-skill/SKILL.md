@@ -317,7 +317,7 @@ Built-in functions for 15+ providers in `pixeltable.functions.*`:
 
 | Provider | Module | Key Functions |
 |----------|--------|---------------|
-| OpenAI | `openai` | `chat_completions`, `embeddings`, `image_generations`, `speech`, `transcriptions`, `vision` |
+| OpenAI | `openai` | `chat_completions` (supports multimodal/vision via messages), `embeddings`, `image_generations`, `speech`, `transcriptions` |
 | Anthropic | `anthropic` | `messages`, `invoke_tools` |
 | Gemini | `gemini` | `generate_content` |
 | Hugging Face | `huggingface` | `clip`, `sentence_transformer`, `detr_for_object_detection` |

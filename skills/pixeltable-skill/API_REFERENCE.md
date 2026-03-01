@@ -38,6 +38,23 @@ t = pxt.create_table('dir.table', {
 }, primary_key=['id'], if_exists='ignore')
 ```
 
+### Table with Auto-Generated UUID Primary Key
+
+Production-ready pattern using uuid7() for automatic unique IDs:
+
+```python
+from pixeltable.functions.uuid import uuid7
+
+t = pxt.create_table('dir.items', {
+    'content': pxt.String,
+    'uuid': uuid7(),            # auto-generated on insert
+    'timestamp': pxt.Timestamp,
+}, primary_key=['uuid'], if_exists='ignore')
+
+# No need to provide uuid when inserting
+t.insert([{'content': 'Hello', 'timestamp': datetime.now()}])
+```
+
 ### Table from Data Source
 
 ```python
@@ -77,6 +94,42 @@ filtered = t.where(t.score > 0.5).count()
 
 ```python
 df = t.select(t.col1, t.col2).collect().to_pandas()
+```
+
+### To Pydantic
+
+Convert query results directly to Pydantic models for API responses:
+
+```python
+from pydantic import BaseModel
+
+class ItemResponse(BaseModel):
+    title: str
+    score: float
+    content: str | None = None
+
+# Column names in select() must match Pydantic field names
+items = list(
+    t.select(title=t.title, score=t.score, content=t.content)
+    .collect()
+    .to_pydantic(ItemResponse)
+)
+```
+
+### Inserting Pydantic Models
+
+```python
+from pydantic import BaseModel
+from datetime import datetime
+
+class AgentRow(BaseModel):
+    prompt: str
+    timestamp: datetime
+    system_prompt: str = "You are a helpful assistant."
+    max_tokens: int = 1024
+
+row = AgentRow(prompt="Explain quantum computing", timestamp=datetime.now())
+t.insert([row])
 ```
 
 ### Head / Tail
@@ -142,6 +195,11 @@ chunks = pxt.create_view('dir.pages', t,
     iterator=document_splitter(t.doc, separators='page'),
     if_exists='ignore')
 
+# Combined: page + sentence (recommended for PDFs)
+chunks = pxt.create_view('dir.chunks', t,
+    iterator=document_splitter(t.doc, separators='page, sentence'),
+    if_exists='ignore')
+
 # Combined: heading + token limit
 chunks = pxt.create_view('dir.chunks', t,
     iterator=document_splitter(t.doc, separators='heading,token_limit', limit=500),
@@ -172,11 +230,85 @@ frames = pxt.create_view('dir.frames', t, iterator=frame_iterator(t.video, fps=1
 # Exact number of frames
 frames = pxt.create_view('dir.frames', t, iterator=frame_iterator(t.video, num_frames=10), if_exists='ignore')
 
-# Keyframes only
+# Keyframes only (most efficient for visual search)
 frames = pxt.create_view('dir.frames', t, iterator=frame_iterator(t.video, keyframes_only=True), if_exists='ignore')
 ```
 
 Output columns: `frame` (PIL Image), `frame_idx`, `pos_msec`, `pos_frame`
+
+### String Splitting
+
+```python
+from pixeltable.functions.string import string_splitter
+
+# Split text into sentences
+sentences = pxt.create_view('dir.sentences', t,
+    iterator=string_splitter(text=t.content, separators='sentence'),
+    if_exists='ignore')
+```
+
+Output columns: `text`
+
+### Audio Splitting
+
+```python
+from pixeltable.functions.audio import audio_splitter
+
+# Split audio into 30-second chunks
+audio_chunks = pxt.create_view('dir.audio_chunks', t,
+    iterator=audio_splitter(audio=t.audio, duration=30.0),
+    if_exists='ignore')
+```
+
+Output columns: `audio_chunk`
+
+## Built-in Image Functions
+
+```python
+from pixeltable.functions import image as pxt_image
+
+# Thumbnail generation
+t.add_computed_column(
+    thumb=pxt_image.thumbnail(t.image, size=(320, 320)),
+    if_exists='ignore')
+
+# Base64 encoding (useful for API responses and Anthropic vision)
+t.add_computed_column(
+    b64=pxt_image.b64_encode(t.image),
+    if_exists='ignore')
+
+# Combined: thumbnail + base64 (common pattern for APIs)
+t.add_computed_column(
+    thumbnail=pxt_image.b64_encode(
+        pxt_image.thumbnail(t.image, size=(320, 320))
+    ),
+    if_exists='ignore')
+
+# Base64 with explicit format
+t.add_computed_column(
+    png_b64=pxt_image.b64_encode(t.image, 'png'),
+    if_exists='ignore')
+```
+
+## Built-in Video Functions
+
+```python
+from pixeltable.functions.video import extract_audio
+
+# Extract audio track from video
+t.add_computed_column(
+    audio=extract_audio(t.video, format='mp3'),
+    if_exists='ignore')
+```
+
+## Built-in String Functions
+
+```python
+from pixeltable.functions import string as pxt_str
+
+# String length
+t.add_computed_column(text_len=pxt_str.len(t.content), if_exists='ignore')
+```
 
 ## Embedding Indexes
 
@@ -193,6 +325,10 @@ t.add_embedding_index('image_col', embedding=embed_fn, if_exists='ignore')
 embed_fn = sentence_transformer.using(model_id='all-MiniLM-L6-v2')
 t.add_embedding_index('text_col', embedding=embed_fn, if_exists='ignore')
 
+# Sentence Transformers (multilingual, high quality, recommended for production)
+embed_fn = sentence_transformer.using(model_id='intfloat/multilingual-e5-large-instruct')
+t.add_embedding_index('text_col', string_embed=embed_fn, if_exists='ignore')
+
 # OpenAI embeddings
 from pixeltable.functions.openai import embeddings
 t.add_embedding_index('text_col', embedding=embeddings.using(model='text-embedding-3-small'), if_exists='ignore')
@@ -204,6 +340,10 @@ t.add_embedding_index('text_col', embedding=embeddings.using(model='text-embeddi
 # Text
 sim = t.text_col.similarity(string='search query')
 results = t.order_by(sim, asc=False).limit(10).select(t.text_col, sim).collect()
+
+# Text with threshold filter
+sim = t.text_col.similarity(string='search query')
+results = t.where(sim > 0.5).order_by(sim, asc=False).limit(10).select(t.text_col, sim).collect()
 
 # Image with text (multimodal)
 sim = t.image_col.similarity(string='a red car')
@@ -292,21 +432,124 @@ t.describe()
 t.columns()
 ```
 
-## Tools and Agents
+## Snapshots
 
-### Create Tools from Tables
+Point-in-time copies of tables:
 
 ```python
-tool = pxt.tool(t, name='search_docs', description='Search documents')
-my_tools = pxt.tools(tool1, tool2)
+snap = pxt.create_snapshot('dir.snap_v1', t, if_exists='ignore')
+# Query the snapshot like any table
+snap.select(snap.col1).collect()
+```
 
-t.add_computed_column(
-    response=chat_completions(
-        messages=[{'role': 'user', 'content': t.question}],
-        model='gpt-4o',
-        tools=my_tools
-    )
+## Tools and Agents
+
+### Create Tools from UDFs and Query Functions
+
+```python
+@pxt.udf
+def web_search(keywords: str) -> str:
+    """Search the web for information."""
+    from duckduckgo_search import DDGS
+    with DDGS() as ddgs:
+        results = list(ddgs.news(keywords=keywords, max_results=5))
+        return '\n'.join(f"{r['title']}: {r['body']}" for r in results) if results else 'No results.'
+
+@pxt.query
+def search_docs(query_text: str):
+    """Search documents by semantic similarity."""
+    sim = chunks.text.similarity(string=query_text)
+    return chunks.order_by(sim, asc=False).limit(10).select(chunks.text, sim)
+
+tools = pxt.tools(web_search, search_docs)
+```
+
+### Full Tool-Calling Agent Pipeline
+
+The agent pipeline uses chained computed columns. Inserting a row triggers the entire pipeline:
+
+```python
+from pixeltable.functions.anthropic import messages, invoke_tools
+
+agent = pxt.create_table('project.agent', {
+    'prompt': pxt.String,
+    'timestamp': pxt.Timestamp,
+    'initial_system_prompt': pxt.String,
+    'final_system_prompt': pxt.String,
+    'max_tokens': pxt.Int,
+    'temperature': pxt.Float,
+}, if_exists='ignore')
+
+# Step 1: Initial LLM call with tool selection
+agent.add_computed_column(
+    initial_response=messages(
+        model='claude-sonnet-4-20250514',
+        messages=[{'role': 'user', 'content': agent.prompt}],
+        tools=tools,
+        tool_choice=tools.choice(required=True),
+        max_tokens=agent.max_tokens,
+        model_kwargs={
+            'system': agent.initial_system_prompt,
+            'temperature': agent.temperature,
+        },
+    ),
+    if_exists='ignore',
 )
+
+# Step 2: Execute the tools the LLM selected
+agent.add_computed_column(
+    tool_output=invoke_tools(tools, agent.initial_response),
+    if_exists='ignore',
+)
+
+# Step 3: RAG context retrieval
+agent.add_computed_column(
+    doc_context=search_docs(agent.prompt),
+    if_exists='ignore',
+)
+
+# Step 4: Assemble context with a UDF
+agent.add_computed_column(
+    context=assemble_context(agent.prompt, agent.tool_output, agent.doc_context),
+    if_exists='ignore',
+)
+
+# Step 5: Final LLM call with full context
+agent.add_computed_column(
+    final_response=messages(
+        model='claude-sonnet-4-20250514',
+        messages=[{'role': 'user', 'content': agent.context}],
+        max_tokens=agent.max_tokens,
+        model_kwargs={
+            'system': agent.final_system_prompt,
+            'temperature': agent.temperature,
+        },
+    ),
+    if_exists='ignore',
+)
+
+# Step 6: Extract answer text
+agent.add_computed_column(
+    answer=agent.final_response.content[0].text,
+    if_exists='ignore',
+)
+```
+
+### Using the Agent Pipeline
+
+```python
+from datetime import datetime
+
+agent.insert([{
+    'prompt': 'What are the latest developments in quantum computing?',
+    'timestamp': datetime.now(),
+    'initial_system_prompt': 'Identify the best tool(s) to answer the query.',
+    'final_system_prompt': 'Provide a clear answer. Cite sources when possible.',
+    'max_tokens': 1024,
+    'temperature': 0.7,
+}])
+
+result = agent.order_by(agent.timestamp, asc=False).limit(1).select(agent.answer).collect()
 ```
 
 ### MCP Integration
@@ -432,6 +675,25 @@ t.add_computed_column(
         system='You are an expert analyst.',
         max_tokens=2048
     ).content[0].text
+)
+
+# With tool calling
+from pixeltable.functions.anthropic import messages, invoke_tools
+
+tools = pxt.tools(search_fn, lookup_fn)
+t.add_computed_column(
+    response=messages(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        model='claude-sonnet-4-20250514',
+        tools=tools,
+        tool_choice=tools.choice(required=True),
+        max_tokens=1024,
+    ),
+    if_exists='ignore',
+)
+t.add_computed_column(
+    tool_results=invoke_tools(tools, t.response),
+    if_exists='ignore',
 )
 ```
 
@@ -559,6 +821,10 @@ from pixeltable.functions.huggingface import sentence_transformer
 
 embed_fn = sentence_transformer.using(model_id='all-MiniLM-L6-v2')
 t.add_embedding_index('text', embedding=embed_fn)
+
+# For multilingual / high-quality (recommended for production)
+embed_fn = sentence_transformer.using(model_id='intfloat/multilingual-e5-large-instruct')
+t.add_embedding_index('text', string_embed=embed_fn)
 ```
 
 #### Object Detection (DETR)
@@ -599,18 +865,15 @@ from pixeltable.functions.openai import chat_completions, embeddings
 
 pxt.create_dir('rag', if_exists='ignore')
 
-# Document table
 docs = pxt.create_table('rag.documents', {
     'doc': pxt.Document,
     'title': pxt.String,
 }, if_exists='ignore')
 
-# Chunk
 chunks = pxt.create_view('rag.chunks', docs,
     iterator=document_splitter(docs.doc, separators='token_limit', limit=300, metadata='title,heading'),
     if_exists='ignore')
 
-# Embed + index
 chunks.add_computed_column(
     embed=embeddings(input=chunks.text, model='text-embedding-3-small').data[0].embedding,
     if_exists='ignore')
@@ -618,13 +881,11 @@ chunks.add_embedding_index('text',
     embedding=embeddings.using(model='text-embedding-3-small'),
     if_exists='ignore')
 
-# Ingest
 docs.insert([
     {'doc': 'path/to/document.pdf', 'title': 'My Document'},
     {'doc': 'https://example.com/page.html', 'title': 'Web Page'},
 ])
 
-# Search
 @pxt.query
 def retrieve(question: str, top_k: int = 5):
     sim = chunks.text.similarity(string=question)
@@ -637,18 +898,57 @@ context = retrieve('What is machine learning?').collect()
 
 ```python
 import pixeltable as pxt
-from pixeltable.functions.video import frame_iterator
-from pixeltable.functions.openai import chat_completions
-from pixeltable.functions.huggingface import clip
+from pixeltable.functions.video import frame_iterator, extract_audio
+from pixeltable.functions.audio import audio_splitter
+from pixeltable.functions.string import string_splitter
+from pixeltable.functions.openai import chat_completions, transcriptions
+from pixeltable.functions.huggingface import clip, sentence_transformer
+from pixeltable.functions import image as pxt_image
 
 pxt.create_dir('video', if_exists='ignore')
 
-videos = pxt.create_table('video.library', {'video': pxt.Video, 'title': pxt.String}, if_exists='ignore')
+videos = pxt.create_table('video.library', {
+    'video': pxt.Video, 'title': pxt.String
+}, if_exists='ignore')
 
+# 1. Keyframe extraction + CLIP visual search
 frames = pxt.create_view('video.frames', videos,
-    iterator=frame_iterator(videos.video, fps=1.0), if_exists='ignore')
+    iterator=frame_iterator(videos.video, keyframes_only=True),
+    if_exists='ignore')
 
-# Describe each frame
+frames.add_computed_column(
+    thumbnail=pxt_image.b64_encode(
+        pxt_image.thumbnail(frames.frame, size=(320, 320))),
+    if_exists='ignore')
+
+frames.add_embedding_index('frame',
+    embedding=clip.using(model_id='openai/clip-vit-base-patch32'),
+    if_exists='ignore')
+
+# 2. Audio extraction -> transcription -> sentence embedding
+videos.add_computed_column(
+    audio=extract_audio(videos.video, format='mp3'),
+    if_exists='ignore')
+
+audio_chunks = pxt.create_view('video.audio_chunks', videos,
+    iterator=audio_splitter(audio=videos.audio, duration=30.0),
+    if_exists='ignore')
+
+audio_chunks.add_computed_column(
+    transcription=transcriptions(
+        audio=audio_chunks.audio_chunk, model='whisper-1'),
+    if_exists='ignore')
+
+sentences = pxt.create_view('video.sentences',
+    audio_chunks.where(audio_chunks.transcription != None),
+    iterator=string_splitter(
+        text=audio_chunks.transcription.text, separators='sentence'),
+    if_exists='ignore')
+
+embed_fn = sentence_transformer.using(model_id='all-MiniLM-L6-v2')
+sentences.add_embedding_index('text', string_embed=embed_fn, if_exists='ignore')
+
+# 3. Describe frames with vision LLM
 frames.add_computed_column(
     description=chat_completions(
         messages=[{
@@ -663,11 +963,17 @@ frames.add_computed_column(
     if_exists='ignore')
 
 # Visual search
-embed_fn = clip.using(model_id='openai/clip-vit-base-patch32')
-frames.add_embedding_index('frame', embedding=embed_fn, if_exists='ignore')
-
 sim = frames.frame.similarity(string='person riding a bicycle')
-results = frames.order_by(sim, asc=False).limit(10).select(frames.frame, frames.description, sim).collect()
+results = frames.order_by(sim, asc=False).limit(10).select(
+    frames.frame, frames.description, sim).collect()
+
+# Transcript search
+@pxt.query
+def search_transcripts(query_text: str):
+    sim = sentences.text.similarity(query_text)
+    return sentences.where(sim > 0.7).order_by(sim, asc=False).select(
+        sentences.text, source_video=sentences.video, sim=sim
+    ).limit(20)
 ```
 
 ### Image Classification and Search
@@ -676,6 +982,7 @@ results = frames.order_by(sim, asc=False).limit(10).select(frames.frame, frames.
 import pixeltable as pxt
 from pixeltable.functions.openai import chat_completions
 from pixeltable.functions.huggingface import clip
+from pixeltable.functions import image as pxt_image
 
 pxt.create_dir('images', if_exists='ignore')
 
@@ -683,7 +990,11 @@ catalog = pxt.create_table('images.catalog', {
     'image': pxt.Image, 'filename': pxt.String,
 }, if_exists='ignore')
 
-# Auto-tag
+catalog.add_computed_column(
+    thumbnail=pxt_image.b64_encode(
+        pxt_image.thumbnail(catalog.image, size=(320, 320))),
+    if_exists='ignore')
+
 catalog.add_computed_column(
     tags=chat_completions(
         messages=[{
@@ -697,13 +1008,12 @@ catalog.add_computed_column(
     ).choices[0].message.content,
     if_exists='ignore')
 
-# Embedding index
 embed_fn = clip.using(model_id='openai/clip-vit-base-patch32')
 catalog.add_embedding_index('image', embedding=embed_fn, if_exists='ignore')
 
-# Search
 sim = catalog.image.similarity(string='sunset over the ocean')
-results = catalog.order_by(sim, asc=False).limit(5).select(catalog.image, catalog.tags, sim).collect()
+results = catalog.order_by(sim, asc=False).limit(5).select(
+    catalog.image, catalog.tags, sim).collect()
 ```
 
 ### Audio Transcription and Analysis
@@ -718,12 +1028,10 @@ recordings = pxt.create_table('audio.recordings', {
     'audio': pxt.Audio, 'speaker': pxt.String,
 }, if_exists='ignore')
 
-# Transcribe
 recordings.add_computed_column(
     transcript=transcriptions(audio=recordings.audio, model='whisper-1').text,
     if_exists='ignore')
 
-# Summarize
 recordings.add_computed_column(
     summary=chat_completions(
         messages=[
@@ -764,7 +1072,120 @@ prompts.add_computed_column(
     ).choices[0].message.content, if_exists='ignore')
 
 prompts.insert([{'prompt': 'Explain quantum computing simply.'}])
-results = prompts.select(prompts.prompt, prompts.openai, prompts.anthropic, prompts.llama).collect()
+results = prompts.select(
+    prompts.prompt, prompts.openai, prompts.anthropic, prompts.llama).collect()
+```
+
+### Tool-Calling Agent (Full Production Example)
+
+Complete agent pipeline as used in the Pixeltable App Template:
+
+```python
+import pixeltable as pxt
+from pixeltable.functions.anthropic import messages, invoke_tools
+from pixeltable.functions.huggingface import sentence_transformer, clip
+from pixeltable.functions.document import document_splitter
+from pixeltable.functions import image as pxt_image
+from datetime import datetime
+
+pxt.create_dir('app', if_exists='ignore')
+
+# --- Data pipelines ---
+documents = pxt.create_table('app.documents', {'document': pxt.Document}, if_exists='ignore')
+chunks = pxt.create_view('app.chunks', documents,
+    iterator=document_splitter(documents.document,
+        separators='page, sentence', metadata='title,heading,page'),
+    if_exists='ignore')
+
+embed_fn = sentence_transformer.using(model_id='intfloat/multilingual-e5-large-instruct')
+chunks.add_embedding_index('text', string_embed=embed_fn, if_exists='ignore')
+
+images = pxt.create_table('app.images', {'image': pxt.Image}, if_exists='ignore')
+images.add_computed_column(
+    thumbnail=pxt_image.b64_encode(pxt_image.thumbnail(images.image, size=(320, 320))),
+    if_exists='ignore')
+images.add_embedding_index('image',
+    embedding=clip.using(model_id='openai/clip-vit-base-patch32'), if_exists='ignore')
+
+# --- Query functions (become tools + RAG context) ---
+@pxt.query
+def search_documents(query_text: str):
+    sim = chunks.text.similarity(query_text)
+    return chunks.where(sim > 0.5).order_by(sim, asc=False).select(
+        chunks.text, sim=sim).limit(20)
+
+@pxt.query
+def search_images(query_text: str):
+    sim = images.image.similarity(query_text)
+    return images.where(sim > 0.25).order_by(sim, asc=False).select(
+        encoded_image=pxt_image.b64_encode(
+            pxt_image.thumbnail(images.image, size=(224, 224)), 'png'),
+        sim=sim).limit(5)
+
+@pxt.udf
+def web_search(keywords: str) -> str:
+    """Search the web using DuckDuckGo."""
+    from duckduckgo_search import DDGS
+    with DDGS() as ddgs:
+        results = list(ddgs.news(keywords=keywords, max_results=5))
+        return '\n'.join(
+            f"{r['title']}: {r['body']}" for r in results
+        ) if results else 'No results.'
+
+@pxt.udf
+def assemble_context(question: str, tool_outputs: list | None, doc_context: list | None) -> str:
+    tool_str = str(tool_outputs) if tool_outputs else 'N/A'
+    doc_str = '\n'.join(
+        f"- {item.get('text', '')}" for item in (doc_context or []) if isinstance(item, dict)
+    ) or 'N/A'
+    return f"QUESTION: {question}\n\n[TOOL RESULTS]\n{tool_str}\n\n[DOCUMENTS]\n{doc_str}"
+
+# --- Agent pipeline ---
+tools = pxt.tools(web_search, search_documents)
+
+agent = pxt.create_table('app.agent', {
+    'prompt': pxt.String,
+    'timestamp': pxt.Timestamp,
+    'system_prompt': pxt.String,
+    'max_tokens': pxt.Int,
+    'temperature': pxt.Float,
+}, if_exists='ignore')
+
+agent.add_computed_column(
+    initial_response=messages(
+        model='claude-sonnet-4-20250514',
+        messages=[{'role': 'user', 'content': agent.prompt}],
+        tools=tools,
+        tool_choice=tools.choice(required=True),
+        max_tokens=agent.max_tokens,
+        model_kwargs={'system': agent.system_prompt, 'temperature': agent.temperature},
+    ), if_exists='ignore')
+
+agent.add_computed_column(tool_output=invoke_tools(tools, agent.initial_response), if_exists='ignore')
+agent.add_computed_column(doc_context=search_documents(agent.prompt), if_exists='ignore')
+agent.add_computed_column(
+    context=assemble_context(agent.prompt, agent.tool_output, agent.doc_context),
+    if_exists='ignore')
+
+agent.add_computed_column(
+    final_response=messages(
+        model='claude-sonnet-4-20250514',
+        messages=[{'role': 'user', 'content': agent.context}],
+        max_tokens=agent.max_tokens,
+        model_kwargs={'system': 'Answer based on context. Cite sources.', 'temperature': agent.temperature},
+    ), if_exists='ignore')
+
+agent.add_computed_column(answer=agent.final_response.content[0].text, if_exists='ignore')
+
+# --- Usage ---
+agent.insert([{
+    'prompt': 'What are the latest AI breakthroughs?',
+    'timestamp': datetime.now(),
+    'system_prompt': 'Use tools to gather information, then answer.',
+    'max_tokens': 1024,
+    'temperature': 0.7,
+}])
+result = agent.order_by(agent.timestamp, asc=False).limit(1).select(agent.answer).collect()
 ```
 
 ### Local LLM Pipeline (Ollama)
@@ -778,14 +1199,90 @@ t = pxt.create_table('local.data', {'text': pxt.String}, if_exists='ignore')
 
 t.add_computed_column(
     analysis=chat_completions(
-        messages=[{'role': 'user', 'content': 'Analyze: ' + t.text}], model='llama3.1'
+        messages=[{'role': 'user', 'content': 'Analyze: ' + t.text}],
+        model='llama3.1'
     ).choices[0].message.content, if_exists='ignore')
 
-t.add_embedding_index('text', embedding=embeddings.using(model='nomic-embed-text'), if_exists='ignore')
+t.add_embedding_index('text',
+    embedding=embeddings.using(model='nomic-embed-text'),
+    if_exists='ignore')
 
 t.insert([{'text': 'Machine learning fundamentals'}])
 sim = t.text.similarity(string='neural networks')
 results = t.order_by(sim, asc=False).limit(5).select(t.text, sim).collect()
+```
+
+### FastAPI App Pattern
+
+Production-ready pattern for web apps with Pixeltable:
+
+```python
+# setup_pixeltable.py -- Run once to initialize schema
+import pixeltable as pxt
+from pixeltable.functions.uuid import uuid7
+from pixeltable.functions.document import document_splitter
+from pixeltable.functions.huggingface import sentence_transformer
+
+pxt.drop_dir('app', force=True)
+pxt.create_dir('app', if_exists='ignore')
+
+documents = pxt.create_table('app.documents', {
+    'document': pxt.Document,
+    'uuid': uuid7(),
+    'timestamp': pxt.Timestamp,
+}, primary_key=['uuid'], if_exists='ignore')
+
+chunks = pxt.create_view('app.chunks', documents,
+    iterator=document_splitter(
+        documents.document, separators='page, sentence',
+        metadata='title,heading,page'),
+    if_exists='ignore')
+
+embed_fn = sentence_transformer.using(
+    model_id='intfloat/multilingual-e5-large-instruct')
+chunks.add_embedding_index('text', string_embed=embed_fn, if_exists='ignore')
+
+@pxt.query
+def search_documents(query_text: str):
+    sim = chunks.text.similarity(query_text)
+    return chunks.where(sim > 0.5).order_by(sim, asc=False).select(
+        chunks.text, sim=sim, title=chunks.title
+    ).limit(20)
+```
+
+```python
+# main.py -- FastAPI app (use def, not async def)
+from fastapi import FastAPI
+from pydantic import BaseModel
+import pixeltable as pxt
+
+app = FastAPI()
+
+class SearchRequest(BaseModel):
+    query: str
+
+class SearchResult(BaseModel):
+    text: str
+    sim: float
+    title: str | None = None
+
+class SearchResponse(BaseModel):
+    query: str
+    results: list[SearchResult]
+
+@app.post("/api/search", response_model=SearchResponse)
+def search(body: SearchRequest):                    # sync, not async
+    table = pxt.get_table('app.chunks')
+    sim = table.text.similarity(body.query)
+    result = (
+        table.where(sim > 0.3)
+        .order_by(sim, asc=False)
+        .select(text=table.text, sim=sim, title=table.title)
+        .limit(20)
+        .collect()
+    )
+    items = list(result.to_pydantic(SearchResult))  # direct conversion
+    return SearchResponse(query=body.query, results=items)
 ```
 
 ### Export Workflow
@@ -829,3 +1326,12 @@ pxt.init({'openai.api_key': 'sk-...', 'anthropic.api_key': 'sk-ant-...'})
 - Use `batch_size` in `@pxt.udf(batch_size=32)` for GPU models
 - Embedding indexes use HNSW for fast approximate nearest neighbor search
 - Use `t.insert(source='file.csv')` instead of loading into memory for large datasets
+- Use `keyframes_only=True` in `frame_iterator` for efficient video processing
+- Use `thumbnail()` + `b64_encode()` for API-friendly image responses
+
+## Companion Resources
+
+- **App Template**: [pixeltable/pixeltable-app-template](https://github.com/pixeltable/pixeltable-app-template) -- Full-stack FastAPI + React reference app
+- **MCP Server**: [pixeltable/mcp-server-pixeltable-developer](https://github.com/pixeltable/mcp-server-pixeltable-developer) -- Interactive Pixeltable exploration via MCP
+- **Core AGENTS.md**: [pixeltable/pixeltable/AGENTS.md](https://github.com/pixeltable/pixeltable/blob/main/AGENTS.md) -- Contributing to Pixeltable itself
+- **Docs**: [docs.pixeltable.com](https://docs.pixeltable.com/) | [SDK Reference](https://docs.pixeltable.com/sdk/latest/pixeltable)

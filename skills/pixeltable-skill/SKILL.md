@@ -61,9 +61,9 @@ t.insert([
 ```
 
 **Rules:**
-- Never use `pxt.String` for media paths — the typed column (`pxt.Image`, etc.) unlocks built-in functions, indexing, and similarity search.
+- If you want Pixeltable to manage, cache, and process media, use the dedicated types (`pxt.Image`, `pxt.Video`, `pxt.Audio`, `pxt.Document`) — these unlock built-in functions, indexing, and similarity search. Use `pxt.String` only when you need the path/URL as plain text metadata (e.g., for export). You can convert later with `col.astype(pxt.Image)`.
 - Never use pandas dtypes or NumPy type annotations — always `pxt.*` types.
-- To get a path back out: `.localpath` or `.fileurl` properties.
+- To get a file path or URL back out of a media column: `.localpath` or `.fileurl` properties.
 
 ### Tables, views, and computed columns
 

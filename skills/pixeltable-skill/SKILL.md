@@ -21,17 +21,24 @@ metadata:
 
 ## How to Use This Skill
 
-This skill has three active modes beyond documentation. Use the right one based on what the user is doing.
+### When the user is new to Pixeltable
+
+No existing `import pixeltable` in the project, or they ask "get started," "try Pixeltable," or "what is Pixeltable" — generate a single runnable script immediately. Include `# pip install pixeltable` at the top. Tailor to what they mentioned; default to a simple example if unclear. Let the working code speak — explain concepts as inline comments, not as a lecture before the code.
 
 ### When generating a project scaffold
 
-Infer what you can from context and generate working, runnable code. Don't show templates.
+Guide the user toward the right Pixeltable patterns by understanding their use case. Work through this conversationally — don't dump all four questions at once.
 
-When the data type, provider, or target isn't specified, default to **documents + OpenAI + FastAPI** and note your assumptions briefly so the user can redirect if needed.
+1. **Data** — Identify the type (documents, images, video, audio, text) and where it lives. If it's remote (S3, HTTP), they don't need to download it — Pixeltable references and caches lazily.
+2. **Processing** — Match their needs to built-in functions before suggesting custom UDFs. Pixeltable includes all PIL/Pillow image operations, document splitters, frame extractors, audio splitters, string operations, and more. Use iterators to break data into sub-rows (chunks, frames, segments).
+3. **AI models** — Not just generation — also embeddings, transcription, object detection, classification. All available as built-in integrations via computed columns. Cloud providers need API keys (env vars, config file, or `getpass`); local models (Ollama, Whisper, Hugging Face) don't.
+4. **Search** — No separate vector database needed. An embedding model + `add_embedding_index` + `.similarity()` gives them semantic search directly on their table.
 
-### When reviewing existing Pixeltable code
+Generate working, runnable code as soon as you have enough context. Don't show templates — write real files.
 
-Scan for these five anti-patterns and flag each one found:
+### When you see Pixeltable code (always scan automatically)
+
+Whenever the user shares or points to Pixeltable code for any reason — asking for help, asking to modify, pasting a snippet — silently scan for these anti-patterns. If found, flag concisely at the end of your response. Don't lecture.
 
 | Anti-pattern | What to look for | Fix |
 |---|---|---|
@@ -40,6 +47,9 @@ Scan for these five anti-patterns and flag each one found:
 | Wrong `if_exists` behavior | Unexpected errors on re-run, or silently overwriting existing data | `'error'` (default), `'ignore'` (idempotent setup scripts), `'replace'` (iteration — change your pipeline and re-run, just like rerunning a notebook cell) |
 | Async FastAPI endpoint | `async def` endpoint calling Pixeltable | Change to `def` — Pixeltable is synchronous; Uvicorn handles threading |
 | Single-row anti-pattern | One table created for one prompt/one query | Reframe as a collection; Pixeltable's value is batch + persistence |
+| Custom UDF for built-in | Hand-written UDF that duplicates a built-in (image resize, text splitting, transcription, etc.) | Replace with `pxtf.*` built-in — check `pxtf.image.*`, `pxtf.video.*`, `pxtf.audio.*`, `pxtf.document.*` first |
+| Defensive wrappers | try/except blocks, manual retries, subprocess isolation around Pixeltable calls | Remove — Pixeltable handles errors internally. Use `on_error='ignore'` + `recompute_columns` instead |
+| Calling a UDF outside the table | Defining `@pxt.udf` then calling it as a regular Python function in app code | Everything flows through the table — UDFs run as computed columns, not standalone functions |
 
 ### When debugging a Pixeltable error
 
@@ -90,9 +100,9 @@ Pixeltable is a **persistent, versioned database** for AI workflows — not a Py
 
 The key shift: **don't think "run this script to process files." Think "insert rows; the table handles the rest."**
 
-### Schemas are easy to change — that's a feature
+### Schemas are easy to change
 
-You don't need to design the perfect schema upfront. Add columns, drop columns, rename columns, add computed columns (they backfill automatically on existing rows), add embedding indexes, create views — all after the fact. This is a deliberate differentiator. Help users start simple and extend, not over-architect from the start.
+No need for a perfect schema upfront. Add/drop/rename columns, add computed columns (auto-backfill on existing rows), add embedding indexes, create views — all after the fact. Start simple and extend.
 
 ### The type system
 
@@ -109,33 +119,53 @@ Media is a first-class citizen. Types are always capitalized.
 | `pxt.String`, `pxt.Int`, `pxt.Float`, `pxt.Bool` | Scalars | Python primitives |
 | `pxt.Timestamp`, `pxt.Date`, `pxt.UUID` | Time, identifiers | Standard Python types |
 
-**Critical rules:**
-- **URLs are valid input** — Pixeltable downloads and caches remote media automatically. Never tell a user to download a file before inserting it.
-- **Never use `pxt.String` to store a media path** — the typed column is what unlocks built-in functions, indexing, and similarity search.
-- **Never use pandas dtypes or NumPy type annotations** in a Pixeltable schema. Always `pxt.*` types.
-- Importing from CSV/Parquet with file paths? Use `schema_overrides`: `pxt.create_table('dir.t', source='data.csv', schema_overrides={'img_path': pxt.Image})`
-- To get the file path or URL back out: use `.localpath` or `.fileurl` properties.
+### Data referencing — you don't move your data
 
-### Table hierarchy
+Insert **references**, not files. Pixeltable stores URLs/paths and downloads + caches lazily on access. This is how you work with 100K+ files — you don't move them.
 
-Start with one table. Let it grow naturally:
+Supported schemes: local paths, `file://`, `http://`, `https://`, `s3://` (AWS credentials), `gs://` (GCP credentials).
 
-1. **Base table** — raw data in, typed columns defined
-2. **Views** — derived rows (document chunks, video frames, audio segments)
-3. **Computed columns on views** — transformations, embeddings, AI calls
-4. **More views** — filter or split further as needed
+```python
+t.insert([
+    {'video': '/local/path/video.mp4'},                # local
+    {'video': 'https://cdn.example.com/video.mp4'},    # HTTP
+    {'video': 's3://my-bucket/videos/clip.mp4'},       # S3
+])
+```
+
+**Rules:**
+- Never use `pxt.String` for media paths — the typed column (`pxt.Image`, etc.) unlocks built-in functions, indexing, and similarity search.
+- Never use pandas dtypes or NumPy type annotations — always `pxt.*` types.
+- To get a path back out: `.localpath` or `.fileurl` properties.
+
+### Tables, views, and computed columns
+
+**Tables** hold your raw data with typed columns. They can also have computed columns directly — they're not just for raw data.
+
+**Views** are derived from a table in three ways:
+- With an **iterator** — splits rows into sub-rows (document chunks, video frames, audio segments)
+- As a **filtered subset** — `pxt.create_view('dir.active', t.where(t.is_active == True))`
+- As a **sample** — for testing on a subset
+
+**Computed columns** can go on any table or view. They run automatically on insert and cascade: when you insert into a parent table, all views and their computed columns update automatically.
 
 ### Everything flows through the table
 
-Don't bypass Pixeltable to call AI SDKs directly in application code. Even for a single query, the right pattern is: define a computed column → insert a row → read back the result. The table is your pipeline runner, your result store, and your audit log.
+This is a hard boundary, not a suggestion. Don't bypass Pixeltable to call AI SDKs directly, and don't call `@pxt.udf` functions as regular Python functions. If you defined a UDF or a computed column, it runs through the table. The table is your pipeline runner, your result store, and your audit log.
 
 ```python
 # Wrong: calling the SDK directly
 response = anthropic.Anthropic().messages.create(model='...', messages=[...])
 
-# Right: insert, let computed column run, read back
-agent.insert([{'prompt': question}])
-result = agent.order_by(agent.timestamp, asc=False).limit(1).select(agent.answer).collect()
+# Wrong: calling a UDF as a regular function
+@pxt.udf
+def summarize(text: str) -> str: ...
+result = summarize("some text")  # bypasses persistence, caching, error handling
+
+# Right: define computed column, insert, read back
+t.add_computed_column(summary=summarize(t.content))
+t.insert([{'content': 'some text'}])
+result = t.select(t.summary).collect()
 ```
 
 ---
@@ -145,11 +175,20 @@ result = agent.order_by(agent.timestamp, asc=False).limit(1).select(agent.answer
 ### Setup
 
 ```python
+# pip install pixeltable
 import pixeltable as pxt
 import pixeltable.functions as pxtf
 
 pxt.create_dir('my_project', if_exists='ignore')
 ```
+
+Always use `pxtf.*` for built-in functions (e.g. `pxtf.openai.chat_completions`, `pxtf.image.thumbnail`, `pxtf.document.document_splitter`). Avoid explicit imports like `from pixeltable.functions.openai import chat_completions` — the `pxtf` namespace makes the modality clear and keeps imports clean.
+
+### API keys
+
+Pixeltable auto-discovers credentials. Three options: environment variables (`export OPENAI_API_KEY=sk-...`), config file (`~/.pixeltable/config.toml`), or `getpass` for interactive sessions. No code changes needed — just set the key and Pixeltable finds it.
+
+### `if_exists` options
 
 `create_dir`, `create_table`, `add_computed_column`, and `add_embedding_index` all accept `if_exists=`:
 - `'error'` (default) — fail explicitly if already exists
@@ -170,7 +209,13 @@ t = pxt.create_table('my_project.items', {
     'uuid': pxtf.uuid.uuid7(),
     'created_at': pxt.Timestamp,
 }, primary_key=['uuid'], if_exists='ignore')
+
+# From CSV/Parquet — auto-infer schema, override media columns
+t = pxt.create_table('my_project.data', source='data.csv',
+    schema_overrides={'image_path': pxt.Image, 'audio_path': pxt.Audio})
 ```
+
+Inspect any table's schema with `t.describe()` — shows columns, types, computed column definitions, and iterator sources.
 
 ### Inserting data
 
@@ -198,38 +243,48 @@ t.add_computed_column(
 )
 ```
 
-**Test before committing** — run on a small subset first, no writes:
+**Workflow: test with `.head()`, then commit.** Test expressions on a few rows first, then commit once satisfied:
 
 ```python
-# Test on 2 rows — no API charges for the full dataset yet
-summary_expr = pxtf.openai.chat_completions(
-    messages=[{'role': 'user', 'content': t.text}],
-    model='gpt-4o-mini'
+expr = pxtf.openai.chat_completions(
+    messages=[{'role': 'user', 'content': t.text}], model='gpt-4o-mini'
 ).choices[0].message.content
 
-t.select(t.text, summary=summary_expr).head(2)  # test
-t.add_computed_column(summary=summary_expr)      # commit
+t.select(t.text, summary=expr).head(2)    # test on 2 rows
+t.add_computed_column(summary=expr)        # commit to all rows
 ```
 
-**What to reach for, in order:**
-1. **Built-in functions first** — `pxtf.video.*`, `pxtf.audio.*`, `pxtf.image.*`, `pxtf.document.*`
-2. **Built-in AI integrations second** — `pxtf.openai.*`, `pxtf.anthropic.*`, `pxtf.huggingface.*`, etc.
-3. **UDFs last** — `@pxt.udf` decorator for anything else
+**What to reach for, in order** — this matters. Skipping to UDFs means writing custom code for things Pixeltable already does:
+
+1. **Built-in functions** — `pxtf.image.*`, `pxtf.video.*`, `pxtf.audio.*`, `pxtf.document.*`, etc.
+2. **AI integrations** — `pxtf.openai.*`, `pxtf.anthropic.*`, `pxtf.huggingface.*`, etc.
+3. **Custom `@pxt.udf`** — only for logic that doesn't exist in the built-ins
 
 ```python
+# Wrong: custom UDF for something built-in
+@pxt.udf
+def make_thumbnail(img: PIL.Image.Image) -> PIL.Image.Image:
+    return img.resize((320, 320))
+
+# Right: use the built-in
+t.add_computed_column(thumb=pxtf.image.thumbnail(t.image, size=(320, 320)))
+
+# Right: custom UDF for genuinely custom logic
 @pxt.udf
 def clean_text(text: str) -> str:
     return text.strip().lower()
-
 t.add_computed_column(cleaned=clean_text(t.content), if_exists='ignore')
 ```
 
 ### Querying
 
+Queries are lazy — `.select()`, `.where()`, `.order_by()`, `.limit()` build an expression. Call `.collect()` to materialize results. Shortcuts: `t.head(n)` and `t.tail(n)` collect immediately.
+
 ```python
 results = t.select(t.title, t.score).collect()
 results = t.where(t.score > 0.8).select(t.title).collect()
 results = t.order_by(t.score, asc=False).limit(10).collect()
+t.head(5)                      # quick peek — shortcut for select + limit + collect
 df = t.collect().to_pandas()
 
 # For FastAPI responses
@@ -257,34 +312,15 @@ tools = pxt.tools(retrieve)
 
 ## AI Provider Integrations
 
-Built-in functions for 15+ providers in `pixeltable.functions.*`. Use these inside computed columns — never call the raw SDKs in application code.
+Built-in functions for 15+ providers via `pxtf.<provider>.*`. Use these inside computed columns — never call the raw SDKs in application code.
 
 | Provider | Module | Key Functions |
 |----------|--------|---------------|
-| OpenAI | `openai` | `chat_completions`, `embeddings`, `image_generations`, `speech`, `transcriptions` |
-| Anthropic | `anthropic` | `messages`, `invoke_tools` |
-| Gemini | `gemini` | `generate_content` |
-| Hugging Face | `huggingface` | `clip`, `sentence_transformer`, `detr_for_object_detection` |
-| Together | `together` | `chat_completions`, `embeddings`, `image_generations` |
-| Fireworks | `fireworks` | `chat_completions`, `embeddings` |
-| Ollama | `ollama` | `chat_completions`, `embeddings` |
-| Mistral | `mistralai` | `chat_completions`, `embeddings` |
-| Groq | `groq` | `chat_completions` |
-| DeepSeek | `deepseek` | `chat_completions` |
-| Replicate | `replicate` | `run` |
-| Voyage AI | `voyageai` | `embed` |
-| Bedrock | `bedrock` | `converse` |
-| OpenRouter | `openrouter` | `chat_completions` |
+| OpenAI | `pxtf.openai` | `chat_completions`, `embeddings`, `image_generations`, `speech`, `transcriptions` |
+| Anthropic | `pxtf.anthropic` | `messages`, `invoke_tools` |
+| Hugging Face | `pxtf.huggingface` | `clip`, `sentence_transformer`, `detr_for_object_detection` |
+| Ollama | `pxtf.ollama` | `chat_completions`, `embeddings` |
+| Together | `pxtf.together` | `chat_completions`, `embeddings`, `image_generations` |
+| Gemini | `pxtf.gemini` | `generate_content` |
 
----
-
-## Specialized Skills
-
-These build on this core. Each is self-contained but assumes this mental model:
-
-- **pixeltable-rag** — document chunking, embedding indexes, similarity search, full RAG scaffold
-- **pixeltable-media** — video/audio/image pipelines, frame extraction, CLIP, transcription
-- **pixeltable-agents** — `pxt.tools()`, `invoke_tools`, multi-step agent patterns, MCP
-- **pixeltable-app** — FastAPI patterns, `setup_pixeltable.py`, sync endpoints, `to_pydantic()`
-
-For complete API signatures and end-to-end examples, see `API_REFERENCE.md`.
+15+ providers total (Fireworks, Mistral, Groq, DeepSeek, Replicate, Voyage AI, Bedrock, OpenRouter, etc.) — all follow `pxtf.<provider>.*` pattern. See [docs.pixeltable.com](https://docs.pixeltable.com/) for full list.

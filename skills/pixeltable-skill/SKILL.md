@@ -19,6 +19,84 @@ metadata:
   support: https://github.com/pixeltable/pixeltable/discussions
 ---
 
+## Mental Model
+
+### What Pixeltable actually is
+
+Pixeltable is a **persistent, versioned database** for AI workflows — not a Python framework, not an in-memory dataframe library, not a pipeline orchestrator. Data persists between sessions. Tables outlive scripts. All interaction happens through the Python API (`pxt.*`). No raw SQL.
+
+The key shift: **don't think "run this script to process files." Think "insert rows; the table handles the rest."**
+
+### Schemas are easy to change
+
+No need for a perfect schema upfront. Add/drop/rename columns, add computed columns (auto-backfill on existing rows), add embedding indexes, create views — all after the fact. Start simple and extend.
+
+### The type system
+
+Media is a first-class citizen. Types are always capitalized.
+
+| Type | Use for | Accepts |
+|------|---------|---------|
+| `pxt.Image` | Images | File paths, URLs |
+| `pxt.Video` | Video files | File paths, URLs |
+| `pxt.Audio` | Audio files | File paths, URLs |
+| `pxt.Document` | PDFs, HTML, Markdown, DOCX | File paths, URLs |
+| `pxt.Array` | Embeddings, tensors | NumPy arrays, e.g. `pxt.Array[(768,), pxt.Float]` |
+| `pxt.Json` | Nested/arbitrary data | Dicts, lists — missing keys return `None`, not exceptions |
+| `pxt.String`, `pxt.Int`, `pxt.Float`, `pxt.Bool` | Scalars | Python primitives |
+| `pxt.Timestamp`, `pxt.Date`, `pxt.UUID` | Time, identifiers | Standard Python types |
+
+### Data referencing — you don't move your data
+
+Insert **references**, not files. Pixeltable downloads remote media automatically when it needs to process it — all media processing happens locally. Downloaded files and generated outputs (images, video, audio) are stored in `~/.pixeltable/media`; structured data lives in a managed Postgres instance at `~/.pixeltable`. You never need to move files around or manage the local copies — the data store is fully managed by Pixeltable.
+
+Supported schemes: local paths, `file://`, `http://`, `https://`, `s3://` (AWS credentials), `gs://` (GCP credentials).
+
+```python
+t.insert([
+    {'video': '/local/path/video.mp4'},                # local
+    {'video': 'https://cdn.example.com/video.mp4'},    # HTTP
+    {'video': 's3://my-bucket/videos/clip.mp4'},       # S3
+])
+```
+
+**Rules:**
+- Never use `pxt.String` for media paths — the typed column (`pxt.Image`, etc.) unlocks built-in functions, indexing, and similarity search.
+- Never use pandas dtypes or NumPy type annotations — always `pxt.*` types.
+- To get a path back out: `.localpath` or `.fileurl` properties.
+
+### Tables, views, and computed columns
+
+**Tables** hold your raw data with typed columns. They can also have computed columns directly — they're not just for raw data.
+
+**Views** are derived from a table in three ways:
+- With an **iterator** — splits rows into sub-rows (document chunks, video frames, audio segments)
+- As a **filtered subset** — `pxt.create_view('dir.active', t.where(t.is_active == True))`
+- As a **sample** — for testing on a subset
+
+**Computed columns** can go on any table or view. They run automatically on insert and cascade: when you insert into a parent table, all views and their computed columns update automatically.
+
+### Everything flows through the table
+
+This is a hard boundary, not a suggestion. Don't bypass Pixeltable to call AI SDKs directly, and don't call `@pxt.udf` functions as regular Python functions. If you defined a UDF or a computed column, it runs through the table. The table is your pipeline runner, your result store, and your audit log.
+
+```python
+# Wrong: calling the SDK directly
+response = anthropic.Anthropic().messages.create(model='...', messages=[...])
+
+# Wrong: calling a UDF as a regular function
+@pxt.udf
+def summarize(text: str) -> str: ...
+result = summarize("some text")  # bypasses persistence, caching, error handling
+
+# Right: define computed column, insert, read back
+t.add_computed_column(summary=summarize(t.content))
+t.insert([{'content': 'some text'}])
+result = t.select(t.summary).collect()
+```
+
+---
+
 ## How to Use This Skill
 
 ### When the user is new to Pixeltable
@@ -92,85 +170,7 @@ print(f"Inserted: {status.num_rows}, Errors: {status.num_excs}")
 
 ---
 
-## Mental Model
-
-### What Pixeltable actually is
-
-Pixeltable is a **persistent, versioned database** for AI workflows — not a Python framework, not an in-memory dataframe library, not a pipeline orchestrator. Data persists between sessions. Tables outlive scripts. All interaction happens through the Python API (`pxt.*`). No raw SQL.
-
-The key shift: **don't think "run this script to process files." Think "insert rows; the table handles the rest."**
-
-### Schemas are easy to change
-
-No need for a perfect schema upfront. Add/drop/rename columns, add computed columns (auto-backfill on existing rows), add embedding indexes, create views — all after the fact. Start simple and extend.
-
-### The type system
-
-Media is a first-class citizen. Types are always capitalized.
-
-| Type | Use for | Accepts |
-|------|---------|---------|
-| `pxt.Image` | Images | File paths, URLs |
-| `pxt.Video` | Video files | File paths, URLs |
-| `pxt.Audio` | Audio files | File paths, URLs |
-| `pxt.Document` | PDFs, HTML, Markdown, DOCX | File paths, URLs |
-| `pxt.Array` | Embeddings, tensors | NumPy arrays, e.g. `pxt.Array[(768,), pxt.Float]` |
-| `pxt.Json` | Nested/arbitrary data | Dicts, lists — missing keys return `None`, not exceptions |
-| `pxt.String`, `pxt.Int`, `pxt.Float`, `pxt.Bool` | Scalars | Python primitives |
-| `pxt.Timestamp`, `pxt.Date`, `pxt.UUID` | Time, identifiers | Standard Python types |
-
-### Data referencing — you don't move your data
-
-Insert **references**, not files. Pixeltable stores URLs/paths and downloads + caches lazily on access. This is how you work with 100K+ files — you don't move them.
-
-Supported schemes: local paths, `file://`, `http://`, `https://`, `s3://` (AWS credentials), `gs://` (GCP credentials).
-
-```python
-t.insert([
-    {'video': '/local/path/video.mp4'},                # local
-    {'video': 'https://cdn.example.com/video.mp4'},    # HTTP
-    {'video': 's3://my-bucket/videos/clip.mp4'},       # S3
-])
-```
-
-**Rules:**
-- Never use `pxt.String` for media paths — the typed column (`pxt.Image`, etc.) unlocks built-in functions, indexing, and similarity search.
-- Never use pandas dtypes or NumPy type annotations — always `pxt.*` types.
-- To get a path back out: `.localpath` or `.fileurl` properties.
-
-### Tables, views, and computed columns
-
-**Tables** hold your raw data with typed columns. They can also have computed columns directly — they're not just for raw data.
-
-**Views** are derived from a table in three ways:
-- With an **iterator** — splits rows into sub-rows (document chunks, video frames, audio segments)
-- As a **filtered subset** — `pxt.create_view('dir.active', t.where(t.is_active == True))`
-- As a **sample** — for testing on a subset
-
-**Computed columns** can go on any table or view. They run automatically on insert and cascade: when you insert into a parent table, all views and their computed columns update automatically.
-
-### Everything flows through the table
-
-This is a hard boundary, not a suggestion. Don't bypass Pixeltable to call AI SDKs directly, and don't call `@pxt.udf` functions as regular Python functions. If you defined a UDF or a computed column, it runs through the table. The table is your pipeline runner, your result store, and your audit log.
-
-```python
-# Wrong: calling the SDK directly
-response = anthropic.Anthropic().messages.create(model='...', messages=[...])
-
-# Wrong: calling a UDF as a regular function
-@pxt.udf
-def summarize(text: str) -> str: ...
-result = summarize("some text")  # bypasses persistence, caching, error handling
-
-# Right: define computed column, insert, read back
-t.add_computed_column(summary=summarize(t.content))
-t.insert([{'content': 'some text'}])
-result = t.select(t.summary).collect()
-```
-
----
-
-## Core APIs
+## Pixeltable Patterns
 
 ### Setup
 
@@ -276,6 +276,10 @@ def clean_text(text: str) -> str:
 t.add_computed_column(cleaned=clean_text(t.content), if_exists='ignore')
 ```
 
+### AI providers
+
+Pixeltable integrates 15+ AI providers — foundation model providers (OpenAI, Anthropic, Gemini, Mistral), inference platforms (Together, Fireworks, Groq, Replicate, OpenRouter, fal.ai, Bedrock), Hugging Face, and Ollama for local inference. All follow the same pattern: `pxtf.<provider>.*` through computed columns. Providers with remote APIs need API keys; local inference (Ollama, some Hugging Face models) doesn't. See [docs.pixeltable.com](https://docs.pixeltable.com/) for the full list of providers and their available functions.
+
 ### Querying
 
 Queries are lazy — `.select()`, `.where()`, `.order_by()`, `.limit()` build an expression. Call `.collect()` to materialize results. Shortcuts: `t.head(n)` and `t.tail(n)` collect immediately.
@@ -307,20 +311,3 @@ results = retrieve('What is RAG?').collect()
 # Or pass to pxt.tools() for agent use
 tools = pxt.tools(retrieve)
 ```
-
----
-
-## AI Provider Integrations
-
-Built-in functions for 15+ providers via `pxtf.<provider>.*`. Use these inside computed columns — never call the raw SDKs in application code.
-
-| Provider | Module | Key Functions |
-|----------|--------|---------------|
-| OpenAI | `pxtf.openai` | `chat_completions`, `embeddings`, `image_generations`, `speech`, `transcriptions` |
-| Anthropic | `pxtf.anthropic` | `messages`, `invoke_tools` |
-| Hugging Face | `pxtf.huggingface` | `clip`, `sentence_transformer`, `detr_for_object_detection` |
-| Ollama | `pxtf.ollama` | `chat_completions`, `embeddings` |
-| Together | `pxtf.together` | `chat_completions`, `embeddings`, `image_generations` |
-| Gemini | `pxtf.gemini` | `generate_content` |
-
-15+ providers total (Fireworks, Mistral, Groq, DeepSeek, Replicate, Voyage AI, Bedrock, OpenRouter, etc.) — all follow `pxtf.<provider>.*` pattern. See [docs.pixeltable.com](https://docs.pixeltable.com/) for full list.

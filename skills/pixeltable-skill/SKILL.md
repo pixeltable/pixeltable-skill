@@ -295,19 +295,3 @@ df = t.collect().to_pandas()
 items = list(t.select(title=t.title, score=t.score).collect().to_pydantic(MyModel))
 ```
 
-### Query functions
-
-`@pxt.query` turns a function into a reusable, parameterized query — commonly used for similarity search and as agent tools. **It is not stored in Pixeltable.** Redefine it in every Python process that uses it (both `setup_pixeltable.py` and `main.py`).
-
-```python
-@pxt.query
-def retrieve(question: str, top_k: int = 5):
-    sim = chunks.text.similarity(question)
-    return chunks.order_by(sim, asc=False).limit(top_k).select(chunks.text, sim)
-
-# Use directly
-results = retrieve('What is RAG?').collect()
-
-# Or pass to pxt.tools() for agent use
-tools = pxt.tools(retrieve)
-```

@@ -69,7 +69,7 @@ t.insert([
 
 ### Tables, views, and computed columns
 
-**Tables** hold your raw data with typed columns. They can also have computed columns directly.
+**Tables** are where you insert data. Each column has a Pixeltable type.
 
 **Views** are derived from a table in three ways:
 - With an **iterator** — splits rows into sub-rows (document chunks, video frames, audio segments)

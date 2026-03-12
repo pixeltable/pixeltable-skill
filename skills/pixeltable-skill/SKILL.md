@@ -1,5 +1,5 @@
 ---
-name: pixeltable
+name: pixeltable-skill
 description: >
   Build persistent multimodal AI pipelines — images, video, audio, documents —
   with automatic computed columns, built-in vector search, and 15+ AI provider

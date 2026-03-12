@@ -23,7 +23,7 @@ metadata:
 
 ### What Pixeltable actually is
 
-Pixeltable is a **persistent, versioned database** for AI workflows. Data persists between sessions. Tables outlive scripts. All interaction happens through the Python API (`pxt.*`). No raw SQL.
+Pixeltable is a **persistent, versioned database** for AI workflows — a database where your AI pipeline is part of the schema. You create tables for your data, add columns that call AI models, and Pixeltable handles execution, caching, rate limits, retries, versioning, and search — so you write the logic, not the infrastructure. All interaction happens through the Python API (`pxt.*`). No raw SQL.
 
 **Versioned** means every change to a table (inserts, updates, deletes, schema changes) is tracked, and every computed output is stored and retrievable. You can trace any output back to the inputs and model that produced it, compare results across prompt or model changes, and query any prior state of the table.
 
@@ -76,7 +76,7 @@ t.insert([
 - As a **filtered subset** — `pxt.create_view('dir.active', t.where(t.is_active == True))`
 - As a **sample** — `pxt.create_view('dir.sample', t.sample(n=100, seed=42))`
 
-**Computed columns** can go on any table or view. They run automatically on insert.
+**Computed columns** can go on any table or view. You define them once — Pixeltable computes them on all existing rows immediately and on every future insert. There's no separate "run" step.
 
 ### Everything flows through the table
 
@@ -149,7 +149,7 @@ Follow this diagnosis tree:
 **Computed column errors** → use `on_error='ignore'` on the column, inspect, then retry:
 ```python
 # Add column with graceful error handling
-t.add_computed_column(analysis=my_fn(t.doc), on_error='ignore', if_exists='ignore')
+t.add_computed_column(analysis=my_fn(t.doc), on_error='ignore')
 
 # Find rows with errors
 t.where(t.analysis.errortype != None).select(t.analysis.errortype, t.analysis.errormsg).collect()
@@ -208,14 +208,14 @@ Pixeltable auto-discovers credentials. Three options: environment variables (`ex
 t = pxt.create_table('my_project.documents', {
     'title': pxt.String,
     'doc': pxt.Document,
-}, if_exists='ignore')
+})
 
 # With primary key
 t = pxt.create_table('my_project.items', {
     'content': pxt.String,
     'uuid': pxtf.uuid.uuid7(),
     'created_at': pxt.Timestamp,
-}, primary_key=['uuid'], if_exists='ignore')
+}, primary_key=['uuid'])
 
 # From CSV/Parquet — auto-infer schema, override media columns
 t = pxt.create_table('my_project.data', source='data.csv',
@@ -263,15 +263,14 @@ t.insert([MyModel(...)])  # from Pydantic
 
 ### Computed columns
 
-Run automatically on every new row. Can chain — each column can reference previously defined computed columns. **Cascading is automatic:** when a computed column updates, any downstream columns that depend on it update too.
+Defined once, computed automatically — on all existing rows (backfill) and every future insert. No invocation needed. Can chain — each column can reference previously defined computed columns. **Cascading is automatic:** when a computed column updates, any downstream columns that depend on it update too.
 
 ```python
 t.add_computed_column(
     summary=pxtf.openai.chat_completions(
         messages=[{'role': 'user', 'content': t.content}],
         model='gpt-4o-mini'
-    ).choices[0].message.content,
-    if_exists='ignore'
+    ).choices[0].message.content
 )
 ```
 
@@ -302,8 +301,26 @@ t.add_computed_column(thumb=pxtf.image.thumbnail(t.image, size=(320, 320)))
 @pxt.udf
 def clean_text(text: str) -> str:
     return text.strip().lower()
-t.add_computed_column(cleaned=clean_text(t.content), if_exists='ignore')
+t.add_computed_column(cleaned=clean_text(t.content))
 ```
+
+### Embedding indexes and similarity search
+
+No separate vector database. Add an embedding index to any text or image column, then query with `.similarity()`:
+
+```python
+# Add an embedding index
+chunks.add_embedding_index(
+    'text',
+    embedding=pxtf.huggingface.sentence_transformer.using(model_id='all-MiniLM-L6-v2')
+)
+
+# Search
+sim = chunks.text.similarity('how does authentication work?')
+chunks.order_by(sim, asc=False).limit(5).select(chunks.text, sim).collect()
+```
+
+The index updates incrementally when new rows are inserted — no re-indexing needed.
 
 ### AI providers
 
@@ -332,7 +349,8 @@ t.sample(n_per_stratum=2, stratify_by=t.category).collect() # N per group
 t.describe()                                    # schema + computed column expressions + dependencies
 t.history()                                     # all versions with timestamps and change types
 prior = pxt.get_table('project.items:3')        # time-travel to version 3 (read-only)
-pxt.create_snapshot('project.items', 'before_retrain')  # named milestone
+tbl = pxt.get_table('project.items')
+pxt.create_snapshot('project.before_retrain', tbl)      # named milestone
 ```
 
 ### Working with JSON responses

@@ -25,7 +25,9 @@ metadata:
 
 Pixeltable is a **persistent, versioned database** for AI workflows. Data persists between sessions. Tables outlive scripts. All interaction happens through the Python API (`pxt.*`). No raw SQL.
 
-The key shift: **insert data, define computed columns for what you want to happen, and the table runs your pipeline automatically.**
+**Versioned** means every change to a table (inserts, updates, deletes, schema changes) is tracked, and every computed output is stored and retrievable. You can trace any output back to the inputs and model that produced it, compare results across prompt or model changes, and query any prior state of the table.
+
+The key shift: **instead of writing a series of scripts that process your data and save results somewhere, you add columns to a table and the processing happens automatically — on every insert, for every future row.**
 
 ### Schemas are easy to change
 
@@ -95,6 +97,15 @@ t.insert([{'content': 'some text'}])
 result = t.select(t.summary).collect()
 ```
 
+### What the table handles for you
+
+When processing runs through computed columns, Pixeltable automatically:
+- **Caches every computed result** — if you re-insert or recompute, previously computed values aren't reprocessed
+- **Manages provider rate limits** — calls to OpenAI, Anthropic, etc. are throttled to stay within limits
+- **Retries transient failures** — network errors, API timeouts, and rate-limit rejections are retried automatically
+
+This is why "everything flows through the table" matters. Code that bypasses computed columns loses all three — and the user ends up writing retry loops, caching layers, and rate-limit handling that Pixeltable already provides.
+
 ---
 
 ## How to Use This Skill
@@ -110,7 +121,7 @@ Guide the user toward the right Pixeltable patterns by understanding their use c
 1. **Data** — Identify the type (documents, images, video, audio, text) and where it lives. If it's remote (S3, HTTP), they don't need to download it — Pixeltable downloads and caches remote media when it needs to process it (on insert or when a computed column accesses it).
 2. **Processing** — Match their needs to built-in functions before suggesting custom UDFs. Pixeltable includes all PIL/Pillow image operations, document splitters, frame extractors, audio splitters, string operations, and more. Use iterators to break data into sub-rows (chunks, frames, segments).
 3. **AI models** — Not just generation — also embeddings, transcription, object detection, classification. All available as built-in integrations via computed columns. Cloud providers need API keys (env vars, config file, or `getpass`); local models (Ollama, Hugging Face) don't.
-4. **Search** — No separate vector database needed. An embedding model + `add_embedding_index` + `.similarity()` gives them semantic search directly on their table.
+4. **Search** — No separate vector database needed. An embedding model + `add_embedding_index` + `.similarity()` gives them semantic search directly on their table. The index updates incrementally when new rows are inserted — no re-indexing, no re-processing of existing data.
 
 Generate working, runnable code as soon as you have enough context. Don't show templates — write real files.
 
@@ -126,9 +137,10 @@ Whenever the user shares or points to Pixeltable code for any reason — asking 
 | Async FastAPI endpoint | `async def` endpoint calling Pixeltable | Change to `def` — Pixeltable is synchronous; Uvicorn handles threading |
 | Single-row anti-pattern | One table created for one prompt/one query | Reframe as a collection; Pixeltable's value is batch + persistence |
 | Custom UDF for built-in | Hand-written UDF that duplicates a built-in (image resize, text splitting, transcription, etc.) | Replace with `pxtf.*` built-in — check `pxtf.image.*`, `pxtf.video.*`, `pxtf.audio.*`, `pxtf.document.*` first |
-| Defensive wrappers | try/except blocks, manual retries, subprocess isolation around Pixeltable calls | Remove — Pixeltable handles errors internally. Use `on_error='ignore'` + `recompute_columns` instead |
+| Defensive wrappers | try/except blocks, manual retries, rate-limit sleep loops, caching layers around Pixeltable calls | Remove — Pixeltable caches computed results, retries transient failures, and manages provider rate limits automatically. Use `on_error='ignore'` + `recompute_columns` for errors that need inspection |
 | Calling a UDF outside the table | Defining `@pxt.udf` then calling it as a regular Python function in app code | Everything flows through the table — UDFs run as computed columns, not standalone functions |
 | External tool for built-in capability | Adding Pinecone/Weaviate/ChromaDB for vector search, LangChain/LlamaIndex for chaining, or separate orchestrators | Pixeltable has built-in embedding indexes, similarity search, computed column chaining, and iterators — no external tools needed |
+| Manual JSON parsing | `json.loads()`, manual key extraction, or post-processing scripts to parse AI API responses | Use Pixeltable JSON path expressions directly in computed columns and queries: `t.col['key']`, `t.col['*'].field`, `t.col[0].field`, `t.col[1:].field` |
 
 ### When debugging a Pixeltable error
 
@@ -235,7 +247,7 @@ active = pxt.create_view('project.active', t.where(t.is_active == True))
 sample = pxt.create_view('project.sample', t.sample(n=100, seed=42))
 ```
 
-Inserts to the parent table cascade through all views and their computed columns automatically.
+Inserts to the parent table cascade through all views, their computed columns, and any embedding indexes automatically — new data is processed incrementally without re-indexing or re-processing existing rows.
 
 ### Inserting data
 
@@ -312,6 +324,33 @@ t.sample(n=100).collect()                                  # random N rows
 t.sample(fraction=0.1).collect()                           # random 10%
 t.sample(fraction=0.1, stratify_by=t.category).collect()   # stratified
 t.sample(n_per_stratum=2, stratify_by=t.category).collect() # N per group
+```
+
+### Version history
+
+```python
+t.describe()                                    # schema + computed column expressions + dependencies
+t.history()                                     # all versions with timestamps and change types
+prior = pxt.get_table('project.items:3')        # time-travel to version 3 (read-only)
+pxt.create_snapshot('project.items', 'before_retrain')  # named milestone
+```
+
+### Working with JSON responses
+
+AI API responses are `pxt.Json` columns. Navigate them with path expressions directly in computed columns and queries — no `json.loads()` or manual parsing:
+
+```python
+# Access a key
+t.select(t.response['choices'][0]['message']['content']).collect()
+
+# Extract a field from every element in an array
+t.select(t.scenes['*'].start_time).collect()
+
+# Slice an array, then extract
+t.select(t.scenes[1:].start_time).collect()
+
+# Use in a computed column — parse once, use everywhere
+t.add_computed_column(answer=t.response['choices'][0]['message']['content'])
 ```
 
 ### Exporting data

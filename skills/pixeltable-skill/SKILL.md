@@ -23,9 +23,9 @@ metadata:
 
 ### What Pixeltable actually is
 
-Pixeltable is a **persistent, versioned database** for AI workflows — not a Python framework, not an in-memory dataframe library, not a pipeline orchestrator. Data persists between sessions. Tables outlive scripts. All interaction happens through the Python API (`pxt.*`). No raw SQL.
+Pixeltable is a **persistent, versioned database** for AI workflows. Data persists between sessions. Tables outlive scripts. All interaction happens through the Python API (`pxt.*`). No raw SQL.
 
-The key shift: **don't think "run this script to process files." Think "insert rows; the table handles the rest."**
+The key shift: **insert data, define computed columns for what you want to happen, and the table runs your pipeline automatically.**
 
 ### Schemas are easy to change
 
@@ -128,6 +128,7 @@ Whenever the user shares or points to Pixeltable code for any reason — asking 
 | Custom UDF for built-in | Hand-written UDF that duplicates a built-in (image resize, text splitting, transcription, etc.) | Replace with `pxtf.*` built-in — check `pxtf.image.*`, `pxtf.video.*`, `pxtf.audio.*`, `pxtf.document.*` first |
 | Defensive wrappers | try/except blocks, manual retries, subprocess isolation around Pixeltable calls | Remove — Pixeltable handles errors internally. Use `on_error='ignore'` + `recompute_columns` instead |
 | Calling a UDF outside the table | Defining `@pxt.udf` then calling it as a regular Python function in app code | Everything flows through the table — UDFs run as computed columns, not standalone functions |
+| External tool for built-in capability | Adding Pinecone/Weaviate/ChromaDB for vector search, LangChain/LlamaIndex for chaining, or separate orchestrators | Pixeltable has built-in embedding indexes, similarity search, computed column chaining, and iterators — no external tools needed |
 
 ### When debugging a Pixeltable error
 

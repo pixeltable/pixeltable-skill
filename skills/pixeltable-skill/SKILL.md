@@ -74,7 +74,7 @@ t.insert([
 - As a **filtered subset** — `pxt.create_view('dir.active', t.where(t.is_active == True))`
 - As a **sample** — for testing on a subset
 
-**Computed columns** can go on any table or view. They run automatically on insert and cascade: when you insert into a parent table, all views and their computed columns update automatically.
+**Computed columns** can go on any table or view. They run automatically on insert.
 
 ### Everything flows through the table
 
@@ -107,7 +107,7 @@ No existing `import pixeltable` in the project, or they ask "get started," "try 
 
 Guide the user toward the right Pixeltable patterns by understanding their use case. Work through this conversationally — don't dump all four questions at once.
 
-1. **Data** — Identify the type (documents, images, video, audio, text) and where it lives. If it's remote (S3, HTTP), they don't need to download it — Pixeltable references and caches lazily.
+1. **Data** — Identify the type (documents, images, video, audio, text) and where it lives. If it's remote (S3, HTTP), they don't need to download it — Pixeltable downloads and caches remote media automatically.
 2. **Processing** — Match their needs to built-in functions before suggesting custom UDFs. Pixeltable includes all PIL/Pillow image operations, document splitters, frame extractors, audio splitters, string operations, and more. Use iterators to break data into sub-rows (chunks, frames, segments).
 3. **AI models** — Not just generation — also embeddings, transcription, object detection, classification. All available as built-in integrations via computed columns. Cloud providers need API keys (env vars, config file, or `getpass`); local models (Ollama, Whisper, Hugging Face) don't.
 4. **Search** — No separate vector database needed. An embedding model + `add_embedding_index` + `.similarity()` gives them semantic search directly on their table.
@@ -166,8 +166,6 @@ print(f"Inserted: {status.num_rows}, Errors: {status.num_excs}")
 
 **Type errors** → call `t.describe()` to see the actual schema.
 
-**`@pxt.query` function not found** → it's not stored in Pixeltable. It must be redefined in every Python process that uses it — both in setup and in the app.
-
 ---
 
 ## Pixeltable Patterns
@@ -217,6 +215,26 @@ t = pxt.create_table('my_project.data', source='data.csv',
 
 Inspect any table's schema with `t.describe()` — shows columns, types, computed column definitions, and iterator sources.
 
+### Views
+
+Views transform how you see a table's data. Unlike computed columns (which add new values to existing rows), views create new row structures — splitting one row into many via an iterator, or filtering down to a subset. Iterators can only be used when creating a view.
+
+**"I need to break data into smaller pieces"** → create a view with an **iterator**. Each piece becomes its own row that can have its own computed columns:
+```python
+chunks = pxt.create_view('project.chunks', docs,
+    iterator=pxtf.document.document_splitter(docs.doc, separators='sentence', limit=300))
+
+frames = pxt.create_view('project.frames', videos,
+    iterator=pxtf.video.frame_iterator(videos.video, fps=1))
+```
+
+**"I need a subset of my data"** → filtered view:
+```python
+active = pxt.create_view('project.active', t.where(t.is_active == True))
+```
+
+Inserts to the parent table cascade through all views and their computed columns automatically.
+
 ### Inserting data
 
 ```python
@@ -254,12 +272,7 @@ t.select(t.text, summary=expr).head(2)    # test on 2 rows
 t.add_computed_column(summary=expr)        # commit to all rows
 ```
 
-**What to reach for, in order** — this matters. Skipping to UDFs means writing custom code for things Pixeltable already does:
-
-1. **Built-in functions** — `pxtf.image.*`, `pxtf.video.*`, `pxtf.audio.*`, `pxtf.document.*`, etc.
-2. **AI integrations** — `pxtf.openai.*`, `pxtf.anthropic.*`, `pxtf.huggingface.*`, etc.
-3. **Custom `@pxt.udf`** — only for logic that doesn't exist in the built-ins
-
+**"I need to process images / audio / documents"** → check built-in functions first. Pixeltable includes all PIL/Pillow operations, document splitters, audio splitters, and more — don't go outside Pixeltable to use PIL or write your own:
 ```python
 # Wrong: custom UDF for something built-in
 @pxt.udf
@@ -268,8 +281,10 @@ def make_thumbnail(img: PIL.Image.Image) -> PIL.Image.Image:
 
 # Right: use the built-in
 t.add_computed_column(thumb=pxtf.image.thumbnail(t.image, size=(320, 320)))
+```
 
-# Right: custom UDF for genuinely custom logic
+**"I need custom logic that doesn't exist as a built-in"** → write a `@pxt.udf` as a last resort:
+```python
 @pxt.udf
 def clean_text(text: str) -> str:
     return text.strip().lower()
@@ -289,9 +304,56 @@ results = t.select(t.title, t.score).collect()
 results = t.where(t.score > 0.8).select(t.title).collect()
 results = t.order_by(t.score, asc=False).limit(10).collect()
 t.head(5)                      # quick peek — shortcut for select + limit + collect
-df = t.collect().to_pandas()
-
-# For FastAPI responses
-items = list(t.select(title=t.title, score=t.score).collect().to_pydantic(MyModel))
 ```
+
+### Exporting data
+
+Data doesn't stay trapped in Pixeltable. Guide users to the right export path based on what they're trying to do:
+
+**"I need to analyze results in a notebook or pass data to another library"** → `.to_pandas()`
+```python
+df = t.where(t.score > 0.8).collect().to_pandas()
+```
+
+**"I'm building an API and need typed response objects"** → `.to_pydantic()`
+```python
+items = list(t.select(t.title, t.score).collect().to_pydantic(MyModel))
+```
+
+**"I need to share a dataset or feed it into an analytics pipeline"** → `export_parquet()`
+```python
+pxt.io.export_parquet(t, 'output.parquet')
+pxt.io.export_parquet(t.where(t.label == 'cat'), 'cats.parquet')  # filtered
+```
+
+**"I need to push structured metadata to an existing database"** → `export_sql()`
+```python
+pxt.io.export_sql(
+    t.select(t.label, t.width, t.height),
+    'image_metadata',
+    db_connect_str=connection_string
+)
+```
+
+**"I'm training a model and need a DataLoader-compatible dataset"** → `.to_pytorch_dataset()`
+```python
+pytorch_dataset = t.select(t.image_resized, t.label).to_pytorch_dataset(image_format='pt')
+# 'pt': CxHxW tensors, [0,1] float32 | 'np': HxWxC, [0,255] uint8
+dataloader = DataLoader(pytorch_dataset, batch_size=32)
+```
+
+**"I need COCO-format annotations for object detection"** → `.to_coco_dataset()`
+```python
+coco_path = t.to_coco_dataset()
+```
+
+**"I need generated media (images, audio, etc.) to land in S3/GCS, not locally"** → `destination=` on computed columns
+```python
+t.add_computed_column(
+    rotated=t.image.rotate(90),
+    destination='s3://my-bucket/rotated/',  # or gs:// or local path
+    if_exists='replace'
+)
+```
+
 

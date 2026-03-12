@@ -1,20 +1,20 @@
 ---
-name: pixeltable-skill
+name: pixeltable
 description: >
-  Core foundation for building AI applications with Pixeltable. Always active
-  when working in a Pixeltable project. Use when the user asks how to use
-  Pixeltable, creates tables, inserts data, adds computed columns, writes UDFs,
-  or integrates with AI providers. Also triggers for "how do I use Pixeltable,"
-  general Pixeltable questions, debugging Pixeltable errors, or reviewing existing
-  Pixeltable code. Specialized skills (pixeltable-rag, pixeltable-media,
-  pixeltable-agents, pixeltable-app) extend this foundation — this skill is
-  always the base layer.
+  Build persistent multimodal AI pipelines — images, video, audio, documents —
+  with automatic computed columns, built-in vector search, and 15+ AI provider
+  integrations (OpenAI, Anthropic, Gemini, Hugging Face, Ollama, and more). No
+  separate vector database, no ETL, no glue code. Data lives in S3, HTTP, or
+  local paths and Pixeltable handles the rest. Use when building Pixeltable
+  projects, creating tables or schemas, adding computed columns, integrating AI
+  providers, debugging Pixeltable errors, or reviewing Pixeltable code for
+  anti-patterns.
 license: Apache-2.0
 metadata:
   author: Pixeltable
   version: 2.0.0
   category: data-infrastructure
-  tags: [multimodal, ai, data, tables, computed-columns, udf, embeddings, agents, fastapi]
+  tags: [multimodal, ai, data, tables, computed-columns, udf, embeddings, vector-search, rag, image-processing, video-processing, audio-processing, document-pipeline, ai-pipeline]
   documentation: https://docs.pixeltable.com/
   support: https://github.com/pixeltable/pixeltable/discussions
 ---
@@ -67,18 +67,18 @@ t.insert([
 
 ### Tables, views, and computed columns
 
-**Tables** hold your raw data with typed columns. They can also have computed columns directly — they're not just for raw data.
+**Tables** hold your raw data with typed columns. They can also have computed columns directly.
 
 **Views** are derived from a table in three ways:
 - With an **iterator** — splits rows into sub-rows (document chunks, video frames, audio segments)
 - As a **filtered subset** — `pxt.create_view('dir.active', t.where(t.is_active == True))`
-- As a **sample** — for testing on a subset
+- As a **sample** — `pxt.create_view('dir.sample', t.sample(n=100, seed=42))`
 
 **Computed columns** can go on any table or view. They run automatically on insert.
 
 ### Everything flows through the table
 
-This is a hard boundary, not a suggestion. Don't bypass Pixeltable to call AI SDKs directly, and don't call `@pxt.udf` functions as regular Python functions. If you defined a UDF or a computed column, it runs through the table. The table is your pipeline runner, your result store, and your audit log.
+This is a hard boundary, not a suggestion. Don't bypass Pixeltable to call AI SDKs directly, and don't call `@pxt.udf` functions as regular Python functions. If you defined a UDF or a computed column, it runs through the table.
 
 ```python
 # Wrong: calling the SDK directly
@@ -107,9 +107,9 @@ No existing `import pixeltable` in the project, or they ask "get started," "try 
 
 Guide the user toward the right Pixeltable patterns by understanding their use case. Work through this conversationally — don't dump all four questions at once.
 
-1. **Data** — Identify the type (documents, images, video, audio, text) and where it lives. If it's remote (S3, HTTP), they don't need to download it — Pixeltable downloads and caches remote media automatically.
+1. **Data** — Identify the type (documents, images, video, audio, text) and where it lives. If it's remote (S3, HTTP), they don't need to download it — Pixeltable downloads and caches remote media when it needs to process it (on insert or when a computed column accesses it).
 2. **Processing** — Match their needs to built-in functions before suggesting custom UDFs. Pixeltable includes all PIL/Pillow image operations, document splitters, frame extractors, audio splitters, string operations, and more. Use iterators to break data into sub-rows (chunks, frames, segments).
-3. **AI models** — Not just generation — also embeddings, transcription, object detection, classification. All available as built-in integrations via computed columns. Cloud providers need API keys (env vars, config file, or `getpass`); local models (Ollama, Whisper, Hugging Face) don't.
+3. **AI models** — Not just generation — also embeddings, transcription, object detection, classification. All available as built-in integrations via computed columns. Cloud providers need API keys (env vars, config file, or `getpass`); local models (Ollama, Hugging Face) don't.
 4. **Search** — No separate vector database needed. An embedding model + `add_embedding_index` + `.similarity()` gives them semantic search directly on their table.
 
 Generate working, runnable code as soon as you have enough context. Don't show templates — write real files.
@@ -121,7 +121,7 @@ Whenever the user shares or points to Pixeltable code for any reason — asking 
 | Anti-pattern | What to look for | Fix |
 |---|---|---|
 | SDK call outside computed column | `openai.OpenAI()`, `anthropic.Anthropic()`, `requests.get(...)` in app/endpoint code | Move to `add_computed_column` using `pxtf.<provider>.*` |
-| String path for media | `'path': pxt.String` where the column holds images/video/audio/docs | Use `pxt.Image`, `pxt.Video`, `pxt.Audio`, `pxt.Document` |
+| String path for media | `'path': pxt.String` for columns that should be processed as media (not plain text metadata) | Use `pxt.Image`, `pxt.Video`, `pxt.Audio`, `pxt.Document` — these unlock built-in functions, indexing, and similarity |
 | Wrong `if_exists` behavior | Unexpected errors on re-run, or silently overwriting existing data | `'error'` (default), `'ignore'` (idempotent setup scripts), `'replace'` (iteration — change your pipeline and re-run, just like rerunning a notebook cell) |
 | Async FastAPI endpoint | `async def` endpoint calling Pixeltable | Change to `def` — Pixeltable is synchronous; Uvicorn handles threading |
 | Single-row anti-pattern | One table created for one prompt/one query | Reframe as a collection; Pixeltable's value is batch + persistence |
@@ -160,10 +160,6 @@ status = t.insert(rows, on_error='ignore')
 print(f"Inserted: {status.num_rows}, Errors: {status.num_excs}")
 ```
 
-**Similarity search raises an error** → `add_embedding_index` was never called on that column — `.similarity()` requires an index.
-
-**Similarity search returns fewer results than expected** → `.similarity()` returns a score expression — the number of results you get back is determined by the query operators you chain onto it (`.where()`, `.limit()`, `.order_by()`). Start by running the query without any filters to see all rows and their raw scores, then add filters from there.
-
 **Type errors** → call `t.describe()` to see the actual schema.
 
 ---
@@ -180,7 +176,7 @@ import pixeltable.functions as pxtf
 pxt.create_dir('my_project', if_exists='ignore')
 ```
 
-Always use `pxtf.*` for built-in functions (e.g. `pxtf.openai.chat_completions`, `pxtf.image.thumbnail`, `pxtf.document.document_splitter`). Avoid explicit imports like `from pixeltable.functions.openai import chat_completions` — the `pxtf` namespace makes the modality clear and keeps imports clean.
+Always use `pxtf.*` for built-in functions (e.g. `pxtf.openai.chat_completions`, `pxtf.image.thumbnail`, `pxtf.document.document_splitter`). Avoid explicit imports like `from pixeltable.functions.openai import chat_completions` — the `pxtf` namespace keeps function discovery easy and imports clean.
 
 ### API keys
 
@@ -231,6 +227,11 @@ frames = pxt.create_view('project.frames', videos,
 **"I need a subset of my data"** → filtered view:
 ```python
 active = pxt.create_view('project.active', t.where(t.is_active == True))
+```
+
+**"I need a reproducible sample for testing"** → sample view:
+```python
+sample = pxt.create_view('project.sample', t.sample(n=100, seed=42))
 ```
 
 Inserts to the parent table cascade through all views and their computed columns automatically.
@@ -304,6 +305,12 @@ results = t.select(t.title, t.score).collect()
 results = t.where(t.score > 0.8).select(t.title).collect()
 results = t.order_by(t.score, asc=False).limit(10).collect()
 t.head(5)                      # quick peek — shortcut for select + limit + collect
+
+# Sampling
+t.sample(n=100).collect()                                  # random N rows
+t.sample(fraction=0.1).collect()                           # random 10%
+t.sample(fraction=0.1, stratify_by=t.category).collect()   # stratified
+t.sample(n_per_stratum=2, stratify_by=t.category).collect() # N per group
 ```
 
 ### Exporting data

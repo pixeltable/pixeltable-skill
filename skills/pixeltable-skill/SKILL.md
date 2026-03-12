@@ -35,7 +35,7 @@ No need for a perfect schema upfront. Add/drop/rename columns, add computed colu
 
 ### The type system
 
-Media is a first-class citizen. Types are always capitalized.
+Media columns have dedicated types — don't use `pxt.String` for file paths that Pixeltable should process. Types are always capitalized.
 
 | Type | Use for | Accepts |
 |------|---------|---------|
@@ -100,7 +100,7 @@ result = t.select(t.summary).collect()
 ### What the table handles for you
 
 When processing runs through computed columns, Pixeltable automatically:
-- **Caches every computed result** — if you re-insert or recompute, previously computed values aren't reprocessed
+- **Only processes new rows on insert** — existing computed values are not reprocessed, so adding data to a table with expensive API columns doesn't re-run previous calls
 - **Manages provider rate limits** — calls to OpenAI, Anthropic, etc. are throttled to stay within limits
 - **Retries transient failures** — network errors, API timeouts, and rate-limit rejections are retried automatically
 
@@ -112,14 +112,53 @@ This is why "everything flows through the table" matters. Code that bypasses com
 
 ### When the user is new to Pixeltable
 
-No existing `import pixeltable` in the project, or they ask "get started," "try Pixeltable," or "what is Pixeltable" — generate a single runnable script immediately. Include `# pip install pixeltable` at the top. Tailor to what they mentioned; default to a simple example if unclear. Let the working code speak — explain concepts as inline comments, not as a lecture before the code.
+No existing `import pixeltable` in the project, or they ask "get started," "try Pixeltable," or "what is Pixeltable" — generate a single runnable script immediately. Include `# pip install pixeltable` at the top. Tailor to what they mentioned; default to the image example below that demonstrates the core loop (create table → computed columns → insert → query) with zero API keys. Let the working code speak — explain concepts as inline comments, not as a lecture before the code.
+
+**Default "get started" example** (use when the user's goal is unclear — no API key needed):
+```python
+# pip install pixeltable
+import pixeltable as pxt
+import pixeltable.functions as pxtf
+
+pxt.create_dir('demo', if_exists='ignore')
+t = pxt.create_table('demo.photos', {'image': pxt.Image})
+
+# Computed columns run automatically — on insert and every future row
+t.add_computed_column(thumb=pxtf.image.thumbnail(t.image, size=(320, 320)))
+t.add_computed_column(rotated=t.image.rotate(90))
+
+# URLs work directly — Pixeltable downloads and caches automatically
+prefix = 'https://raw.githubusercontent.com/pixeltable/pixeltable/main/docs/resources/images'
+t.insert([
+    {'image': f'{prefix}/000000000030.jpg'},
+    {'image': f'{prefix}/000000000034.jpg'},
+    {'image': f'{prefix}/000000000042.jpg'},
+])
+
+# Everything is persisted — query anytime, even after restarting Python
+t.select(t.image, t.thumb, t.rotated).collect()
+```
+
+If the user has an API key available, upgrade the example to include an AI computed column (e.g., image captioning with `pxtf.openai.chat_completions` + vision, or text summarization) — that's where Pixeltable's value really shows.
 
 ### When generating a project scaffold
 
-Guide the user toward the right Pixeltable patterns by understanding their use case. Work through this conversationally — don't dump all four questions at once.
+Start by matching the user's goal to a Pixeltable pattern:
+
+| User goal | Pattern |
+|---|---|
+| Document search / Q&A | Table → document_splitter view → embedding index → `.similarity()` |
+| Image catalog / visual search | Table with `pxt.Image` → CLIP embedding index → `.similarity()` |
+| Video understanding | Table → frame_iterator view → CLIP or vision LLM computed columns |
+| Prompt/model comparison | Table with multiple provider computed columns (same input, different models) |
+| Audio transcription + search | Table with `pxt.Audio` → transcription computed column → embedding index |
+| Data labeling / classification | Table → AI computed column for labels → filtered views per category |
+| RAG chatbot | Documents table → chunks view → embedding index → `@pxt.query` retrieval function |
+
+Then refine by working through these conversationally — don't dump all four questions at once.
 
 1. **Data** — Identify the type (documents, images, video, audio, text) and where it lives. If it's remote (S3, HTTP), they don't need to download it — Pixeltable downloads and caches remote media when it needs to process it (on insert or when a computed column accesses it).
-2. **Processing** — Match their needs to built-in functions before suggesting custom UDFs. Pixeltable includes all PIL/Pillow image operations, document splitters, frame extractors, audio splitters, string operations, and more. Use iterators to break data into sub-rows (chunks, frames, segments).
+2. **Processing** — Match their needs to built-in functions before suggesting custom UDFs. Pixeltable includes common PIL/Pillow image operations, document splitters, frame extractors, and audio splitters. Use iterators to break data into sub-rows (chunks, frames, segments).
 3. **AI models** — Not just generation — also embeddings, transcription, object detection, classification. All available as built-in integrations via computed columns. Cloud providers need API keys (env vars, config file, or `getpass`); local models (Ollama, Hugging Face) don't.
 4. **Search** — No separate vector database needed. An embedding model + `add_embedding_index` + `.similarity()` gives them semantic search directly on their table. The index updates incrementally when new rows are inserted — no re-indexing, no re-processing of existing data.
 
@@ -148,8 +187,8 @@ Follow this diagnosis tree:
 
 **Computed column errors** → use `on_error='ignore'` on the column, inspect, then retry:
 ```python
-# Add column with graceful error handling
-t.add_computed_column(analysis=my_fn(t.doc), on_error='ignore')
+# Add (or replace) column with graceful error handling
+t.add_computed_column(analysis=my_fn(t.doc), on_error='ignore', if_exists='replace')
 
 # Find rows with errors
 t.where(t.analysis.errortype != None).select(t.analysis.errortype, t.analysis.errormsg).collect()
@@ -189,11 +228,13 @@ import pixeltable.functions as pxtf
 pxt.create_dir('my_project', if_exists='ignore')
 ```
 
+No server setup — `import pixeltable as pxt` handles everything (creates `~/.pixeltable`, starts an embedded Postgres instance).
+
 Always use `pxtf.*` for built-in functions (e.g. `pxtf.openai.chat_completions`, `pxtf.image.thumbnail`, `pxtf.document.document_splitter`). Avoid explicit imports like `from pixeltable.functions.openai import chat_completions` — the `pxtf` namespace keeps function discovery easy and imports clean.
 
 ### API keys
 
-Pixeltable auto-discovers credentials. Three options: environment variables (`export OPENAI_API_KEY=sk-...`), config file (`~/.pixeltable/config.toml`), or `getpass` for interactive sessions. No code changes needed — just set the key and Pixeltable finds it.
+Pixeltable auto-discovers credentials. Three options: environment variables (`export OPENAI_API_KEY=sk-...`), config file (`~/.pixeltable/config.toml`), or `getpass` for interactive sessions. No code changes needed — just set the key and Pixeltable finds it. The config file also handles provider/model rate limits and default destination buckets for both input and generated output media.
 
 ### `if_exists` options
 
@@ -226,7 +267,7 @@ Inspect any table's schema with `t.describe()` — shows columns, types, compute
 
 ### Views
 
-Views transform how you see a table's data. Unlike computed columns (which add new values to existing rows), views create new row structures — splitting one row into many via an iterator, or filtering down to a subset. Iterators can only be used when creating a view.
+Unlike computed columns (which add new values to existing rows), views create new row structures — splitting one row into many via an iterator, or filtering down to a subset. Iterators can only be used when creating a view.
 
 **"I need to break data into smaller pieces"** → create a view with an **iterator**. Each piece becomes its own row that can have its own computed columns:
 ```python
@@ -261,9 +302,43 @@ t.insert(source='data.csv')  # from file
 t.insert([MyModel(...)])  # from Pydantic
 ```
 
+### Managing directories, tables, and columns
+
+```python
+# --- Directories ---
+pxt.create_dir('my_dir/sub_dir')
+pxt.list_dirs()                                      # list all directories
+pxt.list_tables('my_dir')                            # list tables in a directory
+pxt.move('old_dir', 'new_dir')                       # rename or relocate
+pxt.drop_dir('my_dir/sub_dir')
+
+# --- Tables ---
+# Create: pxt.create_table(), pxt.create_view(), pxt.create_snapshot() — see above
+tbl = pxt.get_table('my_dir.tbl')                    # get handle to existing table
+tbl_v3 = pxt.get_table('my_dir.tbl:3')              # specific version (read-only)
+tbl.count()                                          # row count
+tbl.describe()                                       # schema, computed columns, dependencies
+t.update({'score': 1.0}, where=t.category == 'important')
+t.delete(where=t.is_active == False)
+pxt.move('dir1.my_table', 'dir2.my_table')           # move between directories
+pxt.drop_table('dir.my_table')                        # drop by catalog path
+pxt.drop_table(t)                                     # drop by handle
+
+# --- Columns ---
+tbl.add_column(new_col=pxt.Int)                      # add a data column
+tbl.add_computed_column(rotated=tbl.frame.rotate(90)) # add a computed column
+tbl.add_embedding_index('img', embedding=embed_fn)   # add an embedding index
+# Read: t.select(t.col), t.describe() — column reads are table-level operations
+tbl.rename_column('old_name', 'new_name')
+tbl.drop_column(tbl.col)
+tbl.drop_embedding_index(column=tbl.img)
+# Update column values: if_exists='replace' on add_computed_column,
+#   recompute_columns, or insert new rows
+```
+
 ### Computed columns
 
-Defined once, computed automatically — on all existing rows (backfill) and every future insert. No invocation needed. Can chain — each column can reference previously defined computed columns. **Cascading is automatic:** when a computed column updates, any downstream columns that depend on it update too.
+Defined once, computed automatically — on all existing rows (backfill) and every future insert. No invocation needed. Can chain — each column can reference previously defined computed columns. **Cascading is automatic:** on insert, all computed columns execute in dependency order. On `recompute_columns`, downstream dependent columns update too (`cascade=True` by default). Use `errors_only=True` to retry only failed rows, or `where=` to recompute a specific subset.
 
 ```python
 t.add_computed_column(
@@ -285,7 +360,7 @@ t.select(t.text, summary=expr).head(2)    # test on 2 rows
 t.add_computed_column(summary=expr)        # commit to all rows
 ```
 
-**"I need to process images / audio / documents"** → check built-in functions first. Pixeltable includes all PIL/Pillow operations, document splitters, audio splitters, and more — don't go outside Pixeltable to use PIL or write your own:
+**"I need to process images / audio / documents"** → check built-in functions first. Pixeltable includes common PIL/Pillow image operations, document splitters, and audio splitters — check built-ins before writing your own:
 ```python
 # Wrong: custom UDF for something built-in
 @pxt.udf
@@ -373,7 +448,7 @@ t.add_computed_column(answer=t.response['choices'][0]['message']['content'])
 
 ### Exporting data
 
-Data doesn't stay trapped in Pixeltable. Guide users to the right export path based on what they're trying to do:
+You can always get your data out of Pixeltable. Match the export method to what you need:
 
 **"I need to analyze results in a notebook or pass data to another library"** → `.to_pandas()`
 ```python
@@ -389,27 +464,6 @@ items = list(t.select(t.title, t.score).collect().to_pydantic(MyModel))
 ```python
 pxt.io.export_parquet(t, 'output.parquet')
 pxt.io.export_parquet(t.where(t.label == 'cat'), 'cats.parquet')  # filtered
-```
-
-**"I need to push structured metadata to an existing database"** → `export_sql()`
-```python
-pxt.io.export_sql(
-    t.select(t.label, t.width, t.height),
-    'image_metadata',
-    db_connect_str=connection_string
-)
-```
-
-**"I'm training a model and need a DataLoader-compatible dataset"** → `.to_pytorch_dataset()`
-```python
-pytorch_dataset = t.select(t.image_resized, t.label).to_pytorch_dataset(image_format='pt')
-# 'pt': CxHxW tensors, [0,1] float32 | 'np': HxWxC, [0,255] uint8
-dataloader = DataLoader(pytorch_dataset, batch_size=32)
-```
-
-**"I need COCO-format annotations for object detection"** → `.to_coco_dataset()`
-```python
-coco_path = t.to_coco_dataset()
 ```
 
 **"I need generated media (images, audio, etc.) to land in S3/GCS, not locally"** → `destination=` on computed columns

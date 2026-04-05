@@ -1,110 +1,119 @@
-# Pixeltable Skill for Claude Code
+# Pixeltable Skill
 
-**Build multimodal AI applications with Pixeltable — as a Claude Skill**
+Build multimodal AI applications with [Pixeltable](https://github.com/pixeltable/pixeltable) — declarative tables, computed columns, embedding indexes, similarity search, UDFs, and 15+ AI provider integrations.
 
-A Claude Skill that gives Claude deep expertise in [Pixeltable](https://github.com/pixeltable/pixeltable): declarative tables, computed columns, embedding indexes, similarity search, UDFs, views, and 15+ AI provider integrations. Packaged as a Claude Code Plugin for easy installation and distribution.
+Drop it into any AI coding assistant. One skill, every platform.
 
-Claude autonomously discovers this skill when you ask about Pixeltable, loading only the minimal information needed for your specific task.
+---
 
-## Features
+## Why
 
-- **Full Pixeltable Expertise** — Tables, computed columns, views, embedding indexes, UDFs, queries
-- **15+ AI Providers** — OpenAI, Anthropic, Gemini, Hugging Face, Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, Replicate, Voyage AI, Bedrock, OpenRouter, Twelve Labs
-- **Multimodal Workflows** — Image, video, audio, and document processing pipelines
-- **End-to-End Templates** — RAG, video analysis, image classification, audio transcription, multi-provider comparison
-- **Progressive Disclosure** — Concise `SKILL.md` with full `API_REFERENCE.md` loaded only when needed
-- **Idempotent Patterns** — All examples use `if_exists='ignore'` for safe re-runs
+AI coding assistants write incorrect Pixeltable code because their training data is stale or sparse. This skill gives any assistant deep, current expertise: correct API signatures, idempotent patterns, multimodal workflows, and production-ready templates — so generated code runs on the first try.
 
-## Installation
+- **Correct code** — API signatures, import paths, and parameter names verified against the latest Pixeltable release.
+- **Idempotent patterns** — Every example uses `if_exists='ignore'` for safe re-runs.
+- **Progressive disclosure** — Concise core instructions with a full API reference loaded only when needed.
+- **15+ AI providers** — OpenAI, Anthropic, Gemini, Hugging Face, Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, Replicate, Voyage AI, Bedrock, OpenRouter, Twelve Labs.
+- **End-to-end templates** — RAG, video analysis, image classification, audio transcription, tool-calling agents, FastAPI apps.
 
-This repository is structured as a Claude Code Plugin containing a skill. Install as a **plugin** (recommended) or extract as a **standalone skill**.
+---
 
-### Understanding the Structure
+## Quickstart
+
+### Copy-paste (any platform)
+
+1. Find your platform in the table below.
+2. Copy the file to the specified location in your project.
+
+### One-liner installer
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main/install.sh | bash
+```
+
+Or clone and run directly:
+
+```bash
+git clone https://github.com/pixeltable/pixeltable-skill.git
+cd pixeltable-skill
+./install.sh
+```
+
+Or non-interactively:
+
+```bash
+./install.sh --platform cursor-rule --target ~/my-project
+```
+
+### Claude Code Plugin (recommended for Claude Code users)
+
+```bash
+/plugin marketplace add pixeltable/pixeltable-skill
+/plugin install pixeltable-skill@pixeltable-skill
+```
+
+---
+
+## Platform Support
+
+| Platform | File | Copy to | Notes |
+|----------|------|---------|-------|
+| **Cursor** (rule) | [`pixeltable.mdc`](platforms/cursor-rule/pixeltable.mdc) | `.cursor/rules/` | Compact variant; set `alwaysApply: true` if desired |
+| **Cursor** (skill) | [`SKILL.md`](skills/pixeltable-skill/SKILL.md) + [`reference/`](skills/pixeltable-skill/reference/) | `~/.cursor/skills/pixeltable-skill/` | Full skill with progressive disclosure |
+| **Claude Code** | [`SKILL.md`](skills/pixeltable-skill/SKILL.md) + [`reference/`](skills/pixeltable-skill/reference/) | `.claude/skills/pixeltable-skill/` | Or install as plugin (see above) |
+| **GitHub Copilot** | [`copilot-instructions.md`](platforms/github-copilot/copilot-instructions.md) | `.github/` | Auto-loaded in Copilot Chat |
+| **Windsurf** | [`.windsurfrules`](platforms/windsurf/.windsurfrules) | Project root | Auto-loaded every session |
+| **Cline** | [`.clinerules`](platforms/cline/.clinerules) | Project root | Auto-loaded every session |
+| **AGENTS.md** | [`AGENTS.md`](platforms/agents-md/AGENTS.md) | Project root | Emerging multi-agent convention |
+| **Any LLM API** | [`system-prompt.md`](platforms/system-prompt/system-prompt.md) | N/A | Paste into system prompt |
+| **OpenAI Custom GPT** | [`instructions.md`](platforms/openai-custom-gpt/instructions.md) | N/A | Paste into GPT builder instructions |
+
+---
+
+## Variants
+
+The repo ships four densities of Pixeltable expertise:
+
+| Variant | Lines | Best for |
+|---------|-------|----------|
+| **Full** ([SKILL.md](skills/pixeltable-skill/SKILL.md) + [reference/](skills/pixeltable-skill/reference/)) | ~1,800 | Claude Code, Cursor skill — progressive disclosure |
+| **Standard** ([platform files](platforms/windsurf/.windsurfrules)) | ~200 | Windsurf, Cline, Copilot, AGENTS.md — self-contained |
+| **Compact** ([Cursor rule](platforms/cursor-rule/pixeltable.mdc)) | ~95 | Cursor rule — token-efficient context |
+| **Terse** ([system-prompt](platforms/system-prompt/system-prompt.md)) | ~25 | Raw LLM API, Custom GPTs — minimal footprint |
+
+All encode the same core patterns. Choose based on your platform and token budget.
+
+---
+
+## Repository Structure
 
 ```
-pixeltable-skill/                    # Plugin root
-├── .claude-plugin/                  # Plugin metadata
+pixeltable-skill/
+├── skills/
+│   └── pixeltable-skill/          # Canonical full skill
+│       ├── SKILL.md               # Core instructions (loaded first)
+│       └── reference/             # Detailed reference (loaded on demand)
+│           ├── core-api.md        # Tables, querying, views, UDFs, tools
+│           ├── providers.md       # All AI provider examples
+│           └── workflows.md       # End-to-end workflow templates
+├── platforms/
+│   ├── cursor-rule/               # Compact .mdc rule
+│   ├── github-copilot/            # Standard variant
+│   ├── windsurf/                  # Standard variant
+│   ├── cline/                     # Standard variant
+│   ├── agents-md/                 # Standard variant
+│   ├── system-prompt/             # Terse variant
+│   └── openai-custom-gpt/        # Terse variant
+├── .claude-plugin/                # Claude Code plugin metadata
 │   ├── plugin.json
 │   └── marketplace.json
-├── skills/
-│   └── pixeltable-skill/            # The actual skill
-│       ├── SKILL.md                 # Core instructions (Claude reads this)
-│       └── API_REFERENCE.md         # Full API reference (loaded on demand)
+├── install.sh                     # Multi-platform installer
 ├── README.md
 ├── CONTRIBUTING.md
 └── LICENSE
 ```
 
-Claude Code expects skills in folders under `.claude/skills/`, so manual installation requires extracting the nested skill folder.
-
 ---
-
-### Option 1: Plugin Installation (Recommended)
-
-Install via Claude Code's plugin system for automatic updates:
-
-```bash
-# Add this repository as a marketplace
-/plugin marketplace add pixeltable/pixeltable-skill
-
-# Install the plugin
-/plugin install pixeltable-skill@pixeltable-skill
-```
-
-Verify by running `/help` to confirm the skill is available.
-
----
-
-### Option 2: Standalone Skill Installation
-
-Extract only the skill folder for manual installation.
-
-**Global Installation (Available Everywhere):**
-
-```bash
-# Clone to a temporary location
-git clone https://github.com/pixeltable/pixeltable-skill.git /tmp/pixeltable-skill-temp
-
-# Copy only the skill folder to your global skills directory
-mkdir -p ~/.claude/skills
-cp -r /tmp/pixeltable-skill-temp/skills/pixeltable-skill ~/.claude/skills/
-
-# Clean up
-rm -rf /tmp/pixeltable-skill-temp
-```
-
-**Project-Specific Installation:**
-
-```bash
-# Clone to a temporary location
-git clone https://github.com/pixeltable/pixeltable-skill.git /tmp/pixeltable-skill-temp
-
-# Copy only the skill folder to your project
-mkdir -p .claude/skills
-cp -r /tmp/pixeltable-skill-temp/skills/pixeltable-skill .claude/skills/
-
-# Clean up
-rm -rf /tmp/pixeltable-skill-temp
-```
-
----
-
-### Option 3: Download Release
-
-1. Download and extract the latest release from [GitHub Releases](https://github.com/pixeltable/pixeltable-skill/releases)
-2. Copy the `skills/pixeltable-skill/` folder to:
-   - Global: `~/.claude/skills/pixeltable-skill`
-   - Project: `/path/to/your/project/.claude/skills/pixeltable-skill`
-
----
-
-### Verify Installation
-
-Run `/help` to confirm the skill is loaded, then ask Claude:
-
-```
-"Create a Pixeltable table for storing images with embeddings"
-```
 
 ## Prerequisites
 
@@ -122,57 +131,11 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 # etc.
 ```
 
-## Quick Start
-
-After installation, simply ask Claude to build Pixeltable workflows. Claude will write correct, idempotent Pixeltable code with proper error handling.
-
-### Example Prompts
-
-**Tables and Data:**
-```
-"Create a Pixeltable table for storing articles with title, content, and category"
-"Insert data from a CSV file into my Pixeltable table"
-"Import this Hugging Face dataset into Pixeltable"
-```
-
-**AI Processing:**
-```
-"Add a computed column that summarizes each article using GPT-4o-mini"
-"Set up embeddings and similarity search on my text column"
-"Analyze images in my table using Claude Vision"
-```
-
-**Multimodal Pipelines:**
-```
-"Build a RAG pipeline for my PDF documents"
-"Extract video frames and describe each one with GPT-4 Vision"
-"Create a multimodal search index using CLIP"
-```
-
-**Data Operations:**
-```
-"Export my Pixeltable query results to Parquet"
-"Compare OpenAI and Anthropic responses on the same prompts"
-"Set up a local pipeline using Ollama"
-```
-
-## How It Works
-
-1. You describe what you want to build with Pixeltable
-2. Claude discovers this skill and loads `SKILL.md` (core patterns)
-3. If more detail is needed, Claude loads `API_REFERENCE.md` (full API docs)
-4. Claude writes production-ready Pixeltable code with idempotent operations
-5. Code runs immediately — no guessing about API signatures
-
-## What is a Skill?
-
-Agent Skills are folders of instructions and resources that agents can discover and use to work more accurately and efficiently. When you ask Claude about Pixeltable, Claude discovers this skill, loads the necessary instructions, and writes correct Pixeltable code based on the comprehensive API reference.
-
-This skill implements the open [Agent Skills specification](https://github.com/anthropics/skills), making it compatible across agent platforms.
+---
 
 ## What is Pixeltable?
 
-[Pixeltable](https://github.com/pixeltable/pixeltable) is an open-source Python library providing declarative data infrastructure for building multimodal AI applications. It unifies data storage, transformation, indexing, retrieval, and orchestration of data across images, video, audio, and documents.
+[Pixeltable](https://github.com/pixeltable/pixeltable) is an open-source Python library providing declarative data infrastructure for building multimodal AI applications. It unifies data storage, transformation, indexing, retrieval, and orchestration across images, video, audio, and documents.
 
 **Key features:**
 - **Tables** with native multimodal column types (Image, Video, Audio, Document)
@@ -182,19 +145,52 @@ This skill implements the open [Agent Skills specification](https://github.com/a
 - **15+ AI provider integrations** (OpenAI, Anthropic, Gemini, Hugging Face, etc.)
 - **Import/export** from CSV, Parquet, Hugging Face, pandas, LanceDB
 
+---
+
+## What is an Agent Skill?
+
+Agent Skills are instruction sets that AI coding assistants discover and use to work more accurately. When you ask about Pixeltable, the assistant loads the skill and writes correct code based on verified API references — no hallucinated signatures.
+
+This skill implements the open [Agent Skills specification](https://github.com/anthropics/skills), making it compatible across platforms.
+
+---
+
 ## Contributing
 
-Contributions are welcome! Fork the repository, create a feature branch, make your changes, and submit a pull request. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on improving the skill content, adding platform support, or fixing API examples.
+
+To add a new platform:
+
+1. Create `platforms/<platform-name>/` with the appropriately named config file.
+2. Use the standard or compact variant as a starting point.
+3. Add any required metadata/frontmatter for the platform.
+4. Update the platform matrix in this README.
+5. Add the platform to `install.sh` (the `PLATFORMS`, `platform_src`, `platform_dest`, and `platform_label` functions).
+6. Open a PR.
+
+---
 
 ## Learn More
 
 - [Pixeltable Documentation](https://docs.pixeltable.com/)
 - [Pixeltable GitHub](https://github.com/pixeltable/pixeltable)
+- [Pixeltable App Template](https://github.com/pixeltable/pixeltable-app-template) — Full-stack FastAPI + React reference
+- [Pixeltable MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer)
 - [Pixeltable Discord](https://discord.gg/QPyqFYx2UN)
-- [Agent Skills Specification](https://github.com/anthropics/skills)
-- [Claude Code Skills Documentation](https://docs.anthropic.com/en/docs/claude-code/skills)
-- [Claude Code Plugins Documentation](https://docs.anthropic.com/en/docs/claude-code/plugins)
+
+### LLM-Optimized Documentation
+
+For AI coding tools that can fetch URLs directly, Pixeltable provides documentation in the [llms.txt standard](https://llmstxt.org/):
+
+| Resource | URL | Use |
+|----------|-----|-----|
+| Product overview | [pixeltable.com/llms.txt](https://www.pixeltable.com/llms.txt) | Site map with all links |
+| Docs index | [docs.pixeltable.com/llms.txt](https://docs.pixeltable.com/llms.txt) | Documentation structure |
+| Full docs | [docs.pixeltable.com/llms-full.txt](https://docs.pixeltable.com/llms-full.txt) | Complete documentation content |
+| Any page as markdown | `https://docs.pixeltable.com/<path>.md` | Individual page content |
+
+---
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE) file for details.
+Apache License 2.0 — see [LICENSE](LICENSE) for details.

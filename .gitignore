@@ -11,3 +11,9 @@ Thumbs.db
 
 # Node (if any future scripts added)
 node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

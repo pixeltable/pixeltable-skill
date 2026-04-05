@@ -419,7 +419,16 @@ For a complete reference implementation, see the [Pixeltable App Template](https
 - **App Template** — [pixeltable/pixeltable-app-template](https://github.com/pixeltable/pixeltable-app-template): Full-stack FastAPI + React reference app with multimodal search, document/image/video pipelines, and a tool-calling agent.
 - **MCP Server** — [pixeltable/mcp-server-pixeltable-developer](https://github.com/pixeltable/mcp-server-pixeltable-developer): Interactive exploration of Pixeltable tables, queries, and Python REPL via Model Context Protocol.
 - **Core AGENTS.md** — [pixeltable/pixeltable/AGENTS.md](https://github.com/pixeltable/pixeltable/blob/main/AGENTS.md): Full SDK reference for contributing to Pixeltable itself.
+- **LLM-Optimized Docs** — For deeper context beyond this skill, fetch these URLs directly:
+  - [pixeltable.com/llms.txt](https://www.pixeltable.com/llms.txt) — Product overview and site map
+  - [docs.pixeltable.com/llms.txt](https://docs.pixeltable.com/llms.txt) — Documentation index
+  - [docs.pixeltable.com/llms-full.txt](https://docs.pixeltable.com/llms-full.txt) — Complete documentation (large)
+  - Any docs page as markdown: append `.md` to any URL (e.g., `https://docs.pixeltable.com/overview/pixeltable.md`)
 
 ## Additional Reference
 
-For complete API signatures, all provider examples, and end-to-end workflow templates (RAG, video analysis, image classification, audio transcription, multi-provider comparison, tool-calling agents, FastAPI apps), see `API_REFERENCE.md` in this skill directory. Claude will load it automatically when needed.
+**Core API**: Tables, querying, views, embeddings, UDFs, tools, config → See [reference/core-api.md](reference/core-api.md)
+
+**AI Providers**: OpenAI, Anthropic, Gemini, HuggingFace, Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, OpenRouter, Whisper, Voyage AI → See [reference/providers.md](reference/providers.md)
+
+**Workflows**: RAG, video analysis, image classification, audio transcription, multi-provider comparison, tool-calling agents, FastAPI apps, export → See [reference/workflows.md](reference/workflows.md)

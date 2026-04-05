@@ -1,0 +1,311 @@
+# Pixeltable AI Provider Reference
+
+Complete examples for all 15+ built-in AI provider integrations. All functions live in `pixeltable.functions.*`.
+
+## Contents
+
+- [OpenAI](#openai) (chat, embeddings, DALL-E, TTS, transcription)
+- [Anthropic](#anthropic) (messages, tool calling)
+- [Google Gemini](#google-gemini)
+- [Together AI](#together-ai)
+- [Fireworks](#fireworks)
+- [Ollama](#ollama-local) (local inference)
+- [Mistral AI](#mistral-ai)
+- [Groq](#groq)
+- [DeepSeek](#deepseek)
+- [OpenRouter](#openrouter)
+- [Hugging Face](#hugging-face) (CLIP, Sentence Transformers, DETR)
+- [Whisper](#whisper-local) (local transcription)
+- [Voyage AI](#voyage-ai)
+
+---
+
+## OpenAI
+
+### Chat Completions
+
+```python
+from pixeltable.functions.openai import chat_completions
+
+# Basic
+t.add_computed_column(
+    response=chat_completions(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        model='gpt-4o-mini'
+    ).choices[0].message.content
+)
+
+# With system message
+t.add_computed_column(
+    response=chat_completions(
+        messages=[
+            {'role': 'system', 'content': 'You are a helpful assistant.'},
+            {'role': 'user', 'content': t.prompt}
+        ],
+        model='gpt-4o',
+        max_tokens=1000,
+        temperature=0.7
+    ).choices[0].message.content
+)
+
+# Vision (image analysis)
+t.add_computed_column(
+    description=chat_completions(
+        messages=[{
+            'role': 'user',
+            'content': [
+                {'type': 'text', 'text': 'Describe this image.'},
+                {'type': 'image_url', 'image_url': {'url': t.image}}
+            ]
+        }],
+        model='gpt-4o'
+    ).choices[0].message.content
+)
+
+# JSON mode
+t.add_computed_column(
+    structured=chat_completions(
+        messages=[{'role': 'user', 'content': t.text}],
+        model='gpt-4o-mini',
+        response_format={'type': 'json_object'}
+    ).choices[0].message.content
+)
+```
+
+### Embeddings
+
+```python
+from pixeltable.functions.openai import embeddings
+
+t.add_computed_column(
+    embed=embeddings(input=t.text, model='text-embedding-3-small').data[0].embedding
+)
+
+# As index
+t.add_embedding_index('text', embedding=embeddings.using(model='text-embedding-3-small'))
+```
+
+### Image Generation (DALL-E)
+
+```python
+from pixeltable.functions.openai import image_generations
+
+t.add_computed_column(
+    generated=image_generations(prompt=t.description, model='dall-e-3', size='1024x1024').data[0].url
+)
+```
+
+### Speech (TTS)
+
+```python
+from pixeltable.functions.openai import speech
+
+t.add_computed_column(audio=speech(input=t.text, model='tts-1', voice='alloy'))
+```
+
+### Transcription
+
+```python
+from pixeltable.functions.openai import transcriptions
+
+t.add_computed_column(transcript=transcriptions(audio=t.audio_file, model='whisper-1').text)
+```
+
+## Anthropic
+
+```python
+from pixeltable.functions.anthropic import messages
+
+# Basic
+t.add_computed_column(
+    response=messages(
+        messages=[{'role': 'user', 'content': [{'type': 'text', 'text': t.prompt}]}],
+        model='claude-sonnet-4-20250514',
+        max_tokens=1024
+    ).content[0].text
+)
+
+# With system prompt
+t.add_computed_column(
+    response=messages(
+        messages=[{'role': 'user', 'content': [{'type': 'text', 'text': t.prompt}]}],
+        model='claude-sonnet-4-20250514',
+        system='You are an expert analyst.',
+        max_tokens=2048
+    ).content[0].text
+)
+
+# With tool calling
+from pixeltable.functions.anthropic import messages, invoke_tools
+
+tools = pxt.tools(search_fn, lookup_fn)
+t.add_computed_column(
+    response=messages(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        model='claude-sonnet-4-20250514',
+        tools=tools,
+        tool_choice=tools.choice(required=True),
+        max_tokens=1024,
+    ),
+    if_exists='ignore',
+)
+t.add_computed_column(
+    tool_results=invoke_tools(tools, t.response),
+    if_exists='ignore',
+)
+```
+
+## Google Gemini
+
+```python
+from pixeltable.functions.gemini import generate_content
+
+t.add_computed_column(response=generate_content(contents=t.prompt, model='gemini-2.0-flash'))
+```
+
+## Together AI
+
+```python
+from pixeltable.functions.together import chat_completions
+
+t.add_computed_column(
+    response=chat_completions(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        model='meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo'
+    ).choices[0].message.content
+)
+```
+
+## Fireworks
+
+```python
+from pixeltable.functions.fireworks import chat_completions
+
+t.add_computed_column(
+    response=chat_completions(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        model='accounts/fireworks/models/llama-v3p1-70b-instruct'
+    ).choices[0].message.content
+)
+```
+
+## Ollama (Local)
+
+```python
+from pixeltable.functions.ollama import chat_completions, embeddings
+
+# Chat
+t.add_computed_column(
+    response=chat_completions(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        model='llama3.1'
+    ).choices[0].message.content
+)
+
+# Embeddings
+t.add_computed_column(embed=embeddings(input=t.text, model='nomic-embed-text'))
+```
+
+## Mistral AI
+
+```python
+from pixeltable.functions.mistralai import chat_completions
+
+t.add_computed_column(
+    response=chat_completions(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        model='mistral-large-latest'
+    ).choices[0].message.content
+)
+```
+
+## Groq
+
+```python
+from pixeltable.functions.groq import chat_completions
+
+t.add_computed_column(
+    response=chat_completions(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        model='llama-3.1-70b-versatile'
+    ).choices[0].message.content
+)
+```
+
+## DeepSeek
+
+```python
+from pixeltable.functions.deepseek import chat_completions
+
+t.add_computed_column(
+    response=chat_completions(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        model='deepseek-chat'
+    ).choices[0].message.content
+)
+```
+
+## OpenRouter
+
+```python
+from pixeltable.functions.openrouter import chat_completions
+
+t.add_computed_column(
+    response=chat_completions(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        model='anthropic/claude-sonnet-4-20250514'
+    ).choices[0].message.content
+)
+```
+
+## Hugging Face
+
+### CLIP (Multimodal Embeddings)
+
+```python
+from pixeltable.functions.huggingface import clip
+
+embed_fn = clip.using(model_id='openai/clip-vit-base-patch32')
+t.add_embedding_index('image', embedding=embed_fn)
+
+sim = t.image.similarity(string='a photo of a dog')
+results = t.order_by(sim, asc=False).limit(5).select(t.image, sim).collect()
+```
+
+### Sentence Transformers
+
+```python
+from pixeltable.functions.huggingface import sentence_transformer
+
+embed_fn = sentence_transformer.using(model_id='all-MiniLM-L6-v2')
+t.add_embedding_index('text', embedding=embed_fn)
+
+# For multilingual / high-quality (recommended for production)
+embed_fn = sentence_transformer.using(model_id='intfloat/multilingual-e5-large-instruct')
+t.add_embedding_index('text', string_embed=embed_fn)
+```
+
+### Object Detection (DETR)
+
+```python
+from pixeltable.functions.huggingface import detr_for_object_detection
+
+detect = detr_for_object_detection.using(model_id='facebook/detr-resnet-50')
+t.add_computed_column(detections=detect(t.image, threshold=0.8))
+```
+
+## Whisper (Local)
+
+```python
+from pixeltable.functions.whisper import transcribe
+
+t.add_computed_column(transcript=transcribe(audio=t.audio, model='base'))
+```
+
+## Voyage AI
+
+```python
+from pixeltable.functions.voyageai import embed
+
+t.add_computed_column(embed=embed(input=t.text, model='voyage-2'))
+```

@@ -1,0 +1,95 @@
+---
+description: "Pixeltable: declarative tables, computed columns, embeddings, similarity search, UDFs for multimodal AI. Use when working with Pixeltable or building multimodal data pipelines."
+alwaysApply: false
+---
+
+# Pixeltable Quick Reference
+
+`pip install pixeltable` | Docs: https://docs.pixeltable.com/
+
+## Tables
+
+```python
+import pixeltable as pxt
+pxt.create_dir('project', if_exists='ignore')
+t = pxt.create_table('project.data', {
+    'content': pxt.String, 'image': pxt.Image, 'score': pxt.Float,
+}, if_exists='ignore')
+```
+
+Types: `String`, `Int`, `Float`, `Bool`, `Image`, `Video`, `Audio`, `Document`, `Json`, `Array`, `Timestamp`, `Date`, `UUID`, `Binary`. Use `pxt.Required[pxt.String]` for non-nullable.
+
+## Computed Columns
+
+```python
+from pixeltable.functions.openai import chat_completions
+t.add_computed_column(
+    summary=chat_completions(
+        messages=[{'role': 'user', 'content': t.content}], model='gpt-4o-mini'
+    ).choices[0].message.content, if_exists='ignore')
+```
+
+## Querying
+
+```python
+results = t.where(t.score > 0.8).order_by(t.score, asc=False).limit(10).select(t.title).collect()
+df = t.collect().to_pandas()
+```
+
+## Views
+
+```python
+from pixeltable.functions.document import document_splitter
+chunks = pxt.create_view('project.chunks', t,
+    iterator=document_splitter(t.doc, separators='token_limit', limit=300),
+    if_exists='ignore')
+```
+
+## Embeddings and Search
+
+```python
+from pixeltable.functions.huggingface import sentence_transformer
+t.add_embedding_index('content',
+    embedding=sentence_transformer.using(model_id='all-MiniLM-L6-v2'),
+    if_exists='ignore')
+sim = t.content.similarity(string='query')
+results = t.order_by(sim, asc=False).limit(5).select(t.title, sim).collect()
+```
+
+## UDFs and Query Functions
+
+```python
+@pxt.udf
+def fn(text: str) -> str:
+    return text.strip()
+
+@pxt.query
+def search(q: str):
+    sim = t.content.similarity(string=q)
+    return t.order_by(sim, asc=False).limit(10).select(t.content, sim)
+```
+
+## Providers
+
+All in `pixeltable.functions.*`: OpenAI (`chat_completions`, `embeddings`, `image_generations`, `speech`, `transcriptions`), Anthropic (`messages`, `invoke_tools`), Gemini (`generate_content`), HuggingFace (`clip`, `sentence_transformer`), Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, OpenRouter, Replicate, Voyage AI, Bedrock, Twelve Labs.
+
+## Agent Pipeline
+
+```python
+from pixeltable.functions.anthropic import messages, invoke_tools
+tools = pxt.tools(my_udf, my_query)
+agent.add_computed_column(
+    response=messages(model='claude-sonnet-4-20250514',
+        messages=[{'role': 'user', 'content': agent.prompt}],
+        tools=tools, tool_choice=tools.choice(required=True),
+        max_tokens=1024), if_exists='ignore')
+agent.add_computed_column(tool_output=invoke_tools(tools, agent.response), if_exists='ignore')
+```
+
+## Rules
+
+- **Always** `if_exists='ignore'` for idempotent operations
+- FastAPI endpoints: `def` not `async def` (Pixeltable is synchronous)
+- Pixeltable IS the data layer — no ORM needed
+- Use `on_error='ignore'` for fault-tolerant inserts
+- LLM docs: [pixeltable.com/llms.txt](https://www.pixeltable.com/llms.txt) | [docs llms.txt](https://docs.pixeltable.com/llms.txt) | [llms-full.txt](https://docs.pixeltable.com/llms-full.txt)

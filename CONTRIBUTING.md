@@ -11,56 +11,83 @@ Thanks for your interest in improving the Pixeltable Skill! This guide covers ho
 5. Push to your fork: `git push origin my-feature`
 6. Open a Pull Request
 
+## Repository Structure
+
+```
+pixeltable-skill/
+├── skills/pixeltable-skill/   # Canonical full skill (SKILL.md + API_REFERENCE.md)
+├── platforms/                 # Platform-specific variants at different densities
+│   ├── cursor-rule/           # Compact (~80 lines)
+│   ├── github-copilot/        # Standard (~170 lines)
+│   ├── windsurf/              # Standard
+│   ├── cline/                 # Standard
+│   ├── agents-md/             # Standard
+│   ├── system-prompt/         # Terse (~20 lines)
+│   └── openai-custom-gpt/    # Terse
+├── install.sh                 # Multi-platform installer
+└── .claude-plugin/            # Claude Code plugin metadata
+```
+
 ## What to Contribute
 
-### Improving SKILL.md
+### Improving Core Content (skills/pixeltable-skill/)
 
 - Fix incorrect API examples
 - Add missing patterns for common use cases
-- Improve clarity of existing instructions
-- Keep it concise — detailed content goes in `API_REFERENCE.md`
+- Update provider examples for new Pixeltable releases
+- Keep `SKILL.md` concise — detailed content goes in `API_REFERENCE.md`
+- `SKILL.md` should stay under 500 lines
 
-### Improving API_REFERENCE.md
+### Improving Platform Variants (platforms/)
 
-- Add examples for new Pixeltable features or providers
-- Fix outdated API signatures
-- Add new workflow templates
-- Ensure all examples use idempotent flags (`if_exists='ignore'`)
+When changing core content, propagate relevant updates to platform variants:
+- **Standard** (Windsurf, Cline, Copilot, AGENTS.md): Self-contained, ~170 lines
+- **Compact** (Cursor rule): Token-efficient, ~80 lines
+- **Terse** (system prompt, Custom GPT): Minimal, ~20 lines
+
+### Adding a New Platform
+
+1. Create `platforms/<platform-name>/` with the appropriately named config file
+2. Use the standard or compact variant as a starting point
+3. Add any required metadata/frontmatter
+4. Update the platform matrix in README.md
+5. Add the platform to `install.sh` (the `PLATFORMS`, `platform_src`, `platform_dest`, and `platform_label` functions)
 
 ### Plugin Metadata
 
-- Update version numbers in `plugin.json`
-- Add relevant tags in `marketplace.json`
+- Update version numbers in `.claude-plugin/plugin.json`
+- Add relevant tags in `.claude-plugin/marketplace.json`
 
 ## Guidelines
 
-### Keep Instructions Concise
-
-`SKILL.md` should stay under 5,000 words. It's what Claude loads first. Move detailed reference material to `API_REFERENCE.md`.
-
 ### All Examples Must Be Idempotent
 
-Every example should use `if_exists='ignore'` or equivalent so it can be safely re-run:
+Every example should use `if_exists='ignore'` so it can be safely re-run:
 
 ```python
-# Good
+# Correct
 pxt.create_table('dir.table', schema, if_exists='ignore')
 
-# Bad - will error on re-run
+# Will error on re-run
 pxt.create_table('dir.table', schema)
 ```
+
+### Keep Consistent Terminology
+
+Choose one term and use it throughout. For example: always "computed column" (not "derived column" or "formula column").
 
 ### Test Your Changes
 
 Before submitting, verify:
 
-1. YAML frontmatter in `SKILL.md` is valid (no XML tags, name in kebab-case)
-2. All code examples are syntactically correct
+1. YAML frontmatter in `SKILL.md` is valid (name in kebab-case, no XML tags)
+2. All code examples are syntactically correct Python
 3. Provider examples match the current Pixeltable API
+4. The install script still works: `./install.sh --platform cursor-rule --target /tmp/test`
 
 ### No XML Tags
 
-The Claude Skills specification forbids XML angle brackets (`<` `>`) in skill files. Use markdown formatting instead.
+The Agent Skills specification forbids XML angle brackets in skill files. Use markdown formatting instead.
 
 ## Reporting Issues
 

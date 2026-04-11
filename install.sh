@@ -137,13 +137,13 @@ install_skill_dir() {
     cp "$script_dir/skills/pixeltable-skill/reference/"*.md "$skill_dest/reference/"
   else
     curl -fsSL "$REPO_URL/skills/pixeltable-skill/SKILL.md" -o "$skill_dest/SKILL.md"
-    for ref_file in core-api providers workflows; do
+    for ref_file in core-api providers workflows video-rag-agents; do
       curl -fsSL "$REPO_URL/skills/pixeltable-skill/reference/${ref_file}.md" -o "$skill_dest/reference/${ref_file}.md"
     done
   fi
 
   echo "  Installed: $skill_dest/SKILL.md"
-  echo "  Installed: $skill_dest/reference/ (core-api.md, providers.md, workflows.md)"
+  echo "  Installed: $skill_dest/reference/ (core-api.md, providers.md, workflows.md, video-rag-agents.md)"
 }
 
 install_platform() {

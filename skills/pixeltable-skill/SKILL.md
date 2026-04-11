@@ -25,9 +25,31 @@ metadata:
 
 Pixeltable is an open-source Python library providing **declarative data infrastructure** for building multimodal AI applications. It unifies data storage, transformation, indexing, retrieval, and orchestration of data across images, video, audio, and documents in a single table-based interface.
 
-**Install:** `pip install pixeltable`
+**Install:** `pip install pixeltable` (requires Python >= 3.10)
 
 **Docs:** https://docs.pixeltable.com/ | **GitHub:** https://github.com/pixeltable/pixeltable
+
+## Task Router
+
+Jump to the right section based on what you're building:
+
+| If the user wants to... | Read |
+|--------------------------|------|
+| Create tables, insert data, query | **Core Concepts** (below) and [core-api.md](reference/core-api.md) |
+| Add AI-powered columns (summarize, classify, embed) | **Computed Columns** (below) and [providers.md](reference/providers.md) |
+| Chunk documents, extract video frames, split audio | **Views and Iterators** (below) and [core-api.md → Views](reference/core-api.md#views) |
+| Build semantic search / embedding indexes | **Embedding Indexes** (below) and [core-api.md → Embedding Indexes](reference/core-api.md#embedding-indexes) |
+| Build a RAG pipeline | [workflows.md → RAG Pipeline](reference/workflows.md#rag-pipeline) |
+| Build a tool-calling agent | **Tool-Calling Agent Pipeline** (below) and [workflows.md → Tool-Calling Agent](reference/workflows.md#tool-calling-agent-full-production-example) |
+| Build a video RAG agent (video + search + agent) | [video-rag-agents.md](reference/video-rag-agents.md) — dedicated combined recipe |
+| Process video (frames, transcription, visual search) | [workflows.md → Video Analysis Pipeline](reference/workflows.md#video-analysis-pipeline) |
+| Process images (classify, tag, search) | [workflows.md → Image Classification and Search](reference/workflows.md#image-classification-and-search) |
+| Process audio (transcribe, summarize) | [workflows.md → Audio Transcription](reference/workflows.md#audio-transcription-and-analysis) |
+| Compare multiple AI providers | [workflows.md → Multi-Provider Comparison](reference/workflows.md#multi-provider-comparison) |
+| Build a FastAPI web app | [workflows.md → FastAPI App Pattern](reference/workflows.md#fastapi-app-pattern) |
+| Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](reference/core-api.md#udfs) |
+| Use `pxt.tools()` and `invoke_tools()` for agents | **Tool-Calling Agent Pipeline** (below) and [core-api.md → Tools and Agents](reference/core-api.md#tools-and-agents) |
+| Look up a specific provider's import and output shape | [providers.md → Quick Reference](reference/providers.md#quick-reference) |
 
 ## Core Concepts
 
@@ -450,3 +472,5 @@ For a complete reference implementation, see the [Pixeltable App Template](https
 **AI Providers**: OpenAI, Anthropic, Gemini, HuggingFace, Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, OpenRouter, Whisper, Voyage AI → See [reference/providers.md](reference/providers.md)
 
 **Workflows**: RAG, video analysis, image classification, audio transcription, multi-provider comparison, tool-calling agents, FastAPI apps, export → See [reference/workflows.md](reference/workflows.md)
+
+**Video RAG Agent**: Combined video processing + transcript/frame retrieval + tool-calling agent in one pipeline → See [reference/video-rag-agents.md](reference/video-rag-agents.md)

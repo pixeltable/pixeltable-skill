@@ -32,7 +32,8 @@ t.add_computed_column(
     response=chat_completions(
         messages=[{'role': 'user', 'content': t.prompt}],
         model='gpt-4o-mini'
-    ).choices[0].message.content
+    ).choices[0].message.content,
+    if_exists='ignore',
 )
 
 # With system message
@@ -45,7 +46,8 @@ t.add_computed_column(
         model='gpt-4o',
         max_tokens=1000,
         temperature=0.7
-    ).choices[0].message.content
+    ).choices[0].message.content,
+    if_exists='ignore',
 )
 
 # Vision (image analysis)
@@ -59,7 +61,8 @@ t.add_computed_column(
             ]
         }],
         model='gpt-4o'
-    ).choices[0].message.content
+    ).choices[0].message.content,
+    if_exists='ignore',
 )
 
 # JSON mode
@@ -68,7 +71,8 @@ t.add_computed_column(
         messages=[{'role': 'user', 'content': t.text}],
         model='gpt-4o-mini',
         response_format={'type': 'json_object'}
-    ).choices[0].message.content
+    ).choices[0].message.content,
+    if_exists='ignore',
 )
 ```
 
@@ -78,11 +82,12 @@ t.add_computed_column(
 from pixeltable.functions.openai import embeddings
 
 t.add_computed_column(
-    embed=embeddings(input=t.text, model='text-embedding-3-small').data[0].embedding
+    embed=embeddings(input=t.text, model='text-embedding-3-small').data[0].embedding,
+    if_exists='ignore',
 )
 
 # As index
-t.add_embedding_index('text', embedding=embeddings.using(model='text-embedding-3-small'))
+t.add_embedding_index('text', embedding=embeddings.using(model='text-embedding-3-small'), if_exists='ignore')
 ```
 
 ### Image Generation (DALL-E)
@@ -91,7 +96,8 @@ t.add_embedding_index('text', embedding=embeddings.using(model='text-embedding-3
 from pixeltable.functions.openai import image_generations
 
 t.add_computed_column(
-    generated=image_generations(prompt=t.description, model='dall-e-3', size='1024x1024').data[0].url
+    generated=image_generations(prompt=t.description, model='dall-e-3', size='1024x1024').data[0].url,
+    if_exists='ignore',
 )
 ```
 
@@ -100,7 +106,7 @@ t.add_computed_column(
 ```python
 from pixeltable.functions.openai import speech
 
-t.add_computed_column(audio=speech(input=t.text, model='tts-1', voice='alloy'))
+t.add_computed_column(audio=speech(input=t.text, model='tts-1', voice='alloy'), if_exists='ignore')
 ```
 
 ### Transcription
@@ -108,7 +114,7 @@ t.add_computed_column(audio=speech(input=t.text, model='tts-1', voice='alloy'))
 ```python
 from pixeltable.functions.openai import transcriptions
 
-t.add_computed_column(transcript=transcriptions(audio=t.audio_file, model='whisper-1').text)
+t.add_computed_column(transcript=transcriptions(audio=t.audio_file, model='whisper-1').text, if_exists='ignore')
 ```
 
 ## Anthropic
@@ -122,7 +128,8 @@ t.add_computed_column(
         messages=[{'role': 'user', 'content': [{'type': 'text', 'text': t.prompt}]}],
         model='claude-sonnet-4-20250514',
         max_tokens=1024
-    ).content[0].text
+    ).content[0].text,
+    if_exists='ignore',
 )
 
 # With system prompt
@@ -132,7 +139,8 @@ t.add_computed_column(
         model='claude-sonnet-4-20250514',
         system='You are an expert analyst.',
         max_tokens=2048
-    ).content[0].text
+    ).content[0].text,
+    if_exists='ignore',
 )
 
 # With tool calling
@@ -141,7 +149,7 @@ from pixeltable.functions.anthropic import messages, invoke_tools
 tools = pxt.tools(search_fn, lookup_fn)
 t.add_computed_column(
     response=messages(
-        messages=[{'role': 'user', 'content': t.prompt}],
+        messages=[{'role': 'user', 'content': [{'type': 'text', 'text': t.prompt}]}],
         model='claude-sonnet-4-20250514',
         tools=tools,
         tool_choice=tools.choice(required=True),
@@ -160,7 +168,7 @@ t.add_computed_column(
 ```python
 from pixeltable.functions.gemini import generate_content
 
-t.add_computed_column(response=generate_content(contents=t.prompt, model='gemini-2.0-flash'))
+t.add_computed_column(response=generate_content(contents=t.prompt, model='gemini-2.0-flash'), if_exists='ignore')
 ```
 
 ## Together AI
@@ -172,7 +180,8 @@ t.add_computed_column(
     response=chat_completions(
         messages=[{'role': 'user', 'content': t.prompt}],
         model='meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo'
-    ).choices[0].message.content
+    ).choices[0].message.content,
+    if_exists='ignore',
 )
 ```
 
@@ -185,7 +194,8 @@ t.add_computed_column(
     response=chat_completions(
         messages=[{'role': 'user', 'content': t.prompt}],
         model='accounts/fireworks/models/llama-v3p1-70b-instruct'
-    ).choices[0].message.content
+    ).choices[0].message.content,
+    if_exists='ignore',
 )
 ```
 
@@ -199,11 +209,12 @@ t.add_computed_column(
     response=chat_completions(
         messages=[{'role': 'user', 'content': t.prompt}],
         model='llama3.1'
-    ).choices[0].message.content
+    ).choices[0].message.content,
+    if_exists='ignore',
 )
 
 # Embeddings
-t.add_computed_column(embed=embeddings(input=t.text, model='nomic-embed-text'))
+t.add_computed_column(embed=embeddings(input=t.text, model='nomic-embed-text'), if_exists='ignore')
 ```
 
 ## Mistral AI
@@ -215,7 +226,8 @@ t.add_computed_column(
     response=chat_completions(
         messages=[{'role': 'user', 'content': t.prompt}],
         model='mistral-large-latest'
-    ).choices[0].message.content
+    ).choices[0].message.content,
+    if_exists='ignore',
 )
 ```
 
@@ -228,7 +240,8 @@ t.add_computed_column(
     response=chat_completions(
         messages=[{'role': 'user', 'content': t.prompt}],
         model='llama-3.1-70b-versatile'
-    ).choices[0].message.content
+    ).choices[0].message.content,
+    if_exists='ignore',
 )
 ```
 
@@ -241,7 +254,8 @@ t.add_computed_column(
     response=chat_completions(
         messages=[{'role': 'user', 'content': t.prompt}],
         model='deepseek-chat'
-    ).choices[0].message.content
+    ).choices[0].message.content,
+    if_exists='ignore',
 )
 ```
 
@@ -254,7 +268,8 @@ t.add_computed_column(
     response=chat_completions(
         messages=[{'role': 'user', 'content': t.prompt}],
         model='anthropic/claude-sonnet-4-20250514'
-    ).choices[0].message.content
+    ).choices[0].message.content,
+    if_exists='ignore',
 )
 ```
 
@@ -266,7 +281,7 @@ t.add_computed_column(
 from pixeltable.functions.huggingface import clip
 
 embed_fn = clip.using(model_id='openai/clip-vit-base-patch32')
-t.add_embedding_index('image', embedding=embed_fn)
+t.add_embedding_index('image', embedding=embed_fn, if_exists='ignore')
 
 sim = t.image.similarity(string='a photo of a dog')
 results = t.order_by(sim, asc=False).limit(5).select(t.image, sim).collect()
@@ -278,11 +293,11 @@ results = t.order_by(sim, asc=False).limit(5).select(t.image, sim).collect()
 from pixeltable.functions.huggingface import sentence_transformer
 
 embed_fn = sentence_transformer.using(model_id='all-MiniLM-L6-v2')
-t.add_embedding_index('text', embedding=embed_fn)
+t.add_embedding_index('text', embedding=embed_fn, if_exists='ignore')
 
 # For multilingual / high-quality (recommended for production)
 embed_fn = sentence_transformer.using(model_id='intfloat/multilingual-e5-large-instruct')
-t.add_embedding_index('text', string_embed=embed_fn)
+t.add_embedding_index('text', string_embed=embed_fn, if_exists='ignore')
 ```
 
 ### Object Detection (DETR)
@@ -291,7 +306,7 @@ t.add_embedding_index('text', string_embed=embed_fn)
 from pixeltable.functions.huggingface import detr_for_object_detection
 
 detect = detr_for_object_detection.using(model_id='facebook/detr-resnet-50')
-t.add_computed_column(detections=detect(t.image, threshold=0.8))
+t.add_computed_column(detections=detect(t.image, threshold=0.8), if_exists='ignore')
 ```
 
 ## Whisper (Local)
@@ -299,7 +314,7 @@ t.add_computed_column(detections=detect(t.image, threshold=0.8))
 ```python
 from pixeltable.functions.whisper import transcribe
 
-t.add_computed_column(transcript=transcribe(audio=t.audio, model='base'))
+t.add_computed_column(transcript=transcribe(audio=t.audio, model='base'), if_exists='ignore')
 ```
 
 ## Voyage AI
@@ -307,5 +322,5 @@ t.add_computed_column(transcript=transcribe(audio=t.audio, model='base'))
 ```python
 from pixeltable.functions.voyageai import embed
 
-t.add_computed_column(embed=embed(input=t.text, model='voyage-2'))
+t.add_computed_column(embed=embed(input=t.text, model='voyage-2'), if_exists='ignore')
 ```

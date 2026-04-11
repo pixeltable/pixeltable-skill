@@ -34,9 +34,6 @@ chunks = pxt.create_view('rag.chunks', docs,
     iterator=document_splitter(docs.doc, separators='token_limit', limit=300, metadata='title,heading'),
     if_exists='ignore')
 
-chunks.add_computed_column(
-    embed=embeddings(input=chunks.text, model='text-embedding-3-small').data[0].embedding,
-    if_exists='ignore')
 chunks.add_embedding_index('text',
     embedding=embeddings.using(model='text-embedding-3-small'),
     if_exists='ignore')
@@ -130,9 +127,9 @@ results = frames.order_by(sim, asc=False).limit(10).select(
 # Transcript search
 @pxt.query
 def search_transcripts(query_text: str):
-    sim = sentences.text.similarity(query_text)
+    sim = sentences.text.similarity(string=query_text)
     return sentences.where(sim > 0.7).order_by(sim, asc=False).select(
-        sentences.text, source_video=sentences.video, sim=sim
+        sentences.text, sim=sim
     ).limit(20)
 ```
 
@@ -270,13 +267,13 @@ images.add_embedding_index('image',
 # --- Query functions (become tools + RAG context) ---
 @pxt.query
 def search_documents(query_text: str):
-    sim = chunks.text.similarity(query_text)
+    sim = chunks.text.similarity(string=query_text)
     return chunks.where(sim > 0.5).order_by(sim, asc=False).select(
         chunks.text, sim=sim).limit(20)
 
 @pxt.query
 def search_images(query_text: str):
-    sim = images.image.similarity(query_text)
+    sim = images.image.similarity(string=query_text)
     return images.where(sim > 0.25).order_by(sim, asc=False).select(
         encoded_image=pxt_image.b64_encode(
             pxt_image.thumbnail(images.image, size=(224, 224)), 'png'),
@@ -404,7 +401,7 @@ chunks.add_embedding_index('text', string_embed=embed_fn, if_exists='ignore')
 
 @pxt.query
 def search_documents(query_text: str):
-    sim = chunks.text.similarity(query_text)
+    sim = chunks.text.similarity(string=query_text)
     return chunks.where(sim > 0.5).order_by(sim, asc=False).select(
         chunks.text, sim=sim, title=chunks.title
     ).limit(20)
@@ -448,7 +445,7 @@ def search(body: SearchRequest):                    # sync, not async
 ### Export Workflow
 
 ```python
-from pixeltable.io import export_parquet, export_lancedb
+from pixeltable.io import export_parquet
 
 # To Parquet
 export_parquet(t, 'output/my_data/')
@@ -460,7 +457,4 @@ export_parquet(query, 'output/filtered/')
 # To pandas
 df = t.select(t.title, t.content).collect().to_pandas()
 df.to_csv('output/data.csv', index=False)
-
-# To LanceDB
-export_lancedb(t.select(t.content, t.embed), 'lancedb/', 'vectors')
 ```

@@ -15,14 +15,14 @@ Thanks for your interest in improving the Pixeltable Skill! This guide covers ho
 
 ```
 pixeltable-skill/
-├── skills/pixeltable-skill/   # Canonical full skill (SKILL.md + API_REFERENCE.md)
+├── skills/pixeltable-skill/   # Canonical full skill (SKILL.md + reference/)
 ├── platforms/                 # Platform-specific variants at different densities
-│   ├── cursor-rule/           # Compact (~80 lines)
-│   ├── github-copilot/        # Standard (~170 lines)
+│   ├── cursor-rule/           # Compact (~95 lines)
+│   ├── github-copilot/        # Standard (~200 lines)
 │   ├── windsurf/              # Standard
 │   ├── cline/                 # Standard
 │   ├── agents-md/             # Standard
-│   ├── system-prompt/         # Terse (~20 lines)
+│   ├── system-prompt/         # Terse (~25 lines)
 │   └── openai-custom-gpt/    # Terse
 ├── install.sh                 # Multi-platform installer
 └── .claude-plugin/            # Claude Code plugin metadata
@@ -35,15 +35,15 @@ pixeltable-skill/
 - Fix incorrect API examples
 - Add missing patterns for common use cases
 - Update provider examples for new Pixeltable releases
-- Keep `SKILL.md` concise — detailed content goes in `API_REFERENCE.md`
+- Keep `SKILL.md` concise — detailed content goes in `reference/` (core-api.md, providers.md, workflows.md)
 - `SKILL.md` should stay under 500 lines
 
 ### Improving Platform Variants (platforms/)
 
 When changing core content, propagate relevant updates to platform variants:
-- **Standard** (Windsurf, Cline, Copilot, AGENTS.md): Self-contained, ~170 lines
-- **Compact** (Cursor rule): Token-efficient, ~80 lines
-- **Terse** (system prompt, Custom GPT): Minimal, ~20 lines
+- **Standard** (Windsurf, Cline, Copilot, AGENTS.md): Self-contained, ~200 lines
+- **Compact** (Cursor rule): Token-efficient, ~95 lines
+- **Terse** (system prompt, Custom GPT): Minimal, ~25 lines
 
 ### Adding a New Platform
 

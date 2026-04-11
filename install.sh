@@ -5,7 +5,7 @@ set -euo pipefail
 # Usage:
 #   Interactive:  ./install.sh
 #   Direct:       ./install.sh --platform cursor-rule --target ./my-project
-#   Curl:         curl -fsSL https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main/install.sh | bash
+#   Curl:         curl -fsSL https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main/install.sh | bash -s -- --platform claude-code
 
 REPO_URL="https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main"
 
@@ -120,7 +120,7 @@ install_skill_dir() {
   if [[ -d "$skill_dest" ]]; then
     echo ""
     echo "  Directory already exists: $skill_dest"
-    read -rp "  Overwrite? [y/N] " answer
+    read -rp "  Overwrite? [y/N] " answer < /dev/tty
     if [[ ! "$answer" =~ ^[Yy] ]]; then
       echo "  Skipped."
       return
@@ -179,7 +179,7 @@ install_platform() {
   if [[ -f "$dest" ]]; then
     echo ""
     echo "  File already exists: $dest"
-    read -rp "  Overwrite? [y/N] " answer
+    read -rp "  Overwrite? [y/N] " answer < /dev/tty
     if [[ ! "$answer" =~ ^[Yy] ]]; then
       echo "  Skipped."
       return
@@ -200,6 +200,14 @@ if [[ -n "$PLATFORM" ]]; then
   exit 0
 fi
 
+# Detect piped stdin (e.g. curl ... | bash) — interactive mode requires a terminal
+if [[ ! -t 0 ]]; then
+  echo "Error: Interactive mode requires a terminal."
+  echo "When piping from curl, use:  curl -fsSL ... | bash -s -- --platform <name>"
+  echo "Available: $PLATFORMS system-prompt openai-custom-gpt"
+  exit 1
+fi
+
 echo ""
 echo "Pixeltable Skill Installer"
 echo "=========================="
@@ -216,7 +224,7 @@ done
 
 count=$((i - 1))
 echo ""
-read -rp "Choice [1-$count]: " choice
+read -rp "Choice [1-$count]: " choice < /dev/tty
 
 if [[ -z "$choice" ]] || ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > count )); then
   echo "Invalid choice."
@@ -239,6 +247,10 @@ echo "Installing for: $(platform_label "$selected")"
 install_platform "$selected"
 
 echo ""
-echo "Done. For the full skill with API reference, install as 'cursor-skill' or 'claude-code'."
+if [[ "$selected" == "cursor-skill" || "$selected" == "claude-code" ]]; then
+  echo "Done. Full skill with API reference installed."
+else
+  echo "Done. For the full skill with API reference, install as 'cursor-skill' or 'claude-code'."
+fi
 echo "  https://github.com/pixeltable/pixeltable-skill"
 echo ""

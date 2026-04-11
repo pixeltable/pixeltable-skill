@@ -223,10 +223,10 @@ def clean_text(text: str) -> str:
     return text.strip().lower()
 
 @pxt.udf
-def safe_length(text: Optional[str]) -> int:
+def safe_length(text: str | None) -> str:
     return 0 if text is None else len(text)
 
-t.add_computed_column(cleaned=clean_text(t.content))
+t.add_computed_column(cleaned=clean_text(t.content), if_exists='ignore')
 ```
 
 ### Query Functions
@@ -249,12 +249,22 @@ Pixeltable can orchestrate a full tool-calling agent as a chain of computed colu
 ```python
 import pixeltable as pxt
 from pixeltable.functions.anthropic import messages, invoke_tools
+from datetime import datetime
 
-# 1. Define tools from UDFs and @pxt.query functions
+# 1. Define tools from UDFs and @pxt.query functions (defined earlier via @pxt.udf / @pxt.query)
 tools = pxt.tools(
     web_search,            # @pxt.udf
     search_documents,      # @pxt.query
 )
+
+# Helper UDF to assemble context for the final LLM call
+@pxt.udf
+def assemble_context(question: str, tool_outputs: list | None, doc_context: list | None) -> str:
+    tool_str = str(tool_outputs) if tool_outputs else 'N/A'
+    doc_str = '\n'.join(
+        f"- {item.get('text', '')}" for item in (doc_context or []) if isinstance(item, dict)
+    ) or 'N/A'
+    return f"QUESTION: {question}\n\n[TOOL RESULTS]\n{tool_str}\n\n[DOCUMENTS]\n{doc_str}"
 
 # 2. Create the agent table
 agent = pxt.create_table('my_project.agent', {
@@ -262,17 +272,18 @@ agent = pxt.create_table('my_project.agent', {
     'timestamp': pxt.Timestamp,
     'system_prompt': pxt.String,
     'max_tokens': pxt.Int,
+    'temperature': pxt.Float,
 }, if_exists='ignore')
 
 # 3. Initial LLM call with tools
 agent.add_computed_column(
     initial_response=messages(
         model='claude-sonnet-4-20250514',
-        messages=[{'role': 'user', 'content': agent.prompt}],
+        messages=[{'role': 'user', 'content': [{'type': 'text', 'text': agent.prompt}]}],
         tools=tools,
         tool_choice=tools.choice(required=True),
         max_tokens=agent.max_tokens,
-        model_kwargs={'system': agent.system_prompt},
+        model_kwargs={'system': agent.system_prompt, 'temperature': agent.temperature},
     ),
     if_exists='ignore',
 )
@@ -291,10 +302,16 @@ agent.add_computed_column(
 
 # 6. Final LLM call with all context
 agent.add_computed_column(
+    context=assemble_context(agent.prompt, agent.tool_output, agent.doc_context),
+    if_exists='ignore',
+)
+
+agent.add_computed_column(
     final_response=messages(
         model='claude-sonnet-4-20250514',
-        messages=assemble_messages(agent.prompt, agent.tool_output, agent.doc_context),
+        messages=[{'role': 'user', 'content': [{'type': 'text', 'text': agent.context}]}],
         max_tokens=agent.max_tokens,
+        model_kwargs={'system': agent.system_prompt, 'temperature': agent.temperature},
     ),
     if_exists='ignore',
 )
@@ -331,6 +348,7 @@ Built-in functions for 15+ providers in `pixeltable.functions.*`:
 | Voyage AI | `voyageai` | `embed` |
 | Bedrock | `bedrock` | `converse` |
 | OpenRouter | `openrouter` | `chat_completions` |
+| Whisper | `whisper` | `transcribe` (local transcription) |
 | Twelve Labs | `twelvelabs` | video understanding |
 
 ## Import/Export

@@ -68,6 +68,7 @@ t = pxt.create_table('dir.items', {
 }, primary_key=['uuid'], if_exists='ignore')
 
 # No need to provide uuid when inserting
+from datetime import datetime
 t.insert([{'content': 'Hello', 'timestamp': datetime.now()}])
 ```
 
@@ -500,7 +501,7 @@ agent = pxt.create_table('project.agent', {
 agent.add_computed_column(
     initial_response=messages(
         model='claude-sonnet-4-20250514',
-        messages=[{'role': 'user', 'content': agent.prompt}],
+        messages=[{'role': 'user', 'content': [{'type': 'text', 'text': agent.prompt}]}],
         tools=tools,
         tool_choice=tools.choice(required=True),
         max_tokens=agent.max_tokens,
@@ -534,7 +535,7 @@ agent.add_computed_column(
 agent.add_computed_column(
     final_response=messages(
         model='claude-sonnet-4-20250514',
-        messages=[{'role': 'user', 'content': agent.context}],
+        messages=[{'role': 'user', 'content': [{'type': 'text', 'text': agent.context}]}],
         max_tokens=agent.max_tokens,
         model_kwargs={
             'system': agent.final_system_prompt,

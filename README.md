@@ -28,7 +28,8 @@ AI coding assistants write incorrect Pixeltable code because their training data
 ### One-liner installer
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main/install.sh | bash
+# Direct install (specify platform when piping)
+curl -fsSL https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main/install.sh | bash -s -- --platform claude-code
 ```
 
 Or clone and run directly:

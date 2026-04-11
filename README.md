@@ -60,8 +60,8 @@ Or non-interactively:
 | Platform | File | Copy to | Notes |
 |----------|------|---------|-------|
 | **Cursor** (rule) | [`pixeltable.mdc`](platforms/cursor-rule/pixeltable.mdc) | `.cursor/rules/` | Compact variant; set `alwaysApply: true` if desired |
-| **Cursor** (skill) | [`SKILL.md`](skills/pixeltable-skill/SKILL.md) + [`reference/`](skills/pixeltable-skill/reference/) | `~/.cursor/skills/pixeltable-skill/` | Full skill with progressive disclosure |
-| **Claude Code** | [`SKILL.md`](skills/pixeltable-skill/SKILL.md) + [`reference/`](skills/pixeltable-skill/reference/) | `.claude/skills/pixeltable-skill/` | Or install as plugin (see above) |
+| **Cursor** (skill) | [`SKILL.md`](skills/pixeltable-skill/SKILL.md) + [`references/`](skills/pixeltable-skill/references/) | `~/.cursor/skills/pixeltable-skill/` | Full skill with progressive disclosure |
+| **Claude Code** | [`SKILL.md`](skills/pixeltable-skill/SKILL.md) + [`references/`](skills/pixeltable-skill/references/) | `.claude/skills/pixeltable-skill/` | Or install as plugin (see above) |
 | **GitHub Copilot** | [`copilot-instructions.md`](platforms/github-copilot/copilot-instructions.md) | `.github/` | Auto-loaded in Copilot Chat |
 | **Windsurf** | [`.windsurfrules`](platforms/windsurf/.windsurfrules) | Project root | Auto-loaded every session |
 | **Cline** | [`.clinerules`](platforms/cline/.clinerules) | Project root | Auto-loaded every session |
@@ -75,7 +75,7 @@ Or non-interactively:
 
 ### Why multiple variants?
 
-The **canonical source of truth** is `skills/pixeltable-skill/SKILL.md` plus its `reference/` directory. This is the full skill with progressive disclosure — Claude Code and Cursor load the core instructions first, then pull in reference files on demand.
+The **canonical source of truth** is `skills/pixeltable-skill/SKILL.md` plus its `references/` directory. This is the full skill with progressive disclosure — Claude Code and Cursor load the core instructions first, then pull in reference files on demand.
 
 Most other platforms (Windsurf, Cline, Copilot, etc.) load a **single file** at startup and have no mechanism to reference additional files. For those platforms, we ship **self-contained condensations** of the full skill at different token budgets:
 
@@ -86,19 +86,19 @@ Most other platforms (Windsurf, Cline, Copilot, etc.) load a **single file** at 
 | **Compact** | ~110 | Cursor rule | Token-efficient quick reference |
 | **Terse** | ~30 | System prompt, Custom GPTs | Minimal footprint for raw LLM API |
 
-**All variants derive from the same source.** When updating content, edit `SKILL.md` and `reference/` first (the canonical source), then propagate changes to the platform variants.
+**All variants derive from the same source.** When updating content, edit `SKILL.md` and `references/` first (the canonical source), then propagate changes to the platform variants.
 
 ### Reference files (loaded on demand)
 
 | File | Coverage |
 |------|----------|
-| [`core-api.md`](skills/pixeltable-skill/reference/core-api.md) | Tables, querying, views, iterators, embeddings, UDFs, B-tree indexes, recompute, data sharing, export SQL, configuration, media destinations, rate limiting |
-| [`providers.md`](skills/pixeltable-skill/reference/providers.md) | Quick-reference table + full examples for all 25+ AI providers |
-| [`workflows.md`](skills/pixeltable-skill/reference/workflows.md) | RAG, video analysis, image classification, audio transcription, multi-provider comparison, tool-calling agent, FastAPI app, export |
-| [`video-rag-agents.md`](skills/pixeltable-skill/reference/video-rag-agents.md) | Combined video processing + transcript/frame retrieval + tool-calling agent |
-| [`agents-memory-mcp.md`](skills/pixeltable-skill/reference/agents-memory-mcp.md) | Agent with persistent memory (chat history + knowledge bank), MCP integration, multi-provider invoke_tools |
-| [`ml-data-pipeline.md`](skills/pixeltable-skill/reference/ml-data-pipeline.md) | ML data wrangling: ingest, enrich, curate, version (snapshots), export to PyTorch/Parquet/pandas |
-| [`agentic-patterns.md`](skills/pixeltable-skill/reference/agentic-patterns.md) | 6 architectural patterns + 2 reasoning strategies (prompt chaining, routing, parallelization, tool use, evaluator-optimizer, orchestrator-worker, ReAct, planning) |
+| [`core-api.md`](skills/pixeltable-skill/references/core-api.md) | Tables, querying, views, iterators, embeddings, UDFs, B-tree indexes, recompute, data sharing, export SQL, configuration, media destinations, rate limiting |
+| [`providers.md`](skills/pixeltable-skill/references/providers.md) | Quick-reference table + full examples for all 25+ AI providers |
+| [`workflows.md`](skills/pixeltable-skill/references/workflows.md) | RAG, video analysis, image classification, audio transcription, multi-provider comparison, tool-calling agent, FastAPI app, export |
+| [`video-rag-agents.md`](skills/pixeltable-skill/references/video-rag-agents.md) | Combined video processing + transcript/frame retrieval + tool-calling agent |
+| [`agents-memory-mcp.md`](skills/pixeltable-skill/references/agents-memory-mcp.md) | Agent with persistent memory (chat history + knowledge bank), MCP integration, multi-provider invoke_tools |
+| [`ml-data-pipeline.md`](skills/pixeltable-skill/references/ml-data-pipeline.md) | ML data wrangling: ingest, enrich, curate, version (snapshots), export to PyTorch/Parquet/pandas |
+| [`agentic-patterns.md`](skills/pixeltable-skill/references/agentic-patterns.md) | 6 architectural patterns + 2 reasoning strategies (prompt chaining, routing, parallelization, tool use, evaluator-optimizer, orchestrator-worker, ReAct, planning) |
 
 ---
 
@@ -109,7 +109,7 @@ pixeltable-skill/
 ├── skills/
 │   └── pixeltable-skill/          # Canonical full skill (source of truth)
 │       ├── SKILL.md               # Core instructions with task router
-│       └── reference/             # Detailed reference (loaded on demand)
+│       └── references/             # Detailed reference (loaded on demand)
 │           ├── core-api.md        # Tables, querying, views, UDFs, config
 │           ├── providers.md       # 25+ AI provider examples
 │           ├── workflows.md       # End-to-end workflow templates
@@ -180,7 +180,7 @@ This skill implements the open [Agent Skills specification](https://agentskills.
 
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-**Key principle**: The canonical source is `skills/pixeltable-skill/SKILL.md` + `reference/`. Edit there first, then propagate to platform variants. Platform files are self-contained condensations — they cannot reference external files.
+**Key principle**: The canonical source is `skills/pixeltable-skill/SKILL.md` + `references/`. Edit there first, then propagate to platform variants. Platform files are self-contained condensations — they cannot reference external files.
 
 To add a new platform:
 

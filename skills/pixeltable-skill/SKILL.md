@@ -33,33 +33,33 @@ Jump to the right section based on what you're building:
 
 | If the user wants to... | Read |
 |--------------------------|------|
-| Create tables, insert data, query | **Core Concepts** (below) and [core-api.md](reference/core-api.md) |
-| Add AI-powered columns (summarize, classify, embed) | **Computed Columns** (below) and [providers.md](reference/providers.md) |
-| Chunk documents, extract video frames, split audio | **Views and Iterators** (below) and [core-api.md → Views](reference/core-api.md#views) |
-| Build semantic search / embedding indexes | **Embedding Indexes** (below) and [core-api.md → Embedding Indexes](reference/core-api.md#embedding-indexes) |
-| Build a RAG pipeline | [workflows.md → RAG Pipeline](reference/workflows.md#rag-pipeline) |
-| Build a tool-calling agent | **Tool-Calling Agent Pipeline** (below) and [workflows.md → Tool-Calling Agent](reference/workflows.md#tool-calling-agent-full-production-example) |
-| Build an agent with persistent memory | [agents-memory-mcp.md](reference/agents-memory-mcp.md) — chat history, knowledge bank, user scoping |
-| Use MCP tools with an agent | [agents-memory-mcp.md → Adding MCP Tools](reference/agents-memory-mcp.md#adding-mcp-tools) |
-| Use `invoke_tools()` with OpenAI, Groq, Gemini, Bedrock | [agents-memory-mcp.md → Multi-Provider](reference/agents-memory-mcp.md#multi-provider-invoke_tools) |
-| Build a video RAG agent (video + search + agent) | [video-rag-agents.md](reference/video-rag-agents.md) — dedicated combined recipe |
-| Process video (frames, transcription, visual search) | [workflows.md → Video Analysis Pipeline](reference/workflows.md#video-analysis-pipeline) |
-| Process images (classify, tag, search) | [workflows.md → Image Classification and Search](reference/workflows.md#image-classification-and-search) |
-| Process audio (transcribe, summarize) | [workflows.md → Audio Transcription](reference/workflows.md#audio-transcription-and-analysis) |
-| Wrangle data for ML training (label, version, export) | [ml-data-pipeline.md](reference/ml-data-pipeline.md) — ingest, enrich, snapshot, PyTorch export |
-| Export to PyTorch, Parquet, or pandas | [ml-data-pipeline.md → Export for Training](reference/ml-data-pipeline.md#export-for-training) |
-| Look up structured data with `retrieval_udf` | [ml-data-pipeline.md → Retrieval UDFs](reference/ml-data-pipeline.md#retrieval-udfs-for-structured-data-lookup) |
+| Create tables, insert data, query | **Core Concepts** (below) and [core-api.md](references/core-api.md) |
+| Add AI-powered columns (summarize, classify, embed) | **Computed Columns** (below) and [providers.md](references/providers.md) |
+| Chunk documents, extract video frames, split audio | **Views and Iterators** (below) and [core-api.md → Views](references/core-api.md#views) |
+| Build semantic search / embedding indexes | **Embedding Indexes** (below) and [core-api.md → Embedding Indexes](references/core-api.md#embedding-indexes) |
+| Build a RAG pipeline | [workflows.md → RAG Pipeline](references/workflows.md#rag-pipeline) |
+| Build a tool-calling agent | **Tool-Calling Agent Pipeline** (below) and [workflows.md → Tool-Calling Agent](references/workflows.md#tool-calling-agent-full-production-example) |
+| Build an agent with persistent memory | [agents-memory-mcp.md](references/agents-memory-mcp.md) — chat history, knowledge bank, user scoping |
+| Use MCP tools with an agent | [agents-memory-mcp.md → Adding MCP Tools](references/agents-memory-mcp.md#adding-mcp-tools) |
+| Use `invoke_tools()` with OpenAI, Groq, Gemini, Bedrock | [agents-memory-mcp.md → Multi-Provider](references/agents-memory-mcp.md#multi-provider-invoke_tools) |
+| Build a video RAG agent (video + search + agent) | [video-rag-agents.md](references/video-rag-agents.md) — dedicated combined recipe |
+| Process video (frames, transcription, visual search) | [workflows.md → Video Analysis Pipeline](references/workflows.md#video-analysis-pipeline) |
+| Process images (classify, tag, search) | [workflows.md → Image Classification and Search](references/workflows.md#image-classification-and-search) |
+| Process audio (transcribe, summarize) | [workflows.md → Audio Transcription](references/workflows.md#audio-transcription-and-analysis) |
+| Wrangle data for ML training (label, version, export) | [ml-data-pipeline.md](references/ml-data-pipeline.md) — ingest, enrich, snapshot, PyTorch export |
+| Export to PyTorch, Parquet, or pandas | [ml-data-pipeline.md → Export for Training](references/ml-data-pipeline.md#export-for-training) |
+| Look up structured data with `retrieval_udf` | [ml-data-pipeline.md → Retrieval UDFs](references/ml-data-pipeline.md#retrieval-udfs-for-structured-data-lookup) |
 | Retry failed computed columns | **Error Handling** (below) — `recompute_columns()` |
-| Use agentic patterns (chaining, routing, parallelization, eval-optimize) | [agentic-patterns.md](reference/agentic-patterns.md) — 6 patterns + 2 reasoning strategies |
-| Configure rate limits, media storage, API keys | [core-api.md → Configuration](reference/core-api.md#configuration) |
-| Export to SQL databases (Postgres, Snowflake, SQLite) | [core-api.md → Export to SQL](reference/core-api.md#export-to-sql-databases) |
-| Share tables across teams (`publish`, `replicate`) | [core-api.md → Data Sharing](reference/core-api.md#data-sharing-and-replication) |
-| Compare multiple AI providers | [workflows.md → Multi-Provider Comparison](reference/workflows.md#multi-provider-comparison) |
-| Build a FastAPI web app | [workflows.md → FastAPI App Pattern](reference/workflows.md#fastapi-app-pattern) |
-| Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](reference/core-api.md#udfs) |
-| Use `pxt.tools()` and `invoke_tools()` for agents | **Tool-Calling Agent Pipeline** (below) and [core-api.md → Tools and Agents](reference/core-api.md#tools-and-agents) |
-| Avoid common mistakes (wrong imports, broken schemas, serialization) | **Common Pitfalls** (below) and [core-api.md → Common Pitfalls](reference/core-api.md#common-pitfalls) |
-| Look up a specific provider's import and output shape | [providers.md → Quick Reference](reference/providers.md#quick-reference) |
+| Use agentic patterns (chaining, routing, parallelization, eval-optimize) | [agentic-patterns.md](references/agentic-patterns.md) — 6 patterns + 2 reasoning strategies |
+| Configure rate limits, media storage, API keys | [core-api.md → Configuration](references/core-api.md#configuration) |
+| Export to SQL databases (Postgres, Snowflake, SQLite) | [core-api.md → Export to SQL](references/core-api.md#export-to-sql-databases) |
+| Share tables across teams (`publish`, `replicate`) | [core-api.md → Data Sharing](references/core-api.md#data-sharing-and-replication) |
+| Compare multiple AI providers | [workflows.md → Multi-Provider Comparison](references/workflows.md#multi-provider-comparison) |
+| Build a FastAPI web app | [workflows.md → FastAPI App Pattern](references/workflows.md#fastapi-app-pattern) |
+| Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](references/core-api.md#udfs) |
+| Use `pxt.tools()` and `invoke_tools()` for agents | **Tool-Calling Agent Pipeline** (below) and [core-api.md → Tools and Agents](references/core-api.md#tools-and-agents) |
+| Avoid common mistakes (wrong imports, broken schemas, serialization) | **Common Pitfalls** (below) and [core-api.md → Common Pitfalls](references/core-api.md#common-pitfalls) |
+| Look up a specific provider's import and output shape | [providers.md → Quick Reference](references/providers.md#quick-reference) |
 
 ## Critical Warnings — Read Before Writing Code
 
@@ -391,7 +391,7 @@ t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
 | 6 | `t.content.similarity(query)` (positional) | `t.content.similarity(string=query)` (keyword) |
 | 7 | Schema corruption (`IntegrityError`) | `pip install -U pixeltable && rm -rf ~/.pixeltable` |
 
-Full examples in [core-api.md → Common Pitfalls](reference/core-api.md#common-pitfalls).
+Full examples in [core-api.md → Common Pitfalls](references/core-api.md#common-pitfalls).
 
 ## Table Management
 
@@ -419,7 +419,7 @@ t.delete(where=t.is_active == False)
 - Use `.to_pydantic(Model)` for type-safe API responses
 - Insert a row → entire computed column chain runs automatically
 
-Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) | [workflows.md → FastAPI](reference/workflows.md#fastapi-app-pattern)
+Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) | [workflows.md → FastAPI](references/workflows.md#fastapi-app-pattern)
 
 ## Resources
 
@@ -431,10 +431,10 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 
 | File | Coverage |
 |------|----------|
-| [core-api.md](reference/core-api.md) | Tables, querying, views, embeddings, UDFs, tools, B-tree indexes, recompute, config, data sharing, SQL export |
-| [providers.md](reference/providers.md) | Quick-reference table + full examples for all 25+ AI providers |
-| [workflows.md](reference/workflows.md) | RAG, video analysis, image classification, audio, multi-provider, agent, FastAPI, export |
-| [video-rag-agents.md](reference/video-rag-agents.md) | Video + transcript/frame retrieval + tool-calling agent |
-| [agents-memory-mcp.md](reference/agents-memory-mcp.md) | Agent with persistent memory, MCP integration, multi-provider invoke_tools |
-| [ml-data-pipeline.md](reference/ml-data-pipeline.md) | Ingest, enrich, version, export to PyTorch/Parquet/pandas |
-| [agentic-patterns.md](reference/agentic-patterns.md) | 6 architectural patterns + 2 reasoning strategies |
+| [core-api.md](references/core-api.md) | Tables, querying, views, embeddings, UDFs, tools, B-tree indexes, recompute, config, data sharing, SQL export |
+| [providers.md](references/providers.md) | Quick-reference table + full examples for all 25+ AI providers |
+| [workflows.md](references/workflows.md) | RAG, video analysis, image classification, audio, multi-provider, agent, FastAPI, export |
+| [video-rag-agents.md](references/video-rag-agents.md) | Video + transcript/frame retrieval + tool-calling agent |
+| [agents-memory-mcp.md](references/agents-memory-mcp.md) | Agent with persistent memory, MCP integration, multi-provider invoke_tools |
+| [ml-data-pipeline.md](references/ml-data-pipeline.md) | Ingest, enrich, version, export to PyTorch/Parquet/pandas |
+| [agentic-patterns.md](references/agentic-patterns.md) | 6 architectural patterns + 2 reasoning strategies |

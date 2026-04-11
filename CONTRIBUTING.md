@@ -15,7 +15,7 @@ Thanks for your interest in improving the Pixeltable Skill! This guide covers ho
 
 ```
 pixeltable-skill/
-├── skills/pixeltable-skill/   # Canonical full skill (SKILL.md + reference/)
+├── skills/pixeltable-skill/   # Canonical full skill (SKILL.md + references/)
 ├── platforms/                 # Platform-specific variants at different densities
 │   ├── cursor-rule/           # Compact (~95 lines)
 │   ├── github-copilot/        # Standard (~200 lines)
@@ -35,7 +35,7 @@ pixeltable-skill/
 - Fix incorrect API examples
 - Add missing patterns for common use cases
 - Update provider examples for new Pixeltable releases
-- Keep `SKILL.md` concise — detailed content goes in `reference/` (core-api.md, providers.md, workflows.md)
+- Keep `SKILL.md` concise — detailed content goes in `references/` (core-api.md, providers.md, workflows.md)
 - `SKILL.md` should stay under 500 lines
 
 ### Improving Platform Variants (platforms/)

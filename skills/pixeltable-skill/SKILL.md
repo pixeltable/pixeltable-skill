@@ -41,10 +41,16 @@ Jump to the right section based on what you're building:
 | Build semantic search / embedding indexes | **Embedding Indexes** (below) and [core-api.md → Embedding Indexes](reference/core-api.md#embedding-indexes) |
 | Build a RAG pipeline | [workflows.md → RAG Pipeline](reference/workflows.md#rag-pipeline) |
 | Build a tool-calling agent | **Tool-Calling Agent Pipeline** (below) and [workflows.md → Tool-Calling Agent](reference/workflows.md#tool-calling-agent-full-production-example) |
+| Build an agent with persistent memory | [agents-memory-mcp.md](reference/agents-memory-mcp.md) — chat history, knowledge bank, user scoping |
+| Use MCP tools with an agent | [agents-memory-mcp.md → Adding MCP Tools](reference/agents-memory-mcp.md#adding-mcp-tools) |
+| Use `invoke_tools()` with OpenAI, Groq, Gemini, Bedrock | [agents-memory-mcp.md → Multi-Provider](reference/agents-memory-mcp.md#multi-provider-invoke_tools) |
 | Build a video RAG agent (video + search + agent) | [video-rag-agents.md](reference/video-rag-agents.md) — dedicated combined recipe |
 | Process video (frames, transcription, visual search) | [workflows.md → Video Analysis Pipeline](reference/workflows.md#video-analysis-pipeline) |
 | Process images (classify, tag, search) | [workflows.md → Image Classification and Search](reference/workflows.md#image-classification-and-search) |
 | Process audio (transcribe, summarize) | [workflows.md → Audio Transcription](reference/workflows.md#audio-transcription-and-analysis) |
+| Wrangle data for ML training (label, version, export) | [ml-data-pipeline.md](reference/ml-data-pipeline.md) — ingest, enrich, snapshot, PyTorch export |
+| Export to PyTorch, Parquet, or pandas | [ml-data-pipeline.md → Export](reference/ml-data-pipeline.md#export-for-training) |
+| Look up structured data with `retrieval_udf` | [ml-data-pipeline.md → Retrieval UDFs](reference/ml-data-pipeline.md#retrieval-udfs-for-structured-data-lookup) |
 | Compare multiple AI providers | [workflows.md → Multi-Provider Comparison](reference/workflows.md#multi-provider-comparison) |
 | Build a FastAPI web app | [workflows.md → FastAPI App Pattern](reference/workflows.md#fastapi-app-pattern) |
 | Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](reference/core-api.md#udfs) |
@@ -474,3 +480,7 @@ For a complete reference implementation, see the [Pixeltable App Template](https
 **Workflows**: RAG, video analysis, image classification, audio transcription, multi-provider comparison, tool-calling agents, FastAPI apps, export → See [reference/workflows.md](reference/workflows.md)
 
 **Video RAG Agent**: Combined video processing + transcript/frame retrieval + tool-calling agent in one pipeline → See [reference/video-rag-agents.md](reference/video-rag-agents.md)
+
+**Agent with Memory and MCP**: Persistent chat history, knowledge bank, user scoping, MCP tool integration, multi-provider invoke_tools → See [reference/agents-memory-mcp.md](reference/agents-memory-mcp.md)
+
+**ML Data Pipeline**: Ingest multimodal data, enrich with AI models, version with snapshots, export to PyTorch/Parquet/pandas → See [reference/ml-data-pipeline.md](reference/ml-data-pipeline.md)

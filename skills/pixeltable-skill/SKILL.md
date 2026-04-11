@@ -358,26 +358,35 @@ result = agent.where(agent.prompt == 'What is quantum computing?').select(agent.
 
 ## AI Provider Integrations
 
-Built-in functions for 15+ providers in `pixeltable.functions.*`:
+Built-in functions for 25+ providers in `pixeltable.functions.*`:
 
 | Provider | Module | Key Functions |
 |----------|--------|---------------|
 | OpenAI | `openai` | `chat_completions` (supports multimodal/vision via messages), `embeddings`, `image_generations`, `speech`, `transcriptions` |
 | Anthropic | `anthropic` | `messages`, `invoke_tools` |
-| Gemini | `gemini` | `generate_content` |
+| Gemini | `gemini` | `generate_content`, `invoke_tools` |
 | Hugging Face | `huggingface` | `clip`, `sentence_transformer`, `detr_for_object_detection` |
 | Together | `together` | `chat_completions`, `embeddings`, `image_generations` |
 | Fireworks | `fireworks` | `chat_completions`, `embeddings` |
 | Ollama | `ollama` | `chat_completions`, `embeddings` |
 | Mistral | `mistralai` | `chat_completions`, `embeddings` |
-| Groq | `groq` | `chat_completions` |
+| Groq | `groq` | `chat_completions`, `invoke_tools` |
 | DeepSeek | `deepseek` | `chat_completions` |
 | Replicate | `replicate` | `run` |
 | Voyage AI | `voyageai` | `embed` |
-| Bedrock | `bedrock` | `converse` |
+| Bedrock | `bedrock` | `converse`, `invoke_tools` |
 | OpenRouter | `openrouter` | `chat_completions` |
 | Whisper | `whisper` | `transcribe` (local transcription) |
-| Twelve Labs | `twelvelabs` | video understanding |
+| WhisperX | `whisperx` | `transcribe` (local, with speaker diarization) |
+| Twelve Labs | `twelvelabs` | `embed` (video understanding) |
+| Jina AI | `jina` | `embeddings`, `rerank` |
+| BFL FLUX | `bfl` | `generate`, `edit`, `expand`, `fill` (image generation/editing) |
+| RunwayML | `runwayml` | `text_to_video`, `image_to_video`, `text_to_image`, `video_to_video` |
+| fal.ai | `fal` | `run` (execute any fal.ai model) |
+| Reve | `reve` | `create`, `edit`, `remix` (image generation) |
+| Microsoft Fabric | `fabric` | `chat_completions`, `embeddings` (Azure OpenAI via Fabric) |
+| llama.cpp | `llama_cpp` | `create_chat_completion` (local GGUF models) |
+| YOLOX | `yolox` | `yolox` (object detection) |
 
 ## Import/Export
 

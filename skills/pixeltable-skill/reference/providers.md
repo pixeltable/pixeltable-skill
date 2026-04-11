@@ -1,6 +1,6 @@
 # Pixeltable AI Provider Reference
 
-Complete examples for all 15+ built-in AI provider integrations. All functions live in `pixeltable.functions.*`.
+Complete examples for all 25+ built-in AI provider integrations. All functions live in `pixeltable.functions.*`.
 
 ## Quick Reference
 
@@ -25,9 +25,21 @@ Use this table to find the correct import, function, and output accessor for eac
 | Hugging Face CLIP | `from pixeltable.functions.huggingface import clip` | `clip.using(model_id='openai/clip-vit-base-patch32')` | *(use as embedding index)* |
 | Hugging Face ST | `from pixeltable.functions.huggingface import sentence_transformer` | `sentence_transformer.using(model_id='all-MiniLM-L6-v2')` | *(use as embedding index)* |
 | Whisper (Local) | `from pixeltable.functions.whisper import transcribe` | `transcribe(audio=..., model='base')` | *(returns text directly)* |
+| WhisperX (Local) | `from pixeltable.functions.whisperx import transcribe` | `transcribe(audio=..., model='large-v2', diarize=True)` | *(returns JSON with segments)* |
 | Voyage AI | `from pixeltable.functions.voyageai import embed` | `embed(input=..., model='voyage-2')` | *(returns embedding directly)* |
+| Jina AI | `from pixeltable.functions.jina import embeddings` | `embeddings(text=..., model='jina-embeddings-v3')` | *(use as embedding index)* |
+| Twelve Labs | `from pixeltable.functions.twelvelabs import embed` | `embed(video_segment=..., model_name='marengo3.0')` | *(use as video embedding index)* |
+| BFL FLUX | `from pixeltable.functions.bfl import generate` | `generate(prompt=..., width=1024, height=1024)` | *(returns Image directly)* |
+| RunwayML | `from pixeltable.functions.runwayml import text_to_video` | `text_to_video(prompt=..., model='gen4.5')` | `['output'][0]` cast to `pxt.Video` |
+| fal.ai | `from pixeltable.functions.fal import run` | `run(input=json, app='fal-ai/flux/schnell')` | *(returns JSON)* |
+| Reve | `from pixeltable.functions.reve import create` | `create(prompt=...)` | *(returns Image directly)* |
+| Fabric | `from pixeltable.functions.fabric import chat_completions` | `chat_completions(messages=..., model='gpt-4.1')` | `.choices[0].message.content` |
+| llama.cpp | `from pixeltable.functions.llama_cpp import create_chat_completion` | `create_chat_completion(messages=..., repo_id='...', repo_filename='*q5_k_m.gguf')` | `.choices[0].message.content` |
+| YOLOX | `from pixeltable.functions.yolox import yolox` | `yolox(image=...)` | *(returns detection JSON)* |
+| Replicate | `from pixeltable.functions.replicate import run` | `run(input=json, model='owner/model')` | *(returns JSON)* |
+| Bedrock | `from pixeltable.functions.bedrock import converse` | `converse(messages=..., model='...')` | `.output.message.content[0].text` |
 
-**Key patterns**: OpenAI-compatible providers (Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, OpenRouter) all return `.choices[0].message.content`. Anthropic returns `.content[0].text`. Embedding functions are used with `add_embedding_index()`, not accessed directly.
+**Key patterns**: OpenAI-compatible providers (Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, OpenRouter, Fabric) all return `.choices[0].message.content`. Anthropic returns `.content[0].text`. Embedding functions are used with `add_embedding_index()`, not accessed directly. Image generation functions (BFL, Reve) return `pxt.Image` directly.
 
 ---
 
@@ -45,7 +57,19 @@ Use this table to find the correct import, function, and output accessor for eac
 - [OpenRouter](#openrouter)
 - [Hugging Face](#hugging-face) (CLIP, Sentence Transformers, DETR)
 - [Whisper](#whisper-local) (local transcription)
+- [WhisperX](#whisperx-local) (local transcription with speaker diarization)
 - [Voyage AI](#voyage-ai)
+- [Jina AI](#jina-ai) (embeddings, reranking)
+- [Twelve Labs](#twelve-labs) (video understanding)
+- [BFL FLUX](#bfl-flux) (image generation and editing)
+- [RunwayML](#runwayml) (video generation)
+- [fal.ai](#falai) (run any fal.ai model)
+- [Reve](#reve) (image generation)
+- [Microsoft Fabric](#microsoft-fabric) (Azure OpenAI via Fabric)
+- [llama.cpp](#llamacpp) (local GGUF models)
+- [Replicate](#replicate)
+- [Bedrock](#bedrock) (AWS)
+- [YOLOX](#yolox) (object detection)
 
 ---
 
@@ -352,4 +376,231 @@ t.add_computed_column(transcript=transcribe(audio=t.audio, model='base'), if_exi
 from pixeltable.functions.voyageai import embed
 
 t.add_computed_column(embed=embed(input=t.text, model='voyage-2'), if_exists='ignore')
+```
+
+## WhisperX (Local)
+
+Enhanced local transcription with word-level timestamps and speaker diarization.
+
+```python
+from pixeltable.functions.whisperx import transcribe
+
+# Basic transcription
+t.add_computed_column(
+    transcript=transcribe(audio=t.audio, model='large-v2'),
+    if_exists='ignore')
+
+# With speaker diarization (requires HF_TOKEN for pyannote)
+t.add_computed_column(
+    transcript=transcribe(audio=t.audio, model='large-v2', diarize=True),
+    if_exists='ignore')
+```
+
+## Jina AI
+
+Embeddings and reranking for search pipelines.
+
+```python
+from pixeltable.functions.jina import embeddings, rerank
+
+# Embeddings (multilingual, 89+ languages)
+t.add_embedding_index('text',
+    embedding=embeddings.using(model='jina-embeddings-v3', task='retrieval.passage'),
+    if_exists='ignore')
+
+# Reranking search results
+t.add_computed_column(
+    ranked=rerank(
+        query=t.query,
+        documents=t.candidates,
+        model='jina-reranker-v2-base-multilingual',
+        top_n=3,
+        return_documents=True,
+    ), if_exists='ignore')
+```
+
+## Twelve Labs
+
+Video understanding via multimodal embeddings.
+
+```python
+from pixeltable.functions.twelvelabs import embed
+
+# Add video embedding index for semantic video search
+t.add_embedding_index('video',
+    embedding=embed.using(model_name='marengo3.0'),
+    if_exists='ignore')
+
+# Search videos by text query
+sim = t.video.similarity(string='person giving a presentation')
+results = t.order_by(sim, asc=False).limit(5).select(t.video, sim).collect()
+```
+
+## BFL FLUX
+
+Image generation and editing with Black Forest Labs FLUX models.
+
+```python
+from pixeltable.functions.bfl import generate, edit, expand, fill
+
+# Text-to-image generation
+t.add_computed_column(
+    image=generate(prompt=t.description, width=1024, height=1024),
+    if_exists='ignore')
+
+# Edit an existing image
+t.add_computed_column(
+    edited=edit(image=t.image, prompt='Make the sky more dramatic'),
+    if_exists='ignore')
+
+# Expand image canvas (outpainting)
+t.add_computed_column(
+    expanded=expand(image=t.image, prompt='Extend the landscape', top=200, right=200),
+    if_exists='ignore')
+
+# Inpaint masked region
+t.add_computed_column(
+    filled=fill(image=t.image, mask=t.mask, prompt='A wooden bench'),
+    if_exists='ignore')
+```
+
+## RunwayML
+
+AI video generation and transformation.
+
+```python
+from pixeltable.functions.runwayml import text_to_video, image_to_video
+
+# Generate video from text
+t.add_computed_column(
+    video=text_to_video(
+        prompt=t.description, model='gen4.5', ratio='1280:720', duration=5,
+    ).astype(pxt.Video),
+    if_exists='ignore')
+
+# Animate an image into a video
+t.add_computed_column(
+    video=image_to_video(
+        prompt=t.description, image=t.image, model='gen4.5', ratio='1280:720',
+    ).astype(pxt.Video),
+    if_exists='ignore')
+```
+
+## fal.ai
+
+Run any model on fal.ai's inference platform.
+
+```python
+from pixeltable.functions.fal import run
+
+# Image generation with FLUX Schnell
+t.add_computed_column(
+    result=run(
+        input={'prompt': t.description, 'image_size': 'landscape_16_9'},
+        app='fal-ai/flux/schnell',
+    ), if_exists='ignore')
+```
+
+## Reve
+
+Image generation, editing, and remixing.
+
+```python
+from pixeltable.functions.reve import create, edit, remix
+
+# Text-to-image
+t.add_computed_column(
+    image=create(prompt=t.description),
+    if_exists='ignore')
+
+# Edit an existing image
+t.add_computed_column(
+    edited=edit(image=t.image, edit_instruction='Make it look like a watercolor painting'),
+    if_exists='ignore')
+```
+
+## Microsoft Fabric
+
+Azure OpenAI models via Microsoft Fabric notebooks (no API key needed in Fabric environment).
+
+```python
+from pixeltable.functions.fabric import chat_completions, embeddings
+
+# Chat
+t.add_computed_column(
+    response=chat_completions(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        model='gpt-4.1',
+    ).choices[0].message.content,
+    if_exists='ignore')
+
+# Embeddings
+t.add_embedding_index('text',
+    embedding=embeddings.using(model='text-embedding-3-small'),
+    if_exists='ignore')
+```
+
+## llama.cpp
+
+Run local GGUF models via llama.cpp (auto-downloaded from Hugging Face).
+
+```python
+from pixeltable.functions.llama_cpp import create_chat_completion
+
+t.add_computed_column(
+    response=create_chat_completion(
+        messages=[{'role': 'user', 'content': t.prompt}],
+        repo_id='Qwen/Qwen2.5-0.5B-Instruct-GGUF',
+        repo_filename='*q5_k_m.gguf',
+    ), if_exists='ignore')
+```
+
+## Replicate
+
+Run any model on Replicate's cloud platform.
+
+```python
+from pixeltable.functions.replicate import run
+
+t.add_computed_column(
+    result=run(input={'prompt': t.description}, model='stability-ai/sdxl'),
+    if_exists='ignore')
+```
+
+## Bedrock
+
+AWS Bedrock models.
+
+```python
+from pixeltable.functions.bedrock import converse, invoke_tools
+
+# Chat
+t.add_computed_column(
+    response=converse(
+        messages=[{'role': 'user', 'content': [{'text': t.prompt}]}],
+        model='anthropic.claude-sonnet-4-20250514-v1:0',
+    ).output.message.content[0].text,
+    if_exists='ignore')
+
+# Tool calling
+tools = pxt.tools(search_fn, lookup_fn)
+t.add_computed_column(
+    response=converse(
+        messages=[{'role': 'user', 'content': [{'text': t.prompt}]}],
+        model='anthropic.claude-sonnet-4-20250514-v1:0',
+        tools=tools,
+    ), if_exists='ignore')
+t.add_computed_column(
+    tool_results=invoke_tools(tools, t.response),
+    if_exists='ignore')
+```
+
+## YOLOX
+
+Local object detection.
+
+```python
+from pixeltable.functions.yolox import yolox
+
+t.add_computed_column(detections=yolox(t.image), if_exists='ignore')
 ```

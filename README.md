@@ -1,6 +1,6 @@
 # Pixeltable Skill
 
-Build multimodal AI applications with [Pixeltable](https://github.com/pixeltable/pixeltable) — declarative tables, computed columns, embedding indexes, similarity search, UDFs, and 15+ AI provider integrations.
+Build multimodal AI applications with [Pixeltable](https://github.com/pixeltable/pixeltable) — declarative tables, computed columns, embedding indexes, similarity search, UDFs, and 25+ AI provider integrations.
 
 Drop it into any AI coding assistant. One skill, every platform.
 
@@ -12,9 +12,9 @@ AI coding assistants write incorrect Pixeltable code because their training data
 
 - **Correct code** — API signatures, import paths, and parameter names verified against the latest Pixeltable release.
 - **Idempotent patterns** — Every example uses `if_exists='ignore'` for safe re-runs.
-- **Progressive disclosure** — Concise core instructions with a full API reference loaded only when needed.
-- **15+ AI providers** — OpenAI, Anthropic, Gemini, Hugging Face, Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, Replicate, Voyage AI, Bedrock, OpenRouter, Twelve Labs.
-- **End-to-end templates** — RAG, video analysis, image classification, audio transcription, tool-calling agents, FastAPI apps.
+- **Progressive disclosure** — Concise core instructions with detailed reference files loaded only when needed.
+- **25+ AI providers** — OpenAI, Anthropic, Gemini, Hugging Face, Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, Bedrock, Jina, BFL FLUX, RunwayML, fal.ai, Reve, Fabric, llama.cpp, and more.
+- **End-to-end recipes** — RAG, video RAG agent, agent with memory and MCP, agentic patterns, ML data pipelines, FastAPI apps.
 
 ---
 
@@ -71,18 +71,34 @@ Or non-interactively:
 
 ---
 
-## Variants
+## Architecture
 
-The repo ships four densities of Pixeltable expertise:
+### Why multiple variants?
 
-| Variant | Lines | Best for |
-|---------|-------|----------|
-| **Full** ([SKILL.md](skills/pixeltable-skill/SKILL.md) + [reference/](skills/pixeltable-skill/reference/)) | ~1,800 | Claude Code, Cursor skill — progressive disclosure |
-| **Standard** ([platform files](platforms/windsurf/.windsurfrules)) | ~200 | Windsurf, Cline, Copilot, AGENTS.md — self-contained |
-| **Compact** ([Cursor rule](platforms/cursor-rule/pixeltable.mdc)) | ~95 | Cursor rule — token-efficient context |
-| **Terse** ([system-prompt](platforms/system-prompt/system-prompt.md)) | ~25 | Raw LLM API, Custom GPTs — minimal footprint |
+The **canonical source of truth** is `skills/pixeltable-skill/SKILL.md` plus its `reference/` directory. This is the full skill with progressive disclosure — Claude Code and Cursor load the core instructions first, then pull in reference files on demand.
 
-All encode the same core patterns. Choose based on your platform and token budget.
+Most other platforms (Windsurf, Cline, Copilot, etc.) load a **single file** at startup and have no mechanism to reference additional files. For those platforms, we ship **self-contained condensations** of the full skill at different token budgets:
+
+| Variant | Lines | Platforms | Relationship to SKILL.md |
+|---------|-------|-----------|--------------------------|
+| **Full** | ~2,500 | Claude Code, Cursor skill | `SKILL.md` + 7 reference files — progressive disclosure |
+| **Standard** | ~230 | Windsurf, Cline, Copilot, AGENTS.md | Self-contained condensation of SKILL.md core patterns |
+| **Compact** | ~110 | Cursor rule | Token-efficient quick reference |
+| **Terse** | ~30 | System prompt, Custom GPTs | Minimal footprint for raw LLM API |
+
+**All variants derive from the same source.** When updating content, edit `SKILL.md` and `reference/` first (the canonical source), then propagate changes to the platform variants.
+
+### Reference files (loaded on demand)
+
+| File | Coverage |
+|------|----------|
+| [`core-api.md`](skills/pixeltable-skill/reference/core-api.md) | Tables, querying, views, iterators, embeddings, UDFs, B-tree indexes, recompute, data sharing, export SQL, configuration, media destinations, rate limiting |
+| [`providers.md`](skills/pixeltable-skill/reference/providers.md) | Quick-reference table + full examples for all 25+ AI providers |
+| [`workflows.md`](skills/pixeltable-skill/reference/workflows.md) | RAG, video analysis, image classification, audio transcription, multi-provider comparison, tool-calling agent, FastAPI app, export |
+| [`video-rag-agents.md`](skills/pixeltable-skill/reference/video-rag-agents.md) | Combined video processing + transcript/frame retrieval + tool-calling agent |
+| [`agents-memory-mcp.md`](skills/pixeltable-skill/reference/agents-memory-mcp.md) | Agent with persistent memory (chat history + knowledge bank), MCP integration, multi-provider invoke_tools |
+| [`ml-data-pipeline.md`](skills/pixeltable-skill/reference/ml-data-pipeline.md) | ML data wrangling: ingest, enrich, curate, version (snapshots), export to PyTorch/Parquet/pandas |
+| [`agentic-patterns.md`](skills/pixeltable-skill/reference/agentic-patterns.md) | 6 architectural patterns + 2 reasoning strategies (prompt chaining, routing, parallelization, tool use, evaluator-optimizer, orchestrator-worker, ReAct, planning) |
 
 ---
 
@@ -91,20 +107,24 @@ All encode the same core patterns. Choose based on your platform and token budge
 ```
 pixeltable-skill/
 ├── skills/
-│   └── pixeltable-skill/          # Canonical full skill
-│       ├── SKILL.md               # Core instructions (loaded first)
+│   └── pixeltable-skill/          # Canonical full skill (source of truth)
+│       ├── SKILL.md               # Core instructions with task router
 │       └── reference/             # Detailed reference (loaded on demand)
-│           ├── core-api.md        # Tables, querying, views, UDFs, tools
-│           ├── providers.md       # All AI provider examples
-│           └── workflows.md       # End-to-end workflow templates
-├── platforms/
-│   ├── cursor-rule/               # Compact .mdc rule
-│   ├── github-copilot/            # Standard variant
-│   ├── windsurf/                  # Standard variant
-│   ├── cline/                     # Standard variant
-│   ├── agents-md/                 # Standard variant
-│   ├── system-prompt/             # Terse variant
-│   └── openai-custom-gpt/        # Terse variant
+│           ├── core-api.md        # Tables, querying, views, UDFs, config
+│           ├── providers.md       # 25+ AI provider examples
+│           ├── workflows.md       # End-to-end workflow templates
+│           ├── video-rag-agents.md
+│           ├── agents-memory-mcp.md
+│           ├── ml-data-pipeline.md
+│           └── agentic-patterns.md
+├── platforms/                     # Self-contained variants for other platforms
+│   ├── cursor-rule/               # Compact (~110 lines)
+│   ├── github-copilot/            # Standard (~230 lines)
+│   ├── windsurf/                  # Standard
+│   ├── cline/                     # Standard
+│   ├── agents-md/                 # Standard
+│   ├── system-prompt/             # Terse (~30 lines)
+│   └── openai-custom-gpt/        # Terse
 ├── .claude-plugin/                # Claude Code plugin metadata
 │   ├── plugin.json
 │   └── marketplace.json
@@ -124,12 +144,12 @@ Make sure Pixeltable is installed in your Python environment:
 pip install pixeltable
 ```
 
-For AI provider integrations, set the appropriate environment variables:
+Requires Python >= 3.10. For AI provider integrations, set the appropriate environment variables:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
 export ANTHROPIC_API_KEY="sk-ant-..."
-# etc.
+# etc. — see core-api.md Configuration section for all 25+ provider keys
 ```
 
 ---
@@ -143,8 +163,8 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 - **Computed columns** that run AI transformations automatically on new data
 - **Views** with iterators for document chunking and video frame extraction
 - **Embedding indexes** with automatic maintenance and similarity search
-- **15+ AI provider integrations** (OpenAI, Anthropic, Gemini, Hugging Face, etc.)
-- **Import/export** from CSV, Parquet, Hugging Face, pandas, LanceDB
+- **25+ AI provider integrations** (OpenAI, Anthropic, Gemini, Hugging Face, etc.)
+- **Import/export** from CSV, Parquet, Hugging Face, pandas, SQL databases, PyTorch
 
 ---
 
@@ -152,13 +172,15 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 
 Agent Skills are instruction sets that AI coding assistants discover and use to work more accurately. When you ask about Pixeltable, the assistant loads the skill and writes correct code based on verified API references — no hallucinated signatures.
 
-This skill implements the open [Agent Skills specification](https://github.com/anthropics/skills), making it compatible across platforms.
+This skill implements the open [Agent Skills specification](https://agentskills.io/specification), making it compatible across platforms.
 
 ---
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on improving the skill content, adding platform support, or fixing API examples.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+**Key principle**: The canonical source is `skills/pixeltable-skill/SKILL.md` + `reference/`. Edit there first, then propagate to platform variants. Platform files are self-contained condensations — they cannot reference external files.
 
 To add a new platform:
 
@@ -166,7 +188,7 @@ To add a new platform:
 2. Use the standard or compact variant as a starting point.
 3. Add any required metadata/frontmatter for the platform.
 4. Update the platform matrix in this README.
-5. Add the platform to `install.sh` (the `PLATFORMS`, `platform_src`, `platform_dest`, and `platform_label` functions).
+5. Add the platform to `install.sh`.
 6. Open a PR.
 
 ---

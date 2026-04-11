@@ -1,11 +1,11 @@
 ---
-description: "Pixeltable: declarative tables, computed columns, embeddings, similarity search, UDFs for multimodal AI. Use when working with Pixeltable or building multimodal data pipelines."
+description: "Pixeltable: declarative tables, computed columns, embeddings, similarity search, UDFs, 25+ AI providers for multimodal AI. Use when working with Pixeltable or building multimodal data pipelines, RAG, agents, or video/audio/image processing."
 alwaysApply: false
 ---
 
 # Pixeltable Quick Reference
 
-`pip install pixeltable` | Docs: https://docs.pixeltable.com/
+`pip install pixeltable` (Python >= 3.10) | Docs: https://docs.pixeltable.com/
 
 ## Tables
 
@@ -33,6 +33,7 @@ t.add_computed_column(
 
 ```python
 results = t.where(t.score > 0.8).order_by(t.score, asc=False).limit(10).select(t.title).collect()
+page2 = t.order_by(t.score).limit(10, offset=10).collect()
 df = t.collect().to_pandas()
 ```
 
@@ -71,7 +72,21 @@ def search(q: str):
 
 ## Providers
 
-All in `pixeltable.functions.*`: OpenAI (`chat_completions`, `embeddings`, `image_generations`, `speech`, `transcriptions`), Anthropic (`messages`, `invoke_tools`), Gemini (`generate_content`), HuggingFace (`clip`, `sentence_transformer`), Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, OpenRouter, Replicate, Voyage AI, Bedrock, Twelve Labs.
+All in `pixeltable.functions.*`:
+
+**Chat**: OpenAI (`chat_completions`), Anthropic (`messages`), Gemini (`generate_content`), Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, OpenRouter, Bedrock (`converse`), Fabric, llama.cpp (`create_chat_completion`).
+
+**Embeddings**: OpenAI (`embeddings`), HuggingFace (`clip`, `sentence_transformer`), Jina (`embeddings`), Voyage AI (`embed`), Ollama, Together, Fireworks, Mistral.
+
+**Image gen**: BFL FLUX (`generate`, `edit`), Reve (`create`, `edit`), OpenAI DALL-E (`image_generations`), fal.ai (`run`).
+
+**Video gen**: RunwayML (`text_to_video`, `image_to_video`).
+
+**Transcription**: OpenAI (`transcriptions`), Whisper local (`transcribe`), WhisperX (`transcribe` + diarization).
+
+**Detection**: HuggingFace DETR (`detr_for_object_detection`), YOLOX (`yolox`).
+
+**Output patterns**: OpenAI-compatible → `.choices[0].message.content`. Anthropic → `.content[0].text`.
 
 ## Agent Pipeline
 
@@ -80,11 +95,14 @@ from pixeltable.functions.anthropic import messages, invoke_tools
 tools = pxt.tools(my_udf, my_query)
 agent.add_computed_column(
     response=messages(model='claude-sonnet-4-20250514',
-        messages=[{'role': 'user', 'content': agent.prompt}],
+        messages=[{'role': 'user', 'content': [{'type': 'text', 'text': agent.prompt}]}],
         tools=tools, tool_choice=tools.choice(required=True),
-        max_tokens=1024), if_exists='ignore')
+        max_tokens=1024,
+        model_kwargs={'system': agent.system_prompt}), if_exists='ignore')
 agent.add_computed_column(tool_output=invoke_tools(tools, agent.response), if_exists='ignore')
 ```
+
+`invoke_tools` also available for: `openai`, `groq`, `gemini`, `bedrock`.
 
 ## Rules
 
@@ -92,4 +110,6 @@ agent.add_computed_column(tool_output=invoke_tools(tools, agent.response), if_ex
 - FastAPI endpoints: `def` not `async def` (Pixeltable is synchronous)
 - Pixeltable IS the data layer — no ORM needed
 - Use `on_error='ignore'` for fault-tolerant inserts
+- Retry failed columns: `t.recompute_columns(columns=['col'], where=t.col.errortype != None)`
+- Anthropic messages: use `[{'type': 'text', 'text': val}]` content blocks
 - LLM docs: [pixeltable.com/llms.txt](https://www.pixeltable.com/llms.txt) | [docs llms.txt](https://docs.pixeltable.com/llms.txt) | [llms-full.txt](https://docs.pixeltable.com/llms-full.txt)

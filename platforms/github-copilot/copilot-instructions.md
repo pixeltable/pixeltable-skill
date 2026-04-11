@@ -2,7 +2,7 @@
 
 Pixeltable is an open-source Python library providing declarative data infrastructure for multimodal AI applications. It unifies storage, transformation, indexing, and retrieval across images, video, audio, and documents in a table-based interface.
 
-**Install:** `pip install pixeltable`  
+**Install:** `pip install pixeltable` (requires Python >= 3.10)
 **Docs:** https://docs.pixeltable.com/ | **GitHub:** https://github.com/pixeltable/pixeltable
 
 ## Core Patterns
@@ -74,6 +74,7 @@ t.add_computed_column(upper_title=t.title.upper(), if_exists='ignore')
 results = t.select(t.title, t.score).collect()
 results = t.where(t.score > 0.8).select(t.title).collect()
 results = t.order_by(t.score, asc=False).limit(10).collect()
+page2 = t.order_by(t.score).limit(10, offset=10).collect()
 df = t.collect().to_pandas()
 
 # To Pydantic models (for API responses)
@@ -141,15 +142,16 @@ tools = pxt.tools(web_search, search_docs)
 agent = pxt.create_table('project.agent', {
     'prompt': pxt.String, 'timestamp': pxt.Timestamp,
     'system_prompt': pxt.String, 'max_tokens': pxt.Int,
+    'temperature': pxt.Float,
 }, if_exists='ignore')
 
 agent.add_computed_column(
     response=messages(
         model='claude-sonnet-4-20250514',
-        messages=[{'role': 'user', 'content': agent.prompt}],
+        messages=[{'role': 'user', 'content': [{'type': 'text', 'text': agent.prompt}]}],
         tools=tools, tool_choice=tools.choice(required=True),
         max_tokens=agent.max_tokens,
-        model_kwargs={'system': agent.system_prompt},
+        model_kwargs={'system': agent.system_prompt, 'temperature': agent.temperature},
     ), if_exists='ignore')
 
 agent.add_computed_column(
@@ -167,17 +169,23 @@ Built-in functions in `pixeltable.functions.*`:
 |----------|--------|---------------|
 | OpenAI | `openai` | `chat_completions`, `embeddings`, `image_generations`, `speech`, `transcriptions` |
 | Anthropic | `anthropic` | `messages`, `invoke_tools` |
-| Gemini | `gemini` | `generate_content` |
+| Gemini | `gemini` | `generate_content`, `invoke_tools` |
 | Hugging Face | `huggingface` | `clip`, `sentence_transformer`, `detr_for_object_detection` |
 | Together | `together` | `chat_completions`, `embeddings`, `image_generations` |
 | Fireworks | `fireworks` | `chat_completions`, `embeddings` |
 | Ollama | `ollama` | `chat_completions`, `embeddings` |
 | Mistral | `mistralai` | `chat_completions`, `embeddings` |
-| Groq | `groq` | `chat_completions` |
+| Groq | `groq` | `chat_completions`, `invoke_tools` |
 | DeepSeek | `deepseek` | `chat_completions` |
 | OpenRouter | `openrouter` | `chat_completions` |
+| Bedrock | `bedrock` | `converse`, `invoke_tools` |
+| Jina AI | `jina` | `embeddings`, `rerank` |
+| BFL FLUX | `bfl` | `generate`, `edit`, `expand`, `fill` |
+| RunwayML | `runwayml` | `text_to_video`, `image_to_video` |
 
-Also: Replicate, Voyage AI, Bedrock, Twelve Labs.
+Also: Replicate, Voyage AI, Twelve Labs, fal.ai, Reve, Fabric, llama.cpp, Whisper, WhisperX, YOLOX.
+
+**Output patterns**: OpenAI-compatible → `.choices[0].message.content`. Anthropic → `.content[0].text`. Image generation (BFL, Reve) → returns `pxt.Image` directly.
 
 ## Import/Export
 
@@ -187,6 +195,8 @@ t = pxt.create_table('dir.data', source='data.csv',
     schema_overrides={'image_col': pxt.Image})
 
 from pixeltable.io import import_huggingface_dataset, import_pandas, export_parquet
+from pixeltable.io.sql import export_sql
+export_sql(t, 'table_name', db_connect_str='sqlite:///data.db')
 ```
 
 ## Critical Rules
@@ -194,8 +204,10 @@ from pixeltable.io import import_huggingface_dataset, import_pandas, export_parq
 - **Always** use `if_exists='ignore'` for idempotent operations
 - Use `on_error='ignore'` for fault-tolerant inserts
 - Error inspection: `t.where(t.col.errortype != None).select(t.col.errormsg).collect()`
+- Retry failed columns: `t.recompute_columns(columns=['col'], where=t.col.errortype != None)`
 - FastAPI endpoints: use `def` not `async def` (Pixeltable is synchronous)
 - Pixeltable IS the data layer — no ORM needed
+- Anthropic messages use list-of-blocks format: `[{'type': 'text', 'text': val}]`
 
 ## Resources
 

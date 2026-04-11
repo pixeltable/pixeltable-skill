@@ -829,6 +829,115 @@ t.add_computed_column(
 
 Supported providers: Amazon S3, Google Cloud Storage (`gs://`), Azure Blob Storage (`wasbs://`), Cloudflare R2, Backblaze B2, Tigris.
 
+## Common Pitfalls
+
+### Deprecated/Wrong Imports
+
+```python
+# WRONG — openai.vision does not exist
+from pixeltable.functions.openai import vision
+description = vision(prompt='Describe', image=t.image)
+
+# CORRECT — use chat_completions with multimodal messages
+from pixeltable.functions.openai import chat_completions
+description = chat_completions(
+    messages=[{
+        'role': 'user',
+        'content': [
+            {'type': 'text', 'text': 'Describe this image.'},
+            {'type': 'image_url', 'image_url': {'url': t.image}}
+        ]
+    }],
+    model='gpt-4o-mini'
+).choices[0].message.content
+
+# WRONG — FrameIterator class import
+from pixeltable.iterators import FrameIterator
+pxt.create_view('v', t, iterator=FrameIterator.create(video=t.video, fps=1))
+
+# CORRECT — function import
+from pixeltable.functions.video import frame_iterator
+pxt.create_view('v', t, iterator=frame_iterator(t.video, fps=1), if_exists='ignore')
+```
+
+### Cast to String Before Embedding
+
+AI functions often return `Json` or complex objects. Embedding indexes require `String` columns:
+
+```python
+# WRONG — transcriptions returns a Json object, not a String
+t.add_computed_column(transcript=openai.transcriptions(audio=t.audio, model='whisper-1'), if_exists='ignore')
+t.add_embedding_index('transcript', embedding=embed_fn)  # silently fails
+
+# CORRECT — extract .text and cast
+t.add_computed_column(
+    transcript=openai.transcriptions(audio=t.audio, model='whisper-1').text.astype(pxt.String),
+    if_exists='ignore')
+t.add_embedding_index('transcript', embedding=embed_fn, if_exists='ignore')
+```
+
+This applies to any computed column used as an embedding source — always ensure it evaluates to `pxt.String`.
+
+### The `if_exists='ignore'` Trap
+
+If you create a column with buggy logic, fixing the code and re-running does **NOT** update the column. `if_exists='ignore'` silently skips the already-existing (broken) column:
+
+```python
+# Bug: wrong model name
+t.add_computed_column(summary=openai.chat_completions(..., model='nonexistent'), if_exists='ignore')
+
+# Fixing the code and re-running does NOTHING — old column persists
+t.add_computed_column(summary=openai.chat_completions(..., model='gpt-4o-mini'), if_exists='ignore')
+
+# FIX: drop the column first, then recreate
+t.drop_column('summary')
+t.add_computed_column(summary=openai.chat_completions(..., model='gpt-4o-mini'), if_exists='ignore')
+
+# OR: wipe the entire namespace during development
+pxt.drop_dir('my_project', force=True)
+```
+
+### Image Serialization in Messages
+
+Never try to JSON-serialize `pxt.Image` objects directly. Use the `image_url` content block pattern:
+
+```python
+# WRONG — "Image is not JSON serializable"
+messages=[{'role': 'user', 'content': [{'type': 'image', 'data': t.image}]}]
+
+# CORRECT — Pixeltable handles the image_url reference internally
+messages=[{
+    'role': 'user',
+    'content': [
+        {'type': 'text', 'text': 'Describe this.'},
+        {'type': 'image_url', 'image_url': {'url': t.image}}
+    ]
+}]
+```
+
+### Schema Corruption Recovery
+
+If you encounter `sqlalchemy.IntegrityError` or Postgres catalog errors:
+
+```bash
+pip install -U pixeltable        # update to latest version
+rm -rf ~/.pixeltable              # wipe local catalog (DELETES ALL LOCAL DATA)
+```
+
+Then re-run your setup script to recreate tables from scratch.
+
+### Similarity Search Keyword
+
+Always use the `string=` keyword argument:
+
+```python
+# Ambiguous — may not work as expected
+sim = t.content.similarity(query_text)
+
+# Explicit — always correct
+sim = t.content.similarity(string=query_text)
+```
+
 ## Performance Tips
 
 - Batch inserts for efficiency
@@ -841,3 +950,5 @@ Supported providers: Amazon S3, Google Cloud Storage (`gs://`), Azure Blob Stora
 - Configure rate limits in `config.toml` to avoid 429 errors on provider APIs
 - Use `recompute_columns(where=t.col.errortype != None)` to retry only failed rows
 - Use `add_btree_index()` on columns used frequently in `where()` filters
+- Cast AI function outputs to `pxt.String` with `.astype(pxt.String)` before embedding indexing
+- During development, use `pxt.drop_dir('dir', force=True)` to reset schema cleanly

@@ -60,6 +60,7 @@ Jump to the right section based on what you're building:
 | Build a FastAPI web app | [workflows.md → FastAPI App Pattern](reference/workflows.md#fastapi-app-pattern) |
 | Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](reference/core-api.md#udfs) |
 | Use `pxt.tools()` and `invoke_tools()` for agents | **Tool-Calling Agent Pipeline** (below) and [core-api.md → Tools and Agents](reference/core-api.md#tools-and-agents) |
+| Avoid common mistakes (wrong imports, broken schemas, serialization) | **Common Pitfalls** (below) and [core-api.md → Common Pitfalls](reference/core-api.md#common-pitfalls) |
 | Look up a specific provider's import and output shape | [providers.md → Quick Reference](reference/providers.md#quick-reference) |
 
 ## Core Concepts
@@ -439,6 +440,84 @@ error_rows = t.where(t.summary.errortype != None).select(t.title, t.summary.erro
 
 # Retry failed computed columns (e.g., after fixing rate limits or API keys)
 t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
+```
+
+## Common Pitfalls
+
+**1. `openai.vision` does not exist.** Use `openai.chat_completions` with multimodal messages instead:
+
+```python
+# WRONG — will raise AttributeError
+description = openai.vision(prompt='Describe this', image=t.image, model='gpt-4o-mini')
+
+# CORRECT — use chat_completions with image_url content blocks
+description = openai.chat_completions(
+    messages=[{
+        'role': 'user',
+        'content': [
+            {'type': 'text', 'text': 'Describe this image concisely.'},
+            {'type': 'image_url', 'image_url': {'url': t.image}}
+        ]
+    }],
+    model='gpt-4o-mini'
+).choices[0].message.content
+```
+
+**2. `FrameIterator` import is wrong.** Use the function form from `pixeltable.functions.video`:
+
+```python
+# WRONG
+from pixeltable.iterators import FrameIterator
+pxt.create_view('dir.frames', t, iterator=FrameIterator.create(video=t.video, fps=1))
+
+# CORRECT
+from pixeltable.functions.video import frame_iterator
+pxt.create_view('dir.frames', t, iterator=frame_iterator(t.video, fps=1), if_exists='ignore')
+```
+
+**3. Cast to String before embedding indexing.** AI functions often return `Json` or complex objects. Embedding indexes expect `String` columns. Use `.astype(pxt.String)`:
+
+```python
+# WRONG — embedding index silently fails on non-String columns
+t.add_computed_column(transcript=openai.transcriptions(audio=t.audio, model='whisper-1'), if_exists='ignore')
+t.add_embedding_index('transcript', embedding=embed_fn)  # won't work — transcript is Json
+
+# CORRECT — extract .text and cast to String
+t.add_computed_column(
+    transcript=openai.transcriptions(audio=t.audio, model='whisper-1').text.astype(pxt.String),
+    if_exists='ignore')
+t.add_embedding_index('transcript', embedding=embed_fn, if_exists='ignore')
+```
+
+**4. The `if_exists='ignore'` trap.** If you create a column with buggy logic, fixing the Python code and re-running does NOT update the column — `if_exists='ignore'` silently skips the already-existing (broken) column. You must drop and recreate:
+
+```python
+# After fixing a bug in a computed column expression:
+t.drop_column('broken_col')
+t.add_computed_column(broken_col=fixed_expression, if_exists='ignore')
+
+# Or for a full reset during development:
+pxt.drop_dir('my_project', force=True)
+# then re-run the entire setup script
+```
+
+**5. Don't pass `pxt.Image` objects in raw dicts.** Manually constructing message dicts with image column references works, but only through the `image_url` content block pattern (see #1 above). Never try to JSON-serialize a `pxt.Image` directly.
+
+**6. Schema corruption recovery.** If you see `sqlalchemy.IntegrityError` or catalog errors, the quickest fix is:
+
+```bash
+pip install -U pixeltable   # update to latest
+rm -rf ~/.pixeltable         # wipe local catalog (DELETES ALL DATA)
+```
+
+**7. Always use `string=` keyword for similarity.** Positional args may silently fail:
+
+```python
+# WRONG — may not work as expected
+sim = t.content.similarity(query_text)
+
+# CORRECT — always use keyword argument
+sim = t.content.similarity(string=query_text)
 ```
 
 ## Table Management

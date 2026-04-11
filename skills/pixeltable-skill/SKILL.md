@@ -23,11 +23,9 @@ metadata:
 
 ## What is Pixeltable?
 
-Pixeltable is an open-source Python library providing **declarative data infrastructure** for building multimodal AI applications. It unifies data storage, transformation, indexing, retrieval, and orchestration of data across images, video, audio, and documents in a single table-based interface.
+Open-source Python library for **declarative multimodal AI data infrastructure** — tables, computed columns, embedding indexes, and 25+ AI providers in one interface.
 
-**Install:** `pip install pixeltable` (requires Python >= 3.10)
-
-**Docs:** https://docs.pixeltable.com/ | **GitHub:** https://github.com/pixeltable/pixeltable
+`pip install pixeltable` (Python >= 3.10) | [Docs](https://docs.pixeltable.com/) | [GitHub](https://github.com/pixeltable/pixeltable)
 
 ## Task Router
 
@@ -116,31 +114,14 @@ t = pxt.create_table('my_project.items', {
 ### Inserting Data
 
 ```python
-# Multiple rows
-t.insert([
-    {'title': 'Doc 1', 'content': 'Hello world', 'score': 0.95},
-    {'title': 'Doc 2', 'content': 'Goodbye world', 'score': 0.85},
-])
-
-# Single row (keyword syntax)
-t.insert(title='Doc 3', content='Another doc', score=0.75)
-
-# From file
-t.insert(source='path/to/data.csv')
-
-# From a Pydantic model (great for FastAPI integration)
-from pydantic import BaseModel
-class ItemRow(BaseModel):
-    title: str
-    content: str
-    score: float
-
-t.insert([ItemRow(title='Doc 4', content='From Pydantic', score=0.9)])
+t.insert([{'title': 'Doc 1', 'content': 'Hello world', 'score': 0.95}])  # list of dicts
+t.insert(title='Doc 2', content='Single row', score=0.75)                 # keyword syntax
+t.insert(source='path/to/data.csv')                                       # from file
 ```
 
 ### Computed Columns
 
-Transformations that run automatically on new/updated data. The heart of Pixeltable's declarative approach.
+Auto-run on insert. Chain AI providers, UDFs, or expressions:
 
 ```python
 from pixeltable.functions.openai import chat_completions
@@ -164,21 +145,12 @@ results = t.where(t.score > 0.8).select(t.title, t.content).collect()
 results = t.order_by(t.score, asc=False).limit(10).select(t.title).collect()
 count = t.count()
 df = t.select(t.title, t.score).collect().to_pandas()
-
-# Convert results to Pydantic models (great for API responses)
-from pydantic import BaseModel
-class SearchResult(BaseModel):
-    title: str
-    score: float
-
-items = list(
-    t.select(title=t.title, score=t.score).collect().to_pydantic(SearchResult)
-)
+items = list(t.select(title=t.title, score=t.score).collect().to_pydantic(MyModel))
 ```
 
 ### Views and Iterators
 
-Views split rows into multiple sub-rows. Essential for document chunking, video frame extraction, audio splitting, and text splitting.
+Split rows into sub-rows (chunking, frame extraction, audio splitting):
 
 ```python
 from pixeltable.functions.document import document_splitter
@@ -273,9 +245,7 @@ def safe_length(text: str | None) -> str:
 t.add_computed_column(cleaned=clean_text(t.content), if_exists='ignore')
 ```
 
-### Query Functions
-
-Reusable query functions that can also be used as agent tools:
+### Query Functions (also usable as agent tools)
 
 ```python
 @pxt.query
@@ -288,20 +258,15 @@ results = search_documents('machine learning').collect()
 
 ## Tool-Calling Agent Pipeline
 
-Pixeltable can orchestrate a full tool-calling agent as a chain of computed columns. Inserting a row triggers the entire pipeline automatically.
+Inserting a row triggers the entire computed column chain automatically.
 
 ```python
 import pixeltable as pxt
 from pixeltable.functions.anthropic import messages, invoke_tools
 from datetime import datetime
 
-# 1. Define tools from UDFs and @pxt.query functions (defined earlier via @pxt.udf / @pxt.query)
-tools = pxt.tools(
-    web_search,            # @pxt.udf
-    search_documents,      # @pxt.query
-)
+tools = pxt.tools(web_search, search_documents)  # @pxt.udf + @pxt.query
 
-# Helper UDF to assemble context for the final LLM call
 @pxt.udf
 def assemble_context(question: str, tool_outputs: list | None, doc_context: list | None) -> str:
     tool_str = str(tool_outputs) if tool_outputs else 'N/A'
@@ -310,63 +275,34 @@ def assemble_context(question: str, tool_outputs: list | None, doc_context: list
     ) or 'N/A'
     return f"QUESTION: {question}\n\n[TOOL RESULTS]\n{tool_str}\n\n[DOCUMENTS]\n{doc_str}"
 
-# 2. Create the agent table
 agent = pxt.create_table('my_project.agent', {
-    'prompt': pxt.String,
-    'timestamp': pxt.Timestamp,
-    'system_prompt': pxt.String,
-    'max_tokens': pxt.Int,
-    'temperature': pxt.Float,
+    'prompt': pxt.String, 'timestamp': pxt.Timestamp,
+    'system_prompt': pxt.String, 'max_tokens': pxt.Int, 'temperature': pxt.Float,
 }, if_exists='ignore')
 
-# 3. Initial LLM call with tools
-agent.add_computed_column(
-    initial_response=messages(
-        model='claude-sonnet-4-20250514',
-        messages=[{'role': 'user', 'content': [{'type': 'text', 'text': agent.prompt}]}],
-        tools=tools,
-        tool_choice=tools.choice(required=True),
-        max_tokens=agent.max_tokens,
-        model_kwargs={'system': agent.system_prompt, 'temperature': agent.temperature},
-    ),
-    if_exists='ignore',
-)
+# LLM selects tools → execute tools → RAG retrieval → assemble → final answer
+agent.add_computed_column(initial_response=messages(
+    model='claude-sonnet-4-20250514',
+    messages=[{'role': 'user', 'content': [{'type': 'text', 'text': agent.prompt}]}],
+    tools=tools, tool_choice=tools.choice(required=True),
+    max_tokens=agent.max_tokens,
+    model_kwargs={'system': agent.system_prompt, 'temperature': agent.temperature},
+), if_exists='ignore')
 
-# 4. Execute the tools the LLM chose
-agent.add_computed_column(
-    tool_output=invoke_tools(tools, agent.initial_response),
-    if_exists='ignore',
-)
+agent.add_computed_column(tool_output=invoke_tools(tools, agent.initial_response), if_exists='ignore')
+agent.add_computed_column(doc_context=search_documents(agent.prompt), if_exists='ignore')
+agent.add_computed_column(context=assemble_context(agent.prompt, agent.tool_output, agent.doc_context), if_exists='ignore')
 
-# 5. RAG context retrieval
-agent.add_computed_column(
-    doc_context=search_documents(agent.prompt),
-    if_exists='ignore',
-)
+agent.add_computed_column(final_response=messages(
+    model='claude-sonnet-4-20250514',
+    messages=[{'role': 'user', 'content': [{'type': 'text', 'text': agent.context}]}],
+    max_tokens=agent.max_tokens,
+    model_kwargs={'system': agent.system_prompt, 'temperature': agent.temperature},
+), if_exists='ignore')
 
-# 6. Final LLM call with all context
-agent.add_computed_column(
-    context=assemble_context(agent.prompt, agent.tool_output, agent.doc_context),
-    if_exists='ignore',
-)
+agent.add_computed_column(answer=agent.final_response.content[0].text, if_exists='ignore')
 
-agent.add_computed_column(
-    final_response=messages(
-        model='claude-sonnet-4-20250514',
-        messages=[{'role': 'user', 'content': [{'type': 'text', 'text': agent.context}]}],
-        max_tokens=agent.max_tokens,
-        model_kwargs={'system': agent.system_prompt, 'temperature': agent.temperature},
-    ),
-    if_exists='ignore',
-)
-
-# 7. Extract answer
-agent.add_computed_column(
-    answer=agent.final_response.content[0].text,
-    if_exists='ignore',
-)
-
-# Usage: insert a row to trigger the full pipeline
+# Usage
 agent.insert([{'prompt': 'What is quantum computing?', 'timestamp': datetime.now(),
                'system_prompt': 'You are a helpful assistant.', 'max_tokens': 1024}])
 result = agent.where(agent.prompt == 'What is quantum computing?').select(agent.answer).collect()
@@ -430,105 +366,32 @@ from pixeltable.io import export_parquet
 export_parquet(t, 'output/')
 ```
 
-## Idempotent Operations
+## Idempotent Operations and Error Handling
 
-CRITICAL: Always use idempotent flags to prevent errors on re-runs:
-
-```python
-pxt.create_dir('my_dir', if_exists='ignore')
-pxt.create_table('my_dir.table', schema, if_exists='ignore')
-t.add_computed_column(col=expr, if_exists='ignore')
-t.add_embedding_index('col', embedding=fn, if_exists='ignore')
-```
-
-## Error Handling and Recomputation
+CRITICAL: Always use `if_exists='ignore'` on every `create_*` and `add_*` call.
 
 ```python
+# Fault-tolerant inserts
 status = t.insert(rows, on_error='ignore')
-print(f'Inserted: {status.num_rows}, Errors: {status.num_excs}')
-error_rows = t.where(t.summary.errortype != None).select(t.title, t.summary.errormsg).collect()
-
-# Retry failed computed columns (e.g., after fixing rate limits or API keys)
+# Inspect errors
+t.where(t.summary.errortype != None).select(t.title, t.summary.errormsg).collect()
+# Retry failed columns
 t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
 ```
 
 ## Common Pitfalls
 
-**1. `openai.vision` does not exist.** Use `openai.chat_completions` with multimodal messages instead:
+| # | Wrong | Correct |
+|---|-------|---------|
+| 1 | `openai.vision(prompt=..., image=t.image)` | `openai.chat_completions(messages=[{'role':'user','content':[{'type':'text','text':'...'}, {'type':'image_url','image_url':{'url':t.image}}]}], model='gpt-4o-mini').choices[0].message.content` |
+| 2 | `from pixeltable.iterators import FrameIterator` | `from pixeltable.functions.video import frame_iterator` |
+| 3 | `t.add_embedding_index('transcript', ...)` on Json col | Extract `.text.astype(pxt.String)` first, then index |
+| 4 | Fix code + re-run with `if_exists='ignore'` | Must `t.drop_column('col')` then recreate — re-run is a no-op |
+| 5 | `{'type':'image', 'data': t.image}` in messages | Use `{'type':'image_url', 'image_url':{'url': t.image}}` |
+| 6 | `t.content.similarity(query)` (positional) | `t.content.similarity(string=query)` (keyword) |
+| 7 | Schema corruption (`IntegrityError`) | `pip install -U pixeltable && rm -rf ~/.pixeltable` |
 
-```python
-# WRONG — will raise AttributeError
-description = openai.vision(prompt='Describe this', image=t.image, model='gpt-4o-mini')
-
-# CORRECT — use chat_completions with image_url content blocks
-description = openai.chat_completions(
-    messages=[{
-        'role': 'user',
-        'content': [
-            {'type': 'text', 'text': 'Describe this image concisely.'},
-            {'type': 'image_url', 'image_url': {'url': t.image}}
-        ]
-    }],
-    model='gpt-4o-mini'
-).choices[0].message.content
-```
-
-**2. `FrameIterator` import is wrong.** Use the function form from `pixeltable.functions.video`:
-
-```python
-# WRONG
-from pixeltable.iterators import FrameIterator
-pxt.create_view('dir.frames', t, iterator=FrameIterator.create(video=t.video, fps=1))
-
-# CORRECT
-from pixeltable.functions.video import frame_iterator
-pxt.create_view('dir.frames', t, iterator=frame_iterator(t.video, fps=1), if_exists='ignore')
-```
-
-**3. Cast to String before embedding indexing.** AI functions often return `Json` or complex objects. Embedding indexes expect `String` columns. Use `.astype(pxt.String)`:
-
-```python
-# WRONG — embedding index silently fails on non-String columns
-t.add_computed_column(transcript=openai.transcriptions(audio=t.audio, model='whisper-1'), if_exists='ignore')
-t.add_embedding_index('transcript', embedding=embed_fn)  # won't work — transcript is Json
-
-# CORRECT — extract .text and cast to String
-t.add_computed_column(
-    transcript=openai.transcriptions(audio=t.audio, model='whisper-1').text.astype(pxt.String),
-    if_exists='ignore')
-t.add_embedding_index('transcript', embedding=embed_fn, if_exists='ignore')
-```
-
-**4. The `if_exists='ignore'` trap.** If you create a column with buggy logic, fixing the Python code and re-running does NOT update the column — `if_exists='ignore'` silently skips the already-existing (broken) column. You must drop and recreate:
-
-```python
-# After fixing a bug in a computed column expression:
-t.drop_column('broken_col')
-t.add_computed_column(broken_col=fixed_expression, if_exists='ignore')
-
-# Or for a full reset during development:
-pxt.drop_dir('my_project', force=True)
-# then re-run the entire setup script
-```
-
-**5. Don't pass `pxt.Image` objects in raw dicts.** Manually constructing message dicts with image column references works, but only through the `image_url` content block pattern (see #1 above). Never try to JSON-serialize a `pxt.Image` directly.
-
-**6. Schema corruption recovery.** If you see `sqlalchemy.IntegrityError` or catalog errors, the quickest fix is:
-
-```bash
-pip install -U pixeltable   # update to latest
-rm -rf ~/.pixeltable         # wipe local catalog (DELETES ALL DATA)
-```
-
-**7. Always use `string=` keyword for similarity.** Positional args may silently fail:
-
-```python
-# WRONG — may not work as expected
-sim = t.content.similarity(query_text)
-
-# CORRECT — always use keyword argument
-sim = t.content.similarity(string=query_text)
-```
+Full examples in [core-api.md → Common Pitfalls](reference/core-api.md#common-pitfalls).
 
 ## Table Management
 
@@ -550,45 +413,28 @@ t.delete(where=t.is_active == False)
 
 ## Building Apps with Pixeltable
 
-When building production applications (e.g., FastAPI + React), follow these patterns:
+- Pixeltable IS the data layer — no ORM, no SQLAlchemy
+- FastAPI endpoints: use `def` not `async def` (Pixeltable is synchronous)
+- Business logic in `@pxt.udf` / `@pxt.query`, not in endpoint handlers
+- Use `.to_pydantic(Model)` for type-safe API responses
+- Insert a row → entire computed column chain runs automatically
 
-**Pixeltable IS the data layer** — no ORM, no SQLAlchemy. Pixeltable handles storage, indexing, transformation, and retrieval.
+Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) | [workflows.md → FastAPI](reference/workflows.md#fastapi-app-pattern)
 
-**Schema-as-code** — Define the entire data model in a single setup file. Run once to initialize.
+## Resources
 
-**Sync endpoints** — FastAPI endpoints should use `def` (not `async def`). Pixeltable operations are synchronous; Uvicorn runs them in a thread pool automatically.
+- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — FastAPI + React reference app with deployment templates
+- [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) — Explore Pixeltable tables via MCP
+- [LLM Docs](https://docs.pixeltable.com/llms-full.txt) — Complete documentation as plain text | [llms.txt](https://www.pixeltable.com/llms.txt)
 
-**Thin routers** — Business logic lives in `@pxt.udf` and `@pxt.query` functions, not in endpoint handlers. Routers just insert rows, collect results, and return responses.
+## Reference Files
 
-**`to_pydantic()` for responses** — Convert Pixeltable query results directly to Pydantic models for type-safe API responses.
-
-**Insert-triggers-pipeline** — For the agent pattern, inserting a row triggers the entire computed column chain. The endpoint just inserts and reads back the answer.
-
-For a complete reference implementation, see the [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit).
-
-## Companion Resources
-
-- **Starter Kit** — [pixeltable/pixeltable-starter-kit](https://github.com/pixeltable/pixeltable-starter-kit): Full-stack FastAPI + React reference app with multimodal search, document/image/video pipelines, tool-calling agent, and deployment templates (Docker, Kubernetes, Terraform).
-- **MCP Server** — [pixeltable/mcp-server-pixeltable-developer](https://github.com/pixeltable/mcp-server-pixeltable-developer): Interactive exploration of Pixeltable tables, queries, and Python REPL via Model Context Protocol.
-- **Core AGENTS.md** — [pixeltable/pixeltable/AGENTS.md](https://github.com/pixeltable/pixeltable/blob/main/AGENTS.md): Full SDK reference for contributing to Pixeltable itself.
-- **LLM-Optimized Docs** — For deeper context beyond this skill, fetch these URLs directly:
-  - [pixeltable.com/llms.txt](https://www.pixeltable.com/llms.txt) — Product overview and site map
-  - [docs.pixeltable.com/llms.txt](https://docs.pixeltable.com/llms.txt) — Documentation index
-  - [docs.pixeltable.com/llms-full.txt](https://docs.pixeltable.com/llms-full.txt) — Complete documentation (large)
-  - Any docs page as markdown: append `.md` to any URL (e.g., `https://docs.pixeltable.com/overview/pixeltable.md`)
-
-## Additional Reference
-
-**Core API**: Tables, querying, views, embeddings, UDFs, tools, config → See [reference/core-api.md](reference/core-api.md)
-
-**AI Providers**: OpenAI, Anthropic, Gemini, HuggingFace, Together, Fireworks, Ollama, Mistral, Groq, DeepSeek, OpenRouter, Whisper, Voyage AI → See [reference/providers.md](reference/providers.md)
-
-**Workflows**: RAG, video analysis, image classification, audio transcription, multi-provider comparison, tool-calling agents, FastAPI apps, export → See [reference/workflows.md](reference/workflows.md)
-
-**Video RAG Agent**: Combined video processing + transcript/frame retrieval + tool-calling agent in one pipeline → See [reference/video-rag-agents.md](reference/video-rag-agents.md)
-
-**Agent with Memory and MCP**: Persistent chat history, knowledge bank, user scoping, MCP tool integration, multi-provider invoke_tools → See [reference/agents-memory-mcp.md](reference/agents-memory-mcp.md)
-
-**ML Data Pipeline**: Ingest multimodal data, enrich with AI models, version with snapshots, export to PyTorch/Parquet/pandas → See [reference/ml-data-pipeline.md](reference/ml-data-pipeline.md)
-
-**Agentic Patterns**: Prompt chaining, routing, parallelization, tool use, evaluator-optimizer, orchestrator-worker, ReAct, planning → See [reference/agentic-patterns.md](reference/agentic-patterns.md)
+| File | Coverage |
+|------|----------|
+| [core-api.md](reference/core-api.md) | Tables, querying, views, embeddings, UDFs, tools, B-tree indexes, recompute, config, data sharing, SQL export |
+| [providers.md](reference/providers.md) | Quick-reference table + full examples for all 25+ AI providers |
+| [workflows.md](reference/workflows.md) | RAG, video analysis, image classification, audio, multi-provider, agent, FastAPI, export |
+| [video-rag-agents.md](reference/video-rag-agents.md) | Video + transcript/frame retrieval + tool-calling agent |
+| [agents-memory-mcp.md](reference/agents-memory-mcp.md) | Agent with persistent memory, MCP integration, multi-provider invoke_tools |
+| [ml-data-pipeline.md](reference/ml-data-pipeline.md) | Ingest, enrich, version, export to PyTorch/Parquet/pandas |
+| [agentic-patterns.md](reference/agentic-patterns.md) | 6 architectural patterns + 2 reasoning strategies |

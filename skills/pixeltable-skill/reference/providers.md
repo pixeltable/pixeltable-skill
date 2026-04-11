@@ -43,37 +43,9 @@ Use this table to find the correct import, function, and output accessor for eac
 
 ---
 
-## Contents
+## Full Examples
 
-- [OpenAI](#openai) (chat, embeddings, DALL-E, TTS, transcription)
-- [Anthropic](#anthropic) (messages, tool calling)
-- [Google Gemini](#google-gemini)
-- [Together AI](#together-ai)
-- [Fireworks](#fireworks)
-- [Ollama](#ollama-local) (local inference)
-- [Mistral AI](#mistral-ai)
-- [Groq](#groq)
-- [DeepSeek](#deepseek)
-- [OpenRouter](#openrouter)
-- [Hugging Face](#hugging-face) (CLIP, Sentence Transformers, DETR)
-- [Whisper](#whisper-local) (local transcription)
-- [WhisperX](#whisperx-local) (local transcription with speaker diarization)
-- [Voyage AI](#voyage-ai)
-- [Jina AI](#jina-ai) (embeddings, reranking)
-- [Twelve Labs](#twelve-labs) (video understanding)
-- [BFL FLUX](#bfl-flux) (image generation and editing)
-- [RunwayML](#runwayml) (video generation)
-- [fal.ai](#falai) (run any fal.ai model)
-- [Reve](#reve) (image generation)
-- [Microsoft Fabric](#microsoft-fabric) (Azure OpenAI via Fabric)
-- [llama.cpp](#llamacpp) (local GGUF models)
-- [Replicate](#replicate)
-- [Bedrock](#bedrock) (AWS)
-- [YOLOX](#yolox) (object detection)
-
----
-
-## OpenAI
+### OpenAI
 
 ### Chat Completions
 

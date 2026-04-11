@@ -113,53 +113,13 @@ page2 = t.order_by(t.col2).limit(10, offset=10).collect()
 sample = t.sample(n=100, seed=42).select(t.col1, t.col2).collect()
 ```
 
-### To Pandas
+### Conversions
 
 ```python
-df = t.select(t.col1, t.col2).collect().to_pandas()
-```
-
-### To Pydantic
-
-Convert query results directly to Pydantic models for API responses:
-
-```python
-from pydantic import BaseModel
-
-class ItemResponse(BaseModel):
-    title: str
-    score: float
-    content: str | None = None
-
-# Column names in select() must match Pydantic field names
-items = list(
-    t.select(title=t.title, score=t.score, content=t.content)
-    .collect()
-    .to_pydantic(ItemResponse)
-)
-```
-
-### Inserting Pydantic Models
-
-```python
-from pydantic import BaseModel
-from datetime import datetime
-
-class AgentRow(BaseModel):
-    prompt: str
-    timestamp: datetime
-    system_prompt: str = "You are a helpful assistant."
-    max_tokens: int = 1024
-
-row = AgentRow(prompt="Explain quantum computing", timestamp=datetime.now())
-t.insert([row])
-```
-
-### Head / Tail
-
-```python
+df = t.select(t.col1, t.col2).collect().to_pandas()                           # to pandas
+items = list(t.select(title=t.title, score=t.score).collect().to_pydantic(M))  # to Pydantic (names must match)
+t.insert([pydantic_model_instance])                                            # insert Pydantic models
 first_5 = t.head(5)
-last_5 = t.tail(5)
 ```
 
 ## Computed Columns
@@ -202,44 +162,15 @@ v = pxt.create_view('dir.active', t.where(t.is_active == True), if_exists='ignor
 ```python
 from pixeltable.functions.document import document_splitter
 
-# By token limit
+# Separators: 'token_limit', 'sentence', 'heading', 'page', or combine: 'page, sentence'
 chunks = pxt.create_view('dir.chunks', t,
     iterator=document_splitter(t.doc, separators='token_limit', limit=300),
     if_exists='ignore')
 
-# By sentence
-chunks = pxt.create_view('dir.sentences', t,
-    iterator=document_splitter(t.doc, separators='sentence'),
-    if_exists='ignore')
-
-# By heading
-chunks = pxt.create_view('dir.headings', t,
-    iterator=document_splitter(t.doc, separators='heading'),
-    if_exists='ignore')
-
-# By page (PDF)
-chunks = pxt.create_view('dir.pages', t,
-    iterator=document_splitter(t.doc, separators='page'),
-    if_exists='ignore')
-
-# Combined: page + sentence (recommended for PDFs)
+# With metadata extraction and image extraction (PDF)
 chunks = pxt.create_view('dir.chunks', t,
-    iterator=document_splitter(t.doc, separators='page, sentence'),
-    if_exists='ignore')
-
-# Combined: heading + token limit
-chunks = pxt.create_view('dir.chunks', t,
-    iterator=document_splitter(t.doc, separators='heading,token_limit', limit=500),
-    if_exists='ignore')
-
-# With metadata
-chunks = pxt.create_view('dir.chunks', t,
-    iterator=document_splitter(t.doc, separators='sentence', metadata='title,heading,page'),
-    if_exists='ignore')
-
-# With image extraction (PDF page separator only)
-chunks = pxt.create_view('dir.chunks', t,
-    iterator=document_splitter(t.doc, separators='page', elements=['text', 'image']),
+    iterator=document_splitter(t.doc, separators='page, sentence',
+        metadata='title,heading,page', elements=['text', 'image']),
     if_exists='ignore')
 ```
 
@@ -248,46 +179,22 @@ chunks = pxt.create_view('dir.chunks', t,
 ```python
 from pixeltable.functions.video import frame_iterator
 
-# All frames
-frames = pxt.create_view('dir.frames', t, iterator=frame_iterator(t.video), if_exists='ignore')
-
-# At specific FPS
 frames = pxt.create_view('dir.frames', t, iterator=frame_iterator(t.video, fps=1.0), if_exists='ignore')
-
-# Exact number of frames
-frames = pxt.create_view('dir.frames', t, iterator=frame_iterator(t.video, num_frames=10), if_exists='ignore')
-
-# Keyframes only (most efficient for visual search)
-frames = pxt.create_view('dir.frames', t, iterator=frame_iterator(t.video, keyframes_only=True), if_exists='ignore')
+# Options: fps=N, num_frames=N, keyframes_only=True
+# Output columns: frame (Image), frame_idx, pos_msec, pos_frame
 ```
 
-Output columns: `frame` (PIL Image), `frame_idx`, `pos_msec`, `pos_frame`
-
-### String Splitting
+### String / Audio Splitting
 
 ```python
 from pixeltable.functions.string import string_splitter
-
-# Split text into sentences
-sentences = pxt.create_view('dir.sentences', t,
-    iterator=string_splitter(text=t.content, separators='sentence'),
-    if_exists='ignore')
-```
-
-Output columns: `text`
-
-### Audio Splitting
-
-```python
 from pixeltable.functions.audio import audio_splitter
 
-# Split audio into 30-second chunks
+sentences = pxt.create_view('dir.sentences', t,
+    iterator=string_splitter(text=t.content, separators='sentence'), if_exists='ignore')
 audio_chunks = pxt.create_view('dir.audio_chunks', t,
-    iterator=audio_splitter(audio=t.audio, duration=30.0),
-    if_exists='ignore')
+    iterator=audio_splitter(audio=t.audio, duration=30.0), if_exists='ignore')
 ```
-
-Output columns: `audio_chunk`
 
 ## Built-in Image Functions
 
@@ -897,46 +804,20 @@ t.add_computed_column(summary=openai.chat_completions(..., model='gpt-4o-mini'),
 pxt.drop_dir('my_project', force=True)
 ```
 
-### Image Serialization in Messages
-
-Never try to JSON-serialize `pxt.Image` objects directly. Use the `image_url` content block pattern:
+### Other Pitfalls
 
 ```python
-# WRONG — "Image is not JSON serializable"
-messages=[{'role': 'user', 'content': [{'type': 'image', 'data': t.image}]}]
+# Image in messages: use image_url, never raw pxt.Image
+messages=[{'role': 'user', 'content': [
+    {'type': 'text', 'text': 'Describe.'},
+    {'type': 'image_url', 'image_url': {'url': t.image}}  # NOT {'type': 'image', 'data': t.image}
+]}]
 
-# CORRECT — Pixeltable handles the image_url reference internally
-messages=[{
-    'role': 'user',
-    'content': [
-        {'type': 'text', 'text': 'Describe this.'},
-        {'type': 'image_url', 'image_url': {'url': t.image}}
-    ]
-}]
+# Similarity: always use string= keyword
+sim = t.content.similarity(string=query_text)  # NOT .similarity(query_text)
 ```
 
-### Schema Corruption Recovery
-
-If you encounter `sqlalchemy.IntegrityError` or Postgres catalog errors:
-
-```bash
-pip install -U pixeltable        # update to latest version
-rm -rf ~/.pixeltable              # wipe local catalog (DELETES ALL LOCAL DATA)
-```
-
-Then re-run your setup script to recreate tables from scratch.
-
-### Similarity Search Keyword
-
-Always use the `string=` keyword argument:
-
-```python
-# Ambiguous — may not work as expected
-sim = t.content.similarity(query_text)
-
-# Explicit — always correct
-sim = t.content.similarity(string=query_text)
-```
+Schema corruption (`IntegrityError`): `pip install -U pixeltable && rm -rf ~/.pixeltable`
 
 ## Performance Tips
 

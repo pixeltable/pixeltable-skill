@@ -2,7 +2,7 @@
 
 A complete recipe for processing multimodal data (video, audio, images, documents) into training-ready datasets. Covers ingestion, enrichment with AI models, dataset versioning, and export to PyTorch, Parquet, and pandas.
 
-## Full Pipeline
+## Ingest Raw Data
 
 ```python
 import pixeltable as pxt
@@ -12,8 +12,6 @@ from pixeltable.functions.huggingface import clip, detr_for_object_detection
 from pixeltable.functions import image as pxt_image
 
 pxt.create_dir('ml_data', if_exists='ignore')
-
-# ── 1. Ingest raw data ──────────────────────────────────────────────
 
 # From local files, URLs, or cloud storage (S3, GCS, Azure)
 images = pxt.create_table('ml_data.images', {
@@ -39,19 +37,26 @@ from pixeltable.io import import_huggingface_dataset
 import datasets
 ds = datasets.load_dataset('cifar10', split='train[:500]')
 cifar = import_huggingface_dataset('ml_data.cifar', ds, if_exists='ignore')
+```
 
-# ── 2. Explore and sample ───────────────────────────────────────────
+## Explore and Sample
 
+```python
 # Quick look at the data
 first_5 = images.head(5)
 total = images.count()
 train_count = images.where(images.split == 'train').count()
 
-# ── 3. Enrich with AI models ────────────────────────────────────────
+# Random sample for exploration
+sample = images.sample(n=10, seed=42).select(images.image, images.filename).collect()
+```
 
-# Resize images for consistent training input
+## Enrich with AI Models
+
+```python
+# Resize images for consistent training input (thumbnail preserves aspect ratio)
 images.add_computed_column(
-    resized=pxt_image.resize(images.image, width=224, height=224),
+    resized=pxt_image.thumbnail(images.image, size=(224, 224)),
     if_exists='ignore')
 
 # Auto-classify with a vision LLM
@@ -74,6 +79,12 @@ images.add_computed_column(
     detections=detect(images.image, threshold=0.8),
     if_exists='ignore')
 
+# Visualize detections (draw bounding boxes on images)
+from pixeltable.functions.image import draw_bounding_boxes
+images.add_computed_column(
+    annotated=draw_bounding_boxes(images.image, images.detections),
+    if_exists='ignore')
+
 # Generate captions
 images.add_computed_column(
     caption=chat_completions(
@@ -91,9 +102,11 @@ images.add_computed_column(
 # Add CLIP embeddings for similarity search and deduplication
 embed_fn = clip.using(model_id='openai/clip-vit-base-patch32')
 images.add_embedding_index('image', embedding=embed_fn, if_exists='ignore')
+```
 
-# ── 4. Curate: filter, deduplicate, quality check ───────────────────
+## Curate: Filter, Deduplicate, Quality Check
 
+```python
 # Test on a small sample first (recommended workflow)
 sample = images.limit(5).select(images.image, images.label, images.caption).collect()
 
@@ -108,8 +121,13 @@ near_dupes = images.where(sim > 0.95).select(images.filename, sim).collect()
 errors = images.where(images.label.errortype != None).select(
     images.filename, images.label.errormsg).collect()
 
-# ── 5. Video → frame extraction → labeled dataset ───────────────────
+# Recompute failed columns (critical for retrying after API errors)
+images.recompute_columns(columns=['label'], where=images.label.errortype != None)
+```
 
+## Video Frame Extraction
+
+```python
 videos = pxt.create_table('ml_data.videos', {
     'video': pxt.Video,
     'category': pxt.String,
@@ -120,11 +138,13 @@ frames = pxt.create_view('ml_data.frames', videos,
     if_exists='ignore')
 
 frames.add_computed_column(
-    resized=pxt_image.resize(frames.frame, width=224, height=224),
+    resized=pxt_image.thumbnail(frames.frame, size=(224, 224)),
     if_exists='ignore')
+```
 
-# ── 6. Retrieval UDFs for structured data lookup ────────────────────
+## Retrieval UDFs for Structured Data Lookup
 
+```python
 # Create a lookup function for enrichment across tables
 products = pxt.create_table('ml_data.products', {
     'sku': pxt.String,
@@ -142,9 +162,11 @@ get_product = pxt.retrieval_udf(
 
 # Use as a computed column for cross-table enrichment
 # orders.add_computed_column(product_info=get_product(sku=orders.product_sku), if_exists='ignore')
+```
 
-# ── 7. Version with snapshots ───────────────────────────────────────
+## Version with Snapshots
 
+```python
 # Take a point-in-time snapshot before exporting
 snap_v1 = pxt.create_snapshot('ml_data.images_v1', images, if_exists='ignore')
 
@@ -153,9 +175,11 @@ snap_v1 = pxt.create_snapshot('ml_data.images_v1', images, if_exists='ignore')
 
 # Query any snapshot like a regular table
 snap_v1.select(snap_v1.filename, snap_v1.label).limit(5).collect()
+```
 
-# ── 8. Export for training ───────────────────────────────────────────
+## Export for Training
 
+```python
 # To PyTorch Dataset (recommended for training loops)
 train_query = images.where(images.split == 'train').select(
     images.resized, images.label)
@@ -207,7 +231,7 @@ result = images.limit(5).select(
 images.add_computed_column(label=chat_completions(...).choices[0].message.content, if_exists='ignore')
 ```
 
-### Error Handling for Batch Processing
+### Error Handling and Recomputation
 
 ```python
 # Insert with error tolerance
@@ -217,6 +241,9 @@ print(f'Inserted: {status.num_rows}, Errors: {status.num_excs}')
 # Find and inspect failed rows
 errors = images.where(images.label.errortype != None).select(
     images.filename, images.label.errormsg).collect()
+
+# Retry failed computations (e.g., after fixing rate limits)
+images.recompute_columns(columns=['label'], where=images.label.errortype != None)
 ```
 
 ### PyTorch Dataset Options
@@ -234,11 +261,13 @@ Data is cached to disk for efficient repeated loading. Use `num_workers > 0` in 
 |------|----------|---------|
 | Ingest | `create_table(source='file.csv')` | Load from CSV, Parquet, URLs, S3 |
 | Ingest | `import_huggingface_dataset()` | Load from Hugging Face Hub |
-| Explore | `t.head(5)`, `t.count()` | Quick data inspection |
+| Explore | `t.head(5)`, `t.count()`, `t.sample(n)` | Quick data inspection |
 | Enrich | `add_computed_column(label=...)` | Auto-label with AI models |
 | Enrich | `detr_for_object_detection()` | Bounding box detection |
+| Visualize | `draw_bounding_boxes(image, detections)` | Overlay detections on images |
 | Search | `add_embedding_index()` + `.similarity()` | Find similar / deduplicate |
 | Curate | `.where(col.errortype != None)` | Review failed transformations |
+| Retry | `recompute_columns(columns=[...], where=...)` | Re-run failed computations |
 | Version | `create_snapshot('name', table)` | Point-in-time dataset copy |
 | Export | `to_pytorch_dataset(image_format='pt')` | PyTorch DataLoader-ready |
 | Export | `export_parquet(query, 'path/')` | Parquet files for sharing |

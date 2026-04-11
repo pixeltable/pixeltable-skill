@@ -49,8 +49,9 @@ Jump to the right section based on what you're building:
 | Process images (classify, tag, search) | [workflows.md → Image Classification and Search](reference/workflows.md#image-classification-and-search) |
 | Process audio (transcribe, summarize) | [workflows.md → Audio Transcription](reference/workflows.md#audio-transcription-and-analysis) |
 | Wrangle data for ML training (label, version, export) | [ml-data-pipeline.md](reference/ml-data-pipeline.md) — ingest, enrich, snapshot, PyTorch export |
-| Export to PyTorch, Parquet, or pandas | [ml-data-pipeline.md → Export](reference/ml-data-pipeline.md#export-for-training) |
+| Export to PyTorch, Parquet, or pandas | [ml-data-pipeline.md → Export for Training](reference/ml-data-pipeline.md#export-for-training) |
 | Look up structured data with `retrieval_udf` | [ml-data-pipeline.md → Retrieval UDFs](reference/ml-data-pipeline.md#retrieval-udfs-for-structured-data-lookup) |
+| Retry failed computed columns | **Error Handling** (below) — `recompute_columns()` |
 | Compare multiple AI providers | [workflows.md → Multi-Provider Comparison](reference/workflows.md#multi-provider-comparison) |
 | Build a FastAPI web app | [workflows.md → FastAPI App Pattern](reference/workflows.md#fastapi-app-pattern) |
 | Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](reference/core-api.md#udfs) |
@@ -425,12 +426,15 @@ t.add_computed_column(col=expr, if_exists='ignore')
 t.add_embedding_index('col', embedding=fn, if_exists='ignore')
 ```
 
-## Error Handling
+## Error Handling and Recomputation
 
 ```python
 status = t.insert(rows, on_error='ignore')
 print(f'Inserted: {status.num_rows}, Errors: {status.num_excs}')
 error_rows = t.where(t.summary.errortype != None).select(t.title, t.summary.errormsg).collect()
+
+# Retry failed computed columns (e.g., after fixing rate limits or API keys)
+t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
 ```
 
 ## Table Management

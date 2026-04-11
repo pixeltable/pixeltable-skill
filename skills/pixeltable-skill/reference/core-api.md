@@ -99,12 +99,18 @@ results = t.where((t.col2 > 10) & (t.col1 != 'exclude')).collect()
 results = t.where(t.col1.like('%pattern%')).collect()
 ```
 
-### Order By / Limit / Count
+### Order By / Limit / Count / Sample
 
 ```python
 results = t.order_by(t.col2, asc=False).limit(10).collect()
 total = t.count()
 filtered = t.where(t.score > 0.5).count()
+
+# Pagination with offset
+page2 = t.order_by(t.col2).limit(10, offset=10).collect()
+
+# Random sample (reproducible with seed)
+sample = t.sample(n=100, seed=42).select(t.col1, t.col2).collect()
 ```
 
 ### To Pandas
@@ -177,6 +183,10 @@ t.add_computed_column(
 
 # Drop column
 t.drop_column('column_name')
+
+# Recompute failed or outdated columns (critical for error recovery)
+t.recompute_columns(columns=['summary'])
+t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
 ```
 
 ## Views
@@ -307,14 +317,45 @@ t.add_computed_column(
     if_exists='ignore')
 ```
 
+## Built-in Image Functions (Additional)
+
+```python
+from pixeltable.functions.image import draw_bounding_boxes
+
+# Draw detection results on images (pairs with DETR/YOLOX output)
+t.add_computed_column(
+    annotated=draw_bounding_boxes(t.image, t.detections),
+    if_exists='ignore')
+```
+
 ## Built-in Video Functions
 
 ```python
-from pixeltable.functions.video import extract_audio
+from pixeltable.functions.video import extract_audio, resize, crop, concat_videos, with_audio
 
 # Extract audio track from video
 t.add_computed_column(
     audio=extract_audio(t.video, format='mp3'),
+    if_exists='ignore')
+
+# Resize video
+t.add_computed_column(
+    resized=resize(t.video, width=640, height=480),
+    if_exists='ignore')
+
+# Crop video region
+t.add_computed_column(
+    cropped=crop(t.video, x=100, y=100, w=400, h=300),
+    if_exists='ignore')
+
+# Concatenate two videos
+t.add_computed_column(
+    combined=concat_videos(t.intro_video, t.main_video),
+    if_exists='ignore')
+
+# Replace audio track on a video
+t.add_computed_column(
+    with_new_audio=with_audio(t.video, t.narration),
     if_exists='ignore')
 ```
 
@@ -379,6 +420,19 @@ t.add_embedding_index('col', embedding=fn, metric='ip')      # inner product
 t.add_embedding_index('col', embedding=fn, metric='l2')      # euclidean
 ```
 
+## B-Tree Indexes
+
+For efficient range queries and equality lookups on non-embedding columns:
+
+```python
+# Add B-tree index for fast filtering
+t.add_btree_index('category', if_exists='ignore')
+t.add_btree_index('timestamp', if_exists='ignore')
+
+# Drop an index
+t.drop_index('index_name')
+```
+
 ## UDFs
 
 ### Basic
@@ -429,7 +483,38 @@ class MyAggregator(pxt.Aggregator):
 ### Retrieval UDF (for AI Tool Use)
 
 ```python
-lookup_fn = pxt.retrieval_udf(t, name='lookup_items', description='Look up items by name')
+lookup_fn = pxt.retrieval_udf(t, name='lookup_items', description='Look up items by name',
+    parameters=['name'], limit=5)
+```
+
+### Custom Iterator
+
+Define custom iterators that produce multiple output rows from a single input:
+
+```python
+@pxt.iterator
+class SlidingWindowIterator:
+    """Produce overlapping windows from a text."""
+    def __init__(self, text: str, window_size: int = 100, stride: int = 50):
+        self.text = text
+        self.window_size = window_size
+        self.stride = stride
+
+    def __next__(self) -> dict:  # yields {'window': str}
+        ...
+```
+
+### List Iterator
+
+Split a list/array column into one row per element:
+
+```python
+from pixeltable.functions import list_iterator
+
+# Explode a JSON array column into individual rows
+items = pxt.create_view('dir.items', t,
+    iterator=list_iterator(t.tags),
+    if_exists='ignore')
 ```
 
 ## Update and Delete
@@ -447,9 +532,29 @@ t.add_column(new_col=pxt.String)
 t.drop_column('col_name')
 t.describe()
 t.columns()
+
+# Directory management
+pxt.list_dirs()
+pxt.list_tables()
+contents = pxt.get_dir_contents('my_dir')
 ```
 
-## Snapshots
+## Recompute Columns
+
+Re-run computed columns on existing rows. Critical for retrying after API errors or rate limits:
+
+```python
+# Recompute all rows for a column
+t.recompute_columns(columns=['summary'])
+
+# Recompute only failed rows (most common pattern)
+t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
+
+# Recompute specific rows matching a condition
+t.recompute_columns(columns=['label'], where=t.category == 'pending')
+```
+
+## Snapshots and Version History
 
 Point-in-time copies of tables:
 
@@ -457,6 +562,9 @@ Point-in-time copies of tables:
 snap = pxt.create_snapshot('dir.snap_v1', t, if_exists='ignore')
 # Query the snapshot like any table
 snap.select(snap.col1).collect()
+
+# View table version history
+versions = t.get_versions()
 ```
 
 ## Tools and Agents

@@ -685,17 +685,149 @@ udfs = pxt.mcp_udfs('http://localhost:8080/sse')
 
 ---
 
+## Data Sharing and Replication
+
+Share tables across teams or environments:
+
+```python
+# Publish a table version (makes it shareable)
+t.publish()
+
+# Replicate a published table (creates a local synchronized copy)
+replica = pxt.replicate('dir.local_copy', source_table_uri)
+
+# Sync changes
+replica.pull()   # fetch latest from source
+replica.push()   # push local changes to source
+```
+
+## Export to SQL Databases
+
+```python
+from pixeltable.io.sql import export_sql
+
+# Export full table to SQLite
+export_sql(t, 'my_table', db_connect_str='sqlite:///data.db')
+
+# Export filtered query with column rename
+export_sql(
+    t.where(t.score > 0.8).select(product_name=t.name, price=t.price),
+    'filtered_products',
+    db_connect_str='sqlite:///data.db',
+)
+
+# Append to existing SQL table
+export_sql(t, 'products', db_connect_str=connection_string, if_exists='insert')
+
+# Replace existing SQL table
+export_sql(t, 'products', db_connect_str=connection_string, if_exists='replace')
+
+# Cloud databases (PostgreSQL, Snowflake, etc.)
+export_sql(t, 'products', db_connect_str='postgresql+psycopg://user:pass@host:5432/db')
+```
+
+---
+
 ## Configuration
+
+### API Keys
 
 ```python
 # Via init
 pxt.init({'openai.api_key': 'sk-...', 'anthropic.api_key': 'sk-ant-...'})
 
-# Via environment variables
-# OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, TOGETHER_API_KEY,
-# FIREWORKS_API_KEY, MISTRAL_API_KEY, GROQ_API_KEY, DEEPSEEK_API_KEY,
-# VOYAGE_API_KEY, REPLICATE_API_TOKEN, HF_TOKEN, OPENROUTER_API_KEY
+# Via environment variables (recommended)
+# OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY / GEMINI_API_KEY,
+# TOGETHER_API_KEY, FIREWORKS_API_KEY, MISTRAL_API_KEY, GROQ_API_KEY,
+# DEEPSEEK_API_KEY, VOYAGE_API_KEY, REPLICATE_API_TOKEN, HF_AUTH_TOKEN,
+# OPENROUTER_API_KEY, FAL_API_KEY, REVE_API_KEY, TWELVELABS_API_KEY,
+# BEDROCK_API_KEY
 ```
+
+### config.toml
+
+Located at `~/.pixeltable/config.toml`:
+
+```toml
+[pixeltable]
+file_cache_size_g = 250
+time_zone = "America/Los_Angeles"
+hide_warnings = true
+verbosity = 2
+
+[openai]
+api_key = 'sk-...'
+
+# Per-model rate limits (requests per minute)
+[openai.rate_limits]
+gpt-4o = 500
+gpt-4o-mini = 1000
+tts-1 = 50
+dall-e-3 = 10
+
+[anthropic]
+api_key = 'sk-ant-...'
+
+[mistral]
+api_key = 'my-mistral-key'
+rate_limit = 600
+
+# Azure OpenAI
+[openai]
+base_url = 'https://my-deployment.openai.azure.com/'
+api_version = '2024-02-01'
+```
+
+### Rate Limiting
+
+Default: 600 requests per minute per provider. Configure in `config.toml`:
+
+```toml
+# Single rate limit for all models of a provider
+[fireworks]
+rate_limit = 300
+
+# Per-model rate limits
+[openai.rate_limits]
+gpt-4o = 500
+gpt-4o-mini = 1000
+```
+
+Custom resource pools for non-built-in APIs:
+
+```python
+@pxt.udf(resource_pool='request-rate:my_service')
+def call_custom_api(prompt: str) -> str:
+    return requests.post('https://my-api.com/generate', json={'prompt': prompt}).json()['text']
+```
+
+### Media Destinations (Cloud Storage)
+
+Store media files in S3, GCS, Azure, or other cloud storage instead of locally:
+
+```toml
+# config.toml — global default
+[pixeltable]
+input_media_dest = "s3://my-bucket/input/"
+output_media_dest = "s3://my-bucket/output/"
+```
+
+```bash
+# Or via environment variables
+export PIXELTABLE_INPUT_MEDIA_DEST="s3://my-bucket/input/"
+export PIXELTABLE_OUTPUT_MEDIA_DEST="s3://my-bucket/output/"
+```
+
+```python
+# Per-column destination (overrides global default)
+t.add_computed_column(
+    thumbnail=pxt_image.thumbnail(t.image, size=(256, 256)),
+    media_destination='s3://my-bucket/thumbnails/',
+    if_exists='ignore',
+)
+```
+
+Supported providers: Amazon S3, Google Cloud Storage (`gs://`), Azure Blob Storage (`wasbs://`), Cloudflare R2, Backblaze B2, Tigris.
 
 ## Performance Tips
 
@@ -706,3 +838,6 @@ pxt.init({'openai.api_key': 'sk-...', 'anthropic.api_key': 'sk-ant-...'})
 - Use `t.insert(source='file.csv')` instead of loading into memory for large datasets
 - Use `keyframes_only=True` in `frame_iterator` for efficient video processing
 - Use `thumbnail()` + `b64_encode()` for API-friendly image responses
+- Configure rate limits in `config.toml` to avoid 429 errors on provider APIs
+- Use `recompute_columns(where=t.col.errortype != None)` to retry only failed rows
+- Use `add_btree_index()` on columns used frequently in `where()` filters

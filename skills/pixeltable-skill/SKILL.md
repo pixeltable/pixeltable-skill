@@ -52,6 +52,10 @@ Jump to the right section based on what you're building:
 | Export to PyTorch, Parquet, or pandas | [ml-data-pipeline.md → Export for Training](reference/ml-data-pipeline.md#export-for-training) |
 | Look up structured data with `retrieval_udf` | [ml-data-pipeline.md → Retrieval UDFs](reference/ml-data-pipeline.md#retrieval-udfs-for-structured-data-lookup) |
 | Retry failed computed columns | **Error Handling** (below) — `recompute_columns()` |
+| Use agentic patterns (chaining, routing, parallelization, eval-optimize) | [agentic-patterns.md](reference/agentic-patterns.md) — 6 patterns + 2 reasoning strategies |
+| Configure rate limits, media storage, API keys | [core-api.md → Configuration](reference/core-api.md#configuration) |
+| Export to SQL databases (Postgres, Snowflake, SQLite) | [core-api.md → Export to SQL](reference/core-api.md#export-to-sql-databases) |
+| Share tables across teams (`publish`, `replicate`) | [core-api.md → Data Sharing](reference/core-api.md#data-sharing-and-replication) |
 | Compare multiple AI providers | [workflows.md → Multi-Provider Comparison](reference/workflows.md#multi-provider-comparison) |
 | Build a FastAPI web app | [workflows.md → FastAPI App Pattern](reference/workflows.md#fastapi-app-pattern) |
 | Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](reference/core-api.md#udfs) |
@@ -497,3 +501,5 @@ For a complete reference implementation, see the [Pixeltable App Template](https
 **Agent with Memory and MCP**: Persistent chat history, knowledge bank, user scoping, MCP tool integration, multi-provider invoke_tools → See [reference/agents-memory-mcp.md](reference/agents-memory-mcp.md)
 
 **ML Data Pipeline**: Ingest multimodal data, enrich with AI models, version with snapshots, export to PyTorch/Parquet/pandas → See [reference/ml-data-pipeline.md](reference/ml-data-pipeline.md)
+
+**Agentic Patterns**: Prompt chaining, routing, parallelization, tool use, evaluator-optimizer, orchestrator-worker, ReAct, planning → See [reference/agentic-patterns.md](reference/agentic-patterns.md)

@@ -213,6 +213,6 @@ export_sql(t, 'table_name', db_connect_str='sqlite:///data.db')
 
 - [Documentation](https://docs.pixeltable.com/)
 - [GitHub](https://github.com/pixeltable/pixeltable)
-- [App Template](https://github.com/pixeltable/pixeltable-app-template) — Full-stack FastAPI + React
+- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — Full-stack FastAPI + React + deployment templates
 - [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer)
 - **LLM-optimized docs**: [pixeltable.com/llms.txt](https://www.pixeltable.com/llms.txt) | [docs.pixeltable.com/llms.txt](https://docs.pixeltable.com/llms.txt) | [llms-full.txt](https://docs.pixeltable.com/llms-full.txt)

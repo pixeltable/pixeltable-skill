@@ -197,7 +197,7 @@ To add a new platform:
 
 - [Pixeltable Documentation](https://docs.pixeltable.com/)
 - [Pixeltable GitHub](https://github.com/pixeltable/pixeltable)
-- [Pixeltable App Template](https://github.com/pixeltable/pixeltable-app-template) — Full-stack FastAPI + React reference
+- [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — Full-stack FastAPI + React reference with deployment templates
 - [Pixeltable MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer)
 - [Pixeltable Discord](https://discord.gg/QPyqFYx2UN)
 

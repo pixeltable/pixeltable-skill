@@ -235,7 +235,7 @@ results = prompts.select(
 
 ### Tool-Calling Agent (Full Production Example)
 
-Complete agent pipeline as used in the Pixeltable App Template:
+Complete agent pipeline as used in the [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit):
 
 ```python
 import pixeltable as pxt

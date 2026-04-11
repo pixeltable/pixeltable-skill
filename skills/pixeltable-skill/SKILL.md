@@ -475,11 +475,11 @@ When building production applications (e.g., FastAPI + React), follow these patt
 
 **Insert-triggers-pipeline** — For the agent pattern, inserting a row triggers the entire computed column chain. The endpoint just inserts and reads back the answer.
 
-For a complete reference implementation, see the [Pixeltable App Template](https://github.com/pixeltable/pixeltable-app-template).
+For a complete reference implementation, see the [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit).
 
 ## Companion Resources
 
-- **App Template** — [pixeltable/pixeltable-app-template](https://github.com/pixeltable/pixeltable-app-template): Full-stack FastAPI + React reference app with multimodal search, document/image/video pipelines, and a tool-calling agent.
+- **Starter Kit** — [pixeltable/pixeltable-starter-kit](https://github.com/pixeltable/pixeltable-starter-kit): Full-stack FastAPI + React reference app with multimodal search, document/image/video pipelines, tool-calling agent, and deployment templates (Docker, Kubernetes, Terraform).
 - **MCP Server** — [pixeltable/mcp-server-pixeltable-developer](https://github.com/pixeltable/mcp-server-pixeltable-developer): Interactive exploration of Pixeltable tables, queries, and Python REPL via Model Context Protocol.
 - **Core AGENTS.md** — [pixeltable/pixeltable/AGENTS.md](https://github.com/pixeltable/pixeltable/blob/main/AGENTS.md): Full SDK reference for contributing to Pixeltable itself.
 - **LLM-Optimized Docs** — For deeper context beyond this skill, fetch these URLs directly:

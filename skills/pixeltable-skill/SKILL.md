@@ -63,6 +63,16 @@ Jump to the right section based on what you're building:
 | Avoid common mistakes (wrong imports, broken schemas, serialization) | **Common Pitfalls** (below) and [core-api.md → Common Pitfalls](reference/core-api.md#common-pitfalls) |
 | Look up a specific provider's import and output shape | [providers.md → Quick Reference](reference/providers.md#quick-reference) |
 
+## Critical Warnings — Read Before Writing Code
+
+1. **`openai.vision` does not exist** — use `openai.chat_completions` with `image_url` content blocks
+2. **Cast to `pxt.String` before embedding** — use `.text.astype(pxt.String)` on AI function outputs before `add_embedding_index`
+3. **`if_exists='ignore'` won't fix bugs** — if a computed column has wrong logic, you must `drop_column()` then recreate; re-running is a silent no-op
+4. **Import `frame_iterator` as a function** — `from pixeltable.functions.video import frame_iterator`, NOT `from pixeltable.iterators import FrameIterator`
+5. **Use `string=` keyword in similarity** — always `t.col.similarity(string=query)`, not positional
+
+See [Common Pitfalls](#common-pitfalls) below for full details and code examples.
+
 ## Core Concepts
 
 ### Tables and Column Types

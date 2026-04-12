@@ -6,29 +6,24 @@ Implements the [Agent Skills specification](https://agentskills.io/specification
 
 ## Install
 
-### Claude Code
+### Any agent (40+ supported via [npx skills](https://github.com/vercel-labs/skills))
+
+```bash
+npx skills add pixeltable/pixeltable-skill
+```
+
+### Claude Code plugin
 
 ```bash
 /plugin marketplace add pixeltable/pixeltable-skill
 /plugin install pixeltable-skill@pixeltable-skill
 ```
 
-### Cursor
-
-```bash
-git clone https://github.com/pixeltable/pixeltable-skill.git
-cp -r pixeltable-skill/skills/pixeltable-skill ~/.cursor/skills/pixeltable-skill
-```
-
-### Any project
+### Manual
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main/install.sh | bash -s -- --platform claude-code
 ```
-
-### Other platforms (Windsurf, Cline, Copilot, etc.)
-
-Copy `skills/pixeltable-skill/SKILL.md` into your platform's config location. It's self-contained at 440 lines. For full reference, point agents to `https://docs.pixeltable.com/llms-full.txt`.
 
 ## What's Inside
 

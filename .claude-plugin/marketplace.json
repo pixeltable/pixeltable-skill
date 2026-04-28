@@ -1,9 +1,22 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "pixeltable-skill",
-  "display_name": "Pixeltable",
-  "description": "Build multimodal AI applications with Pixeltable — tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
-  "categories": ["data-infrastructure", "ai", "multimodal"],
-  "tags": ["pixeltable", "multimodal", "rag", "embeddings", "vector-search", "udf", "openai", "anthropic", "huggingface", "video", "audio", "images", "documents", "agents", "tools", "mcp", "fastapi"],
-  "homepage": "https://www.pixeltable.com",
-  "documentation": "https://docs.pixeltable.com"
+  "owner": {
+    "name": "Pixeltable",
+    "url": "https://github.com/pixeltable"
+  },
+  "metadata": {
+    "description": "Build multimodal AI applications with Pixeltable — tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
+    "version": "2.1.0"
+  },
+  "plugins": [
+    {
+      "name": "pixeltable-skill",
+      "source": ".",
+      "description": "Build multimodal AI applications with Pixeltable — tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
+      "category": "data-infrastructure",
+      "tags": ["pixeltable", "multimodal", "rag", "embeddings", "vector-search", "udf", "openai", "anthropic", "huggingface", "video", "audio", "images", "documents", "agents", "tools", "mcp", "fastapi"],
+      "homepage": "https://www.pixeltable.com"
+    }
+  ]
 }

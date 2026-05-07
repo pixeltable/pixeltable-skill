@@ -15,8 +15,9 @@ Complete reference for table operations, querying, computed columns, views, embe
 - [Table Operations](#table-operations)
 - [Snapshots](#snapshots)
 - [Tools and Agents](#tools-and-agents) (create tools, agent pipeline, MCP)
-- [Serving (FastAPIRouter)](#serving-fastapirouter) (add_insert_route, add_query_route, add_delete_route, background jobs)
-- [Configuration](#configuration)
+- [Serving (FastAPIRouter)](#serving-fastapirouter) (add_insert_route, add_query_route, add_delete_route, background jobs, pxt serve)
+- [Export](#export-csv-json-parquet-lancedb) (CSV, JSON, Parquet, LanceDB, SQL)
+- [Configuration](#configuration) (API keys, config.toml, rate limiting, media destinations, pxtfs://)
 - [Performance Tips](#performance-tips)
 
 ---
@@ -239,7 +240,10 @@ t.add_computed_column(
 ## Built-in Video Functions
 
 ```python
-from pixeltable.functions.video import extract_audio, resize, crop, concat_videos, with_audio
+from pixeltable.functions.video import (
+    extract_audio, resize, crop, concat_videos,
+    with_audio, pan, mix_audio, overlay_image,
+)
 
 # Extract audio track from video
 t.add_computed_column(
@@ -264,6 +268,21 @@ t.add_computed_column(
 # Replace audio track on a video
 t.add_computed_column(
     with_new_audio=with_audio(t.video, t.narration),
+    if_exists='ignore')
+
+# Ken Burns pan effect on an image (creates video from still image)
+t.add_computed_column(
+    clip=pan(t.image, duration=5.0, zoom_start=1.0, zoom_end=1.3),
+    if_exists='ignore')
+
+# Mix (overlay) two audio tracks
+t.add_computed_column(
+    mixed=mix_audio(t.narration, t.background_music),
+    if_exists='ignore')
+
+# Overlay image (watermark) on video
+t.add_computed_column(
+    watermarked=overlay_image(t.video, t.logo, x=10, y=10),
     if_exists='ignore')
 ```
 
@@ -666,6 +685,36 @@ main.py              — import setup_pixeltable; from routers import data, sear
 
 See [workflows.md → FastAPIRouter](workflows.md#fastapirouter-declarative-serving-v06) for a complete example.
 
+### pxt serve (CLI)
+
+For quick prototyping or production without writing Python, define routes in a TOML file:
+
+```toml
+# service.toml
+[service]
+name = "my-api"
+prefix = "/api"
+
+[[endpoints]]
+route_type = "query"
+path = "/search"
+query = "search_docs"
+table = "myapp.documents"
+
+[[endpoints]]
+route_type = "insert"
+path = "/ingest"
+table = "myapp.documents"
+inputs = ["document", "title"]
+outputs = ["uuid"]
+```
+
+```bash
+pxt serve service.toml --port 8000
+```
+
+`pxt serve` generates a FastAPI app from the TOML config. Same capabilities as `FastAPIRouter` (insert, query, delete, background jobs). See [HTTP Serving docs](https://docs.pixeltable.com/howto/deployment/serving).
+
 ---
 
 ## Data Sharing and Replication
@@ -683,6 +732,37 @@ replica = pxt.replicate('dir.local_copy', source_table_uri)
 replica.pull()   # fetch latest from source
 replica.push()   # push local changes to source
 ```
+
+## Export (CSV, JSON, Parquet, LanceDB)
+
+```python
+import pixeltable as pxt
+
+t = pxt.get_table('myapp/documents')
+
+# Export to CSV
+pxt.io.export_csv(t, '/data/documents.csv')
+
+# Export to JSON
+pxt.io.export_json(t, '/data/documents.json')
+
+# Export to Parquet
+pxt.io.export_parquet(t, '/data/documents.parquet')
+
+# Export to LanceDB (vector DB)
+pxt.io.export_lancedb(t, db_uri='/data/lance', table_name='docs')
+
+# Export filtered query results
+results = t.where(t.score > 0.8).select(t.title, t.score)
+pxt.io.export_csv(results, '/data/filtered.csv')
+
+# Other formats
+df = t.collect().to_pandas()           # Pandas DataFrame
+ds = t.to_pytorch_dataset(['image'])   # PyTorch DataLoader
+coco = t.to_coco_dataset()            # COCO format
+```
+
+---
 
 ## Export to SQL Databases
 
@@ -740,6 +820,9 @@ verbosity = 2
 
 [openai]
 api_key = 'sk-...'
+# For Azure OpenAI, add these to the same [openai] section:
+# base_url = 'https://my-deployment.openai.azure.com/'
+# api_version = '2024-02-01'
 
 # Per-model rate limits (requests per minute)
 [openai.rate_limits]
@@ -754,11 +837,6 @@ api_key = 'sk-ant-...'
 [mistral]
 api_key = 'my-mistral-key'
 rate_limit = 600
-
-# Azure OpenAI
-[openai]
-base_url = 'https://my-deployment.openai.azure.com/'
-api_version = '2024-02-01'
 ```
 
 ### Rate Limiting
@@ -805,12 +883,30 @@ export PIXELTABLE_OUTPUT_MEDIA_DEST="s3://my-bucket/output/"
 # Per-column destination (overrides global default)
 t.add_computed_column(
     thumbnail=pxt_image.thumbnail(t.image, size=(256, 256)),
-    media_destination='s3://my-bucket/thumbnails/',
+    destination='s3://my-bucket/thumbnails/',
     if_exists='ignore',
 )
 ```
 
 Supported providers: Amazon S3, Google Cloud Storage (`gs://`), Azure Blob Storage (`wasbs://`), Cloudflare R2, Backblaze B2, Tigris.
+
+**Pixeltable Cloud (home bucket):** Free R2-backed storage. No AWS credentials needed:
+
+```python
+# Use pxtfs:// URI as a destination
+t.add_computed_column(
+    thumbnail=pxt_image.thumbnail(t.image, size=(256, 256)),
+    destination='pxtfs://org:db/home/thumbnails/',
+)
+```
+
+```bash
+# Or set globally
+export PIXELTABLE_API_KEY="pxt_..."
+export PIXELTABLE_OUTPUT_MEDIA_DEST="pxtfs://org:db/home/"
+```
+
+See [Cloud Storage docs](https://docs.pixeltable.com/integrations/cloud-storage).
 
 ## Common Pitfalls
 

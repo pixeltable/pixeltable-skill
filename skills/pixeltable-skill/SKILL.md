@@ -52,11 +52,14 @@ Jump to the right section based on what you're building:
 | Retry failed computed columns | **Error Handling** (below) — `recompute_columns()` |
 | Use agentic patterns (chaining, routing, parallelization, eval-optimize) | [agentic-patterns.md](references/agentic-patterns.md) — 6 patterns + 2 reasoning strategies |
 | Configure rate limits, media storage, API keys | [core-api.md → Configuration](references/core-api.md#configuration) |
+| Export to CSV, JSON, Parquet, LanceDB | [core-api.md → Export](references/core-api.md#export-csv-json-parquet-lancedb) |
 | Export to SQL databases (Postgres, Snowflake, SQLite) | [core-api.md → Export to SQL](references/core-api.md#export-to-sql-databases) |
 | Share tables across teams (`publish`, `replicate`) | [core-api.md → Data Sharing](references/core-api.md#data-sharing-and-replication) |
 | Compare multiple AI providers | [workflows.md → Multi-Provider Comparison](references/workflows.md#multi-provider-comparison) |
 | Build a FastAPI web app (hand-written endpoints) | [workflows.md → FastAPI App Pattern](references/workflows.md#fastapi-app-pattern) |
 | Serve tables/queries via FastAPIRouter (v0.6+) | [workflows.md → FastAPIRouter](references/workflows.md#fastapirouter-declarative-serving-v06) and [core-api.md → Serving](references/core-api.md#serving-fastapirouter) |
+| Serve via CLI (`pxt serve` + TOML config) | [core-api.md → pxt serve](references/core-api.md#pxt-serve-cli) |
+| Store media in Pixeltable Cloud (`pxtfs://`) | [core-api.md → Media Destinations](references/core-api.md#media-destinations-cloud-storage) |
 | Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](references/core-api.md#udfs) |
 | Use `pxt.tools()` and `invoke_tools()` for agents | **Tool-Calling Agent Pipeline** (below) and [core-api.md → Tools and Agents](references/core-api.md#tools-and-agents) |
 | Avoid common mistakes (wrong imports, broken schemas, serialization) | **Common Pitfalls** (below) and [core-api.md → Common Pitfalls](references/core-api.md#common-pitfalls) |

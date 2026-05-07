@@ -14,7 +14,7 @@ Use this table to find the correct import, function, and output accessor for eac
 | OpenAI Transcription | `from pixeltable.functions.openai import transcriptions` | `transcriptions(audio=..., model='whisper-1')` | `.text` |
 | OpenAI DALL-E | `from pixeltable.functions.openai import image_generations` | `image_generations(prompt=..., model='dall-e-3')` | `.data[0].url` |
 | Anthropic | `from pixeltable.functions.anthropic import messages` | `messages(messages=..., model='claude-sonnet-4-20250514', max_tokens=1024)` | `.content[0].text` |
-| Gemini | `from pixeltable.functions.gemini import generate_content` | `generate_content(contents=..., model='gemini-2.0-flash')` | *(returns text directly)* |
+| Gemini | `from pixeltable.functions.gemini import generate_content, embed_content` | `generate_content(contents=..., model='gemini-2.0-flash')` | *(returns text directly)* |
 | Together | `from pixeltable.functions.together import chat_completions` | `chat_completions(messages=..., model='meta-llama/...')` | `.choices[0].message.content` |
 | Fireworks | `from pixeltable.functions.fireworks import chat_completions` | `chat_completions(messages=..., model='accounts/fireworks/...')` | `.choices[0].message.content` |
 | Ollama | `from pixeltable.functions.ollama import chat_completions` | `chat_completions(messages=..., model='llama3.1')` | `.choices[0].message.content` |
@@ -191,9 +191,22 @@ t.add_computed_column(
 ## Google Gemini
 
 ```python
-from pixeltable.functions.gemini import generate_content
+from pixeltable.functions.gemini import generate_content, embed_content
 
+# Text generation
 t.add_computed_column(response=generate_content(contents=t.prompt, model='gemini-2.0-flash'), if_exists='ignore')
+
+# Embeddings (for add_embedding_index)
+t.add_embedding_index(
+    'text',
+    string_embed=embed_content.using(model='gemini-embedding-2-preview'),
+)
+
+# Multimodal: pass images alongside text
+t.add_computed_column(
+    vision=generate_content(contents=[t.image, t.prompt], model='gemini-2.0-flash'),
+    if_exists='ignore',
+)
 ```
 
 ## Together AI

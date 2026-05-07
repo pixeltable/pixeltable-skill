@@ -15,6 +15,7 @@ Complete reference for table operations, querying, computed columns, views, embe
 - [Table Operations](#table-operations)
 - [Snapshots](#snapshots)
 - [Tools and Agents](#tools-and-agents) (create tools, agent pipeline, MCP)
+- [Serving (FastAPIRouter)](#serving-fastapirouter) (add_insert_route, add_query_route, add_delete_route, background jobs)
 - [Configuration](#configuration)
 - [Performance Tips](#performance-tips)
 
@@ -589,6 +590,81 @@ result = agent.order_by(agent.timestamp, asc=False).limit(1).select(agent.answer
 ```python
 udfs = pxt.mcp_udfs('http://localhost:8080/sse')
 ```
+
+---
+
+## Serving (FastAPIRouter)
+
+`pixeltable.serving.FastAPIRouter` (v0.6+) is a subclass of FastAPI's `APIRouter` that generates endpoints from tables and `@pxt.query` functions. No Pydantic models or hand-written handlers needed.
+
+### add_insert_route
+
+```python
+from pixeltable.serving import FastAPIRouter
+import pixeltable as pxt
+
+router = FastAPIRouter(prefix="/api/data", tags=["data"])
+docs = pxt.get_table("app.documents")
+
+# Synchronous insert — returns inserted row fields
+router.add_insert_route(docs, path="/upload/image",
+    uploadfile_inputs=["image"], inputs=["timestamp"], outputs=["uuid", "thumbnail"])
+
+# Background insert — returns job handle for polling
+router.add_insert_route(docs, path="/upload/document",
+    uploadfile_inputs=["document"], inputs=["timestamp"], outputs=["uuid"],
+    background=True)
+# Client receives { "job_url": "http://host/jobs/{id}" }
+# Poll GET /jobs/{id} → { "status": "pending" | "done" | "error", "result": {...} }
+```
+
+Parameters:
+- `uploadfile_inputs` — column names sent as `UploadFile` (multipart form)
+- `inputs` — column names sent as form fields
+- `outputs` — column names to return after insert
+- `background=True` — return immediately with a job URL; client polls for result
+
+### add_query_route
+
+```python
+@pxt.query
+def search_docs(query_text: str):
+    sim = chunks.text.similarity(string=query_text)
+    return chunks.where(sim > 0.3).order_by(sim, asc=False).select(
+        text=chunks.text, sim=sim).limit(20)
+
+router.add_query_route(path="/search", query=search_docs, method="post")
+# POST /api/data/search {"query_text": "..."} → { "rows": [...] }
+
+@pxt.query
+def list_docs():
+    return docs.select(uuid=docs.uuid, name=docs.document).order_by(docs.timestamp, asc=False)
+
+router.add_query_route(path="/list", query=list_docs, method="get")
+# GET /api/data/list → { "rows": [...] }
+```
+
+### add_delete_route
+
+```python
+# Delete by primary key
+router.add_delete_route(docs, path="/delete")
+# POST /api/data/delete {"uuid": "..."} → { "num_rows": 1 }
+
+# Delete by non-PK column
+router.add_delete_route(chat, path="/delete-conversation", match_columns=["conversation_id"])
+```
+
+### Architecture pattern
+
+```
+setup_pixeltable.py  — flat module: creates tables, views, indexes on import
+routers/data.py      — pxt.get_table() + @pxt.query + add_*_route
+routers/search.py    — pxt.get_table() + @pxt.query + add_*_route
+main.py              — import setup_pixeltable; from routers import data, search
+```
+
+See [workflows.md → FastAPIRouter](workflows.md#fastapirouter-declarative-serving-v06) for a complete example.
 
 ---
 

@@ -14,7 +14,7 @@ description: >
 license: Apache-2.0
 metadata:
   author: Pixeltable
-  version: 2.0.0
+  version: 2.1.0
   category: data-infrastructure
   tags: [multimodal, ai, data, tables, embeddings, rag, udf, video, audio, images, documents, agents, tools, fastapi]
   documentation: https://docs.pixeltable.com/
@@ -55,7 +55,8 @@ Jump to the right section based on what you're building:
 | Export to SQL databases (Postgres, Snowflake, SQLite) | [core-api.md → Export to SQL](references/core-api.md#export-to-sql-databases) |
 | Share tables across teams (`publish`, `replicate`) | [core-api.md → Data Sharing](references/core-api.md#data-sharing-and-replication) |
 | Compare multiple AI providers | [workflows.md → Multi-Provider Comparison](references/workflows.md#multi-provider-comparison) |
-| Build a FastAPI web app | [workflows.md → FastAPI App Pattern](references/workflows.md#fastapi-app-pattern) |
+| Build a FastAPI web app (hand-written endpoints) | [workflows.md → FastAPI App Pattern](references/workflows.md#fastapi-app-pattern) |
+| Serve tables/queries via FastAPIRouter (v0.6+) | [workflows.md → FastAPIRouter](references/workflows.md#fastapirouter-declarative-serving-v06) and [core-api.md → Serving](references/core-api.md#serving-fastapirouter) |
 | Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](references/core-api.md#udfs) |
 | Use `pxt.tools()` and `invoke_tools()` for agents | **Tool-Calling Agent Pipeline** (below) and [core-api.md → Tools and Agents](references/core-api.md#tools-and-agents) |
 | Avoid common mistakes (wrong imports, broken schemas, serialization) | **Common Pitfalls** (below) and [core-api.md → Common Pitfalls](references/core-api.md#common-pitfalls) |
@@ -414,12 +415,32 @@ t.delete(where=t.is_active == False)
 ## Building Apps with Pixeltable
 
 - Pixeltable IS the data layer — no ORM, no SQLAlchemy
+- **Prefer `FastAPIRouter`** (v0.6+) over hand-written endpoints — `add_insert_route`, `add_query_route`, `add_delete_route` generate endpoints from tables and `@pxt.query` functions
+- Use `background=True` on `add_insert_route` for long-running inserts (returns a job handle, client polls for completion)
 - FastAPI endpoints: use `def` not `async def` (Pixeltable is synchronous)
 - Business logic in `@pxt.udf` / `@pxt.query`, not in endpoint handlers
-- Use `.to_pydantic(Model)` for type-safe API responses
+- Schema in one file, queries co-located with routes in each router file
 - Insert a row → entire computed column chain runs automatically
 
-Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) | [workflows.md → FastAPI](references/workflows.md#fastapi-app-pattern)
+```python
+from pixeltable.serving import FastAPIRouter
+import pixeltable as pxt
+
+router = FastAPIRouter(prefix="/api/data", tags=["data"])
+docs = pxt.get_table("app.documents")
+
+router.add_insert_route(docs, path="/upload", uploadfile_inputs=["document"],
+                        inputs=["timestamp"], outputs=["uuid"], background=True)
+router.add_delete_route(docs, path="/delete")
+
+@pxt.query
+def list_docs():
+    return docs.select(uuid=docs.uuid, name=docs.document).order_by(docs.timestamp, asc=False)
+
+router.add_query_route(path="/list", query=list_docs, method="get")
+```
+
+Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) | [workflows.md → FastAPIRouter](references/workflows.md#fastapirouter-declarative-serving-v06) | [core-api.md → Serving](references/core-api.md#serving-fastapirouter)
 
 ## Resources
 
@@ -431,9 +452,9 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 
 | File | Coverage |
 |------|----------|
-| [core-api.md](references/core-api.md) | Tables, querying, views, embeddings, UDFs, tools, B-tree indexes, recompute, config, data sharing, SQL export |
+| [core-api.md](references/core-api.md) | Tables, querying, views, embeddings, UDFs, tools, **serving (FastAPIRouter)**, B-tree indexes, recompute, config, data sharing, SQL export |
 | [providers.md](references/providers.md) | Quick-reference table + full examples for all 25+ AI providers |
-| [workflows.md](references/workflows.md) | RAG, video analysis, image classification, audio, multi-provider, agent, FastAPI, export |
+| [workflows.md](references/workflows.md) | RAG, video analysis, image classification, audio, multi-provider, agent, FastAPI, **FastAPIRouter**, export |
 | [video-rag-agents.md](references/video-rag-agents.md) | Video + transcript/frame retrieval + tool-calling agent |
 | [agents-memory-mcp.md](references/agents-memory-mcp.md) | Agent with persistent memory, MCP integration, multi-provider invoke_tools |
 | [ml-data-pipeline.md](references/ml-data-pipeline.md) | Ingest, enrich, version, export to PyTorch/Parquet/pandas |

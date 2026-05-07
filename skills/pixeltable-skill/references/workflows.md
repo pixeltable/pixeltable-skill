@@ -11,7 +11,8 @@ Complete, production-ready workflow templates combining multiple Pixeltable feat
 - [Multi-Provider Comparison](#multi-provider-comparison)
 - [Tool-Calling Agent (Full Production Example)](#tool-calling-agent-full-production-example)
 - [Local LLM Pipeline (Ollama)](#local-llm-pipeline-ollama)
-- [FastAPI App Pattern](#fastapi-app-pattern)
+- [FastAPI App Pattern](#fastapi-app-pattern) (hand-written endpoints)
+- [FastAPIRouter — Declarative Serving (v0.6+)](#fastapirouter-declarative-serving-v06) (preferred)
 - [Export Workflow](#export-workflow)
 
 ---
@@ -441,6 +442,80 @@ def search(body: SearchRequest):                    # sync, not async
     items = list(result.to_pydantic(SearchResult))  # direct conversion
     return SearchResponse(query=body.query, results=items)
 ```
+
+### FastAPIRouter — Declarative Serving (v0.6+)
+
+`pixeltable.serving.FastAPIRouter` generates endpoints from tables and `@pxt.query` functions — no Pydantic models, no hand-written handlers. It's a subclass of FastAPI's `APIRouter`.
+
+```python
+# setup_pixeltable.py — flat module, runs on import
+import pixeltable as pxt
+from pixeltable.functions.uuid import uuid7
+from pixeltable.functions.document import document_splitter
+from pixeltable.functions.huggingface import sentence_transformer
+
+pxt.create_dir('app', if_exists='ignore')
+
+docs = pxt.create_table('app.documents', {
+    'document': pxt.Document, 'uuid': uuid7(), 'timestamp': pxt.Timestamp,
+}, primary_key=['uuid'], if_exists='ignore')
+
+chunks = pxt.create_view('app.chunks', docs,
+    iterator=document_splitter(docs.document, separators='page, sentence', metadata='title,heading,page'),
+    if_exists='ignore')
+
+embed_fn = sentence_transformer.using(model_id='intfloat/multilingual-e5-large-instruct')
+chunks.add_embedding_index('text', idx_name='chunks_embed', string_embed=embed_fn, if_exists='ignore')
+```
+
+```python
+# routers/data.py — queries co-located with routes
+import pixeltable as pxt
+from pixeltable.serving import FastAPIRouter
+
+router = FastAPIRouter(prefix="/api/data", tags=["data"])
+docs = pxt.get_table("app.documents")
+chunks = pxt.get_table("app.chunks")
+
+# Upload with background processing (returns job handle, client polls /jobs/{id})
+router.add_insert_route(docs, path="/upload",
+    uploadfile_inputs=["document"], inputs=["timestamp"], outputs=["uuid"],
+    background=True)
+
+router.add_delete_route(docs, path="/delete")
+
+@pxt.query
+def list_docs():
+    return docs.select(uuid=docs.uuid, name=docs.document, timestamp=docs.timestamp).order_by(docs.timestamp, asc=False)
+
+@pxt.query
+def search_docs(query_text: str):
+    sim = chunks.text.similarity(string=query_text)
+    return chunks.where(sim > 0.3).order_by(sim, asc=False).select(
+        text=chunks.text, sim=sim, title=chunks.title).limit(20)
+
+router.add_query_route(path="/list", query=list_docs, method="get")
+router.add_query_route(path="/search", query=search_docs, method="post")
+```
+
+```python
+# main.py
+from fastapi import FastAPI
+import setup_pixeltable  # noqa: F401 — triggers schema init
+from routers import data
+
+app = FastAPI()
+app.include_router(data.router)
+```
+
+Key points:
+- **`add_insert_route`** — generates POST endpoint from table columns. Use `uploadfile_inputs` for file uploads, `background=True` for long-running inserts
+- **`add_query_route`** — wraps a `@pxt.query` function as GET or POST. Returns `{ "rows": [...] }` automatically
+- **`add_delete_route`** — generates POST endpoint for row deletion by primary key or `match_columns`
+- **Schema in one file, queries in routers** — `setup_pixeltable.py` creates tables/views/indexes on import. Routers get table refs via `pxt.get_table()` and define `@pxt.query` locally
+- **Only write custom endpoints** for multi-table side effects (e.g., agent insert + chat history saves)
+
+Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) | [core-api.md → Serving](core-api.md#serving-fastapirouter)
 
 ### Export Workflow
 

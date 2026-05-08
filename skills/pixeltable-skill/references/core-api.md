@@ -122,6 +122,10 @@ df = t.select(t.col1, t.col2).collect().to_pandas()                           # 
 items = list(t.select(title=t.title, score=t.score).collect().to_pydantic(M))  # to Pydantic (names must match)
 t.insert([pydantic_model_instance])                                            # insert Pydantic models
 first_5 = t.head(5)
+
+# return_rows=True: get computed columns back from insert without a follow-up query
+status = t.insert([row], return_rows=True)
+data = status.rows[0]  # dict with ALL columns including computed
 ```
 
 ## Computed Columns
@@ -450,6 +454,40 @@ items = pxt.create_view('dir.items', t,
 t.update({'score': 1.0}, where=t.category == 'important')
 t.delete(where=t.is_active == False)
 ```
+
+### return_rows=True (insert-then-read)
+
+Get all column values (including computed columns) back from `insert()`, `update()`, or `batch_update()` without a follow-up query:
+
+```python
+# Anti-pattern: insert then query
+t.insert([row])
+result = t.where(t.id == value).select(...).collect()
+data = result[0]
+
+# Correct: return_rows=True
+status = t.insert([row], return_rows=True)
+data = status.rows[0]  # dict with ALL columns including computed
+```
+
+For typed access, use Pydantic `model_validate()` with `extra="ignore"` (row dicts contain every column):
+
+```python
+from pydantic import BaseModel
+
+class AgentResult(BaseModel):
+    model_config = {"extra": "ignore"}
+    answer: str | None = None
+    tool_output: Any = None
+
+status = agent.insert([{"prompt": user_input}], return_rows=True)
+result = AgentResult.model_validate(status.rows[0])
+```
+
+**When to use which:**
+- `return_rows=True` -- insert/update and read computed columns back in one call
+- `to_pydantic()` -- reading from a `ResultSet` (after `.collect()`)
+- `model_validate()` -- reading from `status.rows` (plain dicts from `return_rows=True`)
 
 ## Table Operations
 

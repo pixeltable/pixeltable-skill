@@ -515,6 +515,32 @@ Key points:
 - **Schema in one file, queries in routers** — `setup_pixeltable.py` creates tables/views/indexes on import. Routers get table refs via `pxt.get_table()` and define `@pxt.query` locally
 - **Only write custom endpoints** for multi-table side effects (e.g., agent insert + chat history saves)
 
+#### return_rows=True for hand-written endpoints
+
+When you do need a hand-written endpoint (multi-table side effects, conditional logic), use `return_rows=True` to read computed columns back without a follow-up query:
+
+```python
+from pydantic import BaseModel
+
+class AgentResult(BaseModel):
+    model_config = {"extra": "ignore"}
+    answer: str | None = None
+    tool_output: Any = None
+
+@router.post("/query")
+def agent_query(request: QueryRequest):
+    status = agent_table.insert(
+        [{"prompt": request.prompt}], return_rows=True
+    )
+    result = AgentResult.model_validate(status.rows[0])
+    # Conditional: save to chat history based on computed result
+    if result.answer:
+        chat_table.insert([{"role": "assistant", "content": result.answer}])
+    return result
+```
+
+`extra="ignore"` is required because `status.rows` dicts contain every column; Pydantic would reject the extras without it.
+
 Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) | [core-api.md → Serving](core-api.md#serving-fastapirouter)
 
 ### Export Workflow

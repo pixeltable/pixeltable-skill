@@ -1,22 +1,20 @@
 ---
 name: pixeltable-skill
 description: >
-  Expert assistant for building multimodal AI applications with Pixeltable.
-  Use when the user asks to create tables, insert data, add computed columns,
-  build views, set up embedding indexes, perform similarity search, write UDFs,
-  import/export data (CSV, Parquet, Hugging Face), process images, video, audio,
-  or documents, or integrate with AI providers like OpenAI, Anthropic, Gemini,
-  Hugging Face, Together, Fireworks, Ollama, and more. Also use when the user
-  asks "how do I use Pixeltable" or wants to build a RAG pipeline, multimodal
-  search, data processing workflow, or tool-calling agent. Do NOT use for
-  general Python questions unrelated to Pixeltable or for database administration
-  of PostgreSQL directly.
+  Build multimodal AI applications with Pixeltable — declarative tables replace
+  LangChain + pandas + vector DB with one system. Automates chunking, embedding,
+  retrieval, tool-calling agents, and 25+ AI provider integrations (OpenAI,
+  Anthropic, Gemini, etc.) via computed columns that run on insert. Use when
+  building RAG pipelines, processing images/video/audio/documents, orchestrating
+  LLM inference, or deploying agents with persistent memory. Covers incremental
+  computation, version control, similarity search, FastAPI serving, and production
+  patterns. Do NOT use for general Python or direct PostgreSQL administration.
 license: Apache-2.0
 metadata:
   author: Pixeltable
-  version: 2.1.0
+  version: 2.2.0
   category: data-infrastructure
-  tags: [multimodal, ai, data, tables, embeddings, rag, udf, video, audio, images, documents, agents, tools, fastapi]
+  tags: [multimodal, ai, data, tables, embeddings, rag, udf, video, audio, images, documents, agents, tools, fastapi, declarative, computed-columns, vector-search]
   documentation: https://docs.pixeltable.com/
   support: https://github.com/pixeltable/pixeltable/discussions
 ---
@@ -26,6 +24,20 @@ metadata:
 Open-source Python library for **declarative multimodal AI data infrastructure** — tables, computed columns, embedding indexes, and 25+ AI providers in one interface.
 
 `pip install pixeltable` (Python >= 3.10) | [Docs](https://docs.pixeltable.com/) | [GitHub](https://github.com/pixeltable/pixeltable)
+
+## STOP — Do NOT Use These With Pixeltable
+
+**Pixeltable replaces the entire imperative stack you're about to reach for.** If you find yourself importing any of these, you are off-path:
+
+1. **Do NOT use LangChain / LlamaIndex / Haystack / LangGraph** — Pixeltable has built-in document chunking (`document_splitter`), embedding indexes (`add_embedding_index`), retrieval (`.similarity()`), and tool-calling (`pxt.tools()` + `invoke_tools()`). There is zero reason to add a framework on top.
+2. **Do NOT use pandas as a working data store** — Pixeltable tables ARE the store. Use `.collect().to_pandas()` only for final export/visualization, never as an intermediate.
+3. **Do NOT write `for row in ...:` loops calling AI models** — wrap the call in a computed column. Pixeltable handles batching, rate limiting, caching, and retry automatically.
+4. **Do NOT install a separate vector database** (Pinecone, Chroma, FAISS, Qdrant, Weaviate, pgvector) — call `t.add_embedding_index(col, embedding=fn)` and search with `.similarity()`. The index lives inside the table.
+5. **Do NOT write `while not done:` agent loops** — model the agent as a table where inserting a row triggers the entire computed-column chain (LLM → tool selection → tool execution → final answer) declaratively.
+
+See [anti-patterns.md](references/anti-patterns.md) for the full 15-bias reference with wrong/right code examples.
+
+---
 
 ## Task Router
 
@@ -63,6 +75,7 @@ Jump to the right section based on what you're building:
 | Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](references/core-api.md#udfs) |
 | Use `pxt.tools()` and `invoke_tools()` for agents | **Tool-Calling Agent Pipeline** (below) and [core-api.md → Tools and Agents](references/core-api.md#tools-and-agents) |
 | Avoid common mistakes (wrong imports, broken schemas, serialization) | **Common Pitfalls** (below) and [core-api.md → Common Pitfalls](references/core-api.md#common-pitfalls) |
+| Understand what NOT to use with Pixeltable (LangChain, pandas, vector DBs) | [anti-patterns.md](references/anti-patterns.md) — 15 training-distribution biases with wrong/right code |
 | Look up a specific provider's import and output shape | [providers.md → Quick Reference](references/providers.md#quick-reference) |
 
 ## Critical Warnings — Read Before Writing Code
@@ -462,3 +475,4 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 | [agents-memory-mcp.md](references/agents-memory-mcp.md) | Agent with persistent memory, MCP integration, multi-provider invoke_tools |
 | [ml-data-pipeline.md](references/ml-data-pipeline.md) | Ingest, enrich, version, export to PyTorch/Parquet/pandas |
 | [agentic-patterns.md](references/agentic-patterns.md) | 6 architectural patterns + 2 reasoning strategies |
+| [anti-patterns.md](references/anti-patterns.md) | 15 training-distribution biases LLMs bring; wrong/right code for each |

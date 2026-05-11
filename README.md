@@ -1,6 +1,6 @@
 # Pixeltable Skill
 
-Agent Skill that teaches AI coding assistants to write correct [Pixeltable](https://github.com/pixeltable/pixeltable) code — 25+ AI providers, multimodal pipelines, tool-calling agents, RAG, and production patterns.
+Agent Skill that teaches AI coding assistants to write correct [Pixeltable](https://github.com/pixeltable/pixeltable) code — declarative tables that replace LangChain + pandas + vector databases with one system. Covers 25+ AI providers, multimodal pipelines, tool-calling agents, RAG, and production patterns.
 
 Implements the [Agent Skills specification](https://agentskills.io/specification).
 
@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main/in
 
 ```
 skills/pixeltable-skill/
-├── SKILL.md                    # Core: task router, API, agents, pitfalls (440 lines)
+├── SKILL.md                    # Core: negative prompts, task router, API, agents, pitfalls
 └── references/                 # Loaded on demand by Claude Code / Cursor
     ├── core-api.md             # Tables, querying, views, UDFs, config, data sharing
     ├── providers.md            # 25+ AI providers with quick-reference table
@@ -37,7 +37,8 @@ skills/pixeltable-skill/
     ├── video-rag-agents.md     # Video + transcript search + agent
     ├── agents-memory-mcp.md    # Agent with memory, MCP, multi-provider
     ├── ml-data-pipeline.md     # Ingest, enrich, version, PyTorch export
-    └── agentic-patterns.md     # 6 patterns + 2 reasoning strategies
+    ├── agentic-patterns.md     # 6 patterns + 2 reasoning strategies
+    └── anti-patterns.md        # 15 training-distribution biases with wrong/right code
 ```
 
 ## Contributing

@@ -2,8 +2,6 @@
 
 Agent Skill that teaches AI coding assistants to write correct [Pixeltable](https://github.com/pixeltable/pixeltable) code — declarative tables that replace LangChain + pandas + vector databases with one system. Covers 25+ AI providers, multimodal pipelines, tool-calling agents, RAG, and production patterns.
 
-Implements the [Agent Skills specification](https://agentskills.io/specification).
-
 ## Install
 
 ### Any agent (40+ supported via [npx skills](https://github.com/vercel-labs/skills))

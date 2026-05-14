@@ -2,6 +2,17 @@
 
 A production recipe combining a tool-calling agent with persistent memory (chat history + knowledge bank) and external MCP server integration. The agent remembers past conversations, retrieves stored facts, and can call both local tools and remote MCP tools.
 
+## Workflow
+
+1. Create a chat history table with embedding index for semantic recall
+2. Create a memory bank table for long-lived facts and preferences
+3. Write `@pxt.query` retrieval functions for both (filtered by `user_id`)
+4. Write local `@pxt.udf` tools (including a `save_memory` tool for the LLM to store facts)
+5. (Optional) Load MCP tools with `pxt.mcp_udfs()` and combine with local tools
+6. Bundle all tools with `pxt.tools()`
+7. Create agent table with computed column chain: LLM -> invoke_tools -> context assembly -> final answer
+8. After each agent response, save the conversation to chat history for future recall
+
 ## Full Pipeline
 
 ```python
@@ -262,3 +273,17 @@ To switch providers, change the import and the LLM call function. The `tools` ob
 - **Add image memory**: Use CLIP embeddings on an image column for visual memory recall
 - **Serve via API**: Wrap in a FastAPI endpoint — see [workflows.md → FastAPI App Pattern](workflows.md#fastapi-app-pattern)
 - **Use Anthropic instead**: Swap `chat_completions` → `messages` and `openai.invoke_tools` → `anthropic.invoke_tools` — see [providers.md → Quick Reference](providers.md#quick-reference)
+
+## Agent with Memory Checklist
+
+- [ ] Chat history table created with `user_id`, `role`, `content`, `timestamp` columns
+- [ ] Embedding index added on chat history `content` column
+- [ ] Memory bank table created with `user_id`, `content`, `category` columns
+- [ ] Embedding index added on memory bank `content` column
+- [ ] Recall queries filter by `user_id` (multi-tenant safety)
+- [ ] Recall queries use `.similarity(string=...)` with keyword argument and a minimum threshold
+- [ ] `save_memory` tool has a clear docstring so the LLM knows when to store facts
+- [ ] Tools bundled with `pxt.tools()` — includes both local UDFs and MCP tools if any
+- [ ] `invoke_tools()` import matches the LLM provider used
+- [ ] Agent response saved to chat history after each interaction (both user and assistant turns)
+- [ ] Tested with multiple user IDs to verify scoping works

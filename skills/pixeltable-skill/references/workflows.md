@@ -19,6 +19,15 @@ Complete, production-ready workflow templates combining multiple Pixeltable feat
 
 ### RAG Pipeline
 
+#### Workflow
+
+1. Create a directory and document table with `pxt.Document` column
+2. Create a chunking view with `document_splitter` (set token limit based on your embedding model)
+3. Add an embedding index on the chunk text column
+4. Insert documents (local files, URLs, or S3 paths)
+5. Write a `@pxt.query` retrieval function using `.similarity()`
+6. (Optional) Add a computed column for LLM-generated answers using retrieved context
+
 ```python
 import pixeltable as pxt
 from pixeltable.functions.document import document_splitter
@@ -52,7 +61,26 @@ def retrieve(question: str, top_k: int = 5):
 context = retrieve('What is machine learning?').collect()
 ```
 
+#### RAG Pipeline Checklist
+
+- [ ] Document table created with `pxt.Document` column and `if_exists='ignore'`
+- [ ] Chunking view created with appropriate `separators` and `limit`
+- [ ] Embedding index added (cast to `pxt.String` if source is not already String)
+- [ ] Documents inserted successfully (check `t.count()`)
+- [ ] Retrieval query uses `similarity(string=...)` with keyword argument
+- [ ] Results include similarity score for debugging relevance
+- [ ] (If answering) LLM computed column uses retrieved context, not raw documents
+
 ### Video Analysis Pipeline
+
+#### Workflow
+
+1. Create a video table with `pxt.Video` column
+2. Create a frame extraction view (`frame_iterator` with `fps=` or `keyframes_only=True`)
+3. Extract audio (`extract_audio`), split into chunks (`audio_splitter`), transcribe
+4. Add embedding indexes on frames (CLIP for visual search) and/or transcript text (sentence transformer)
+5. (Optional) Add vision LLM computed column to describe frames
+6. Write `@pxt.query` functions for visual and transcript search
 
 ```python
 import pixeltable as pxt
@@ -133,6 +161,17 @@ def search_transcripts(query_text: str):
         sentences.text, sim=sim
     ).limit(20)
 ```
+
+#### Video Pipeline Checklist
+
+- [ ] Video table created with `pxt.Video` column and `if_exists='ignore'`
+- [ ] Frame view uses `frame_iterator` (not `FrameIterator`) with appropriate fps or `keyframes_only`
+- [ ] Audio extracted with `extract_audio` before creating audio chunk view
+- [ ] Transcription uses `transcriptions` on audio chunks, not raw video
+- [ ] Sentences split from transcription text using `string_splitter`
+- [ ] Embedding indexes use correct type: CLIP for images/frames, sentence_transformer for text
+- [ ] Vision LLM uses `image_url` format (not `image` or `data` keys) in messages
+- [ ] Retrieval queries use `.similarity(string=...)` with keyword argument
 
 ### Image Classification and Search
 
@@ -235,6 +274,16 @@ results = prompts.select(
 ```
 
 ### Tool-Calling Agent (Full Production Example)
+
+#### Workflow
+
+1. Create data tables (documents, images, etc.) with chunking views and embedding indexes
+2. Write `@pxt.query` retrieval functions and `@pxt.udf` tool functions
+3. Bundle tools with `pxt.tools()`
+4. Create agent table with `prompt`, `system_prompt`, `max_tokens`, `temperature` columns
+5. Add computed column chain: initial_response (LLM + tools) -> invoke_tools -> doc_context (RAG) -> assemble_context -> final_response -> answer
+6. Insert a row to trigger the entire pipeline
+7. Query the result from the answer column
 
 Complete agent pipeline as used in the [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit):
 
@@ -345,6 +394,19 @@ agent.insert([{
 }])
 result = agent.order_by(agent.timestamp, asc=False).limit(1).select(agent.answer).collect()
 ```
+
+#### Agent Pipeline Checklist
+
+- [ ] Data tables and chunking views created with `if_exists='ignore'`
+- [ ] Embedding indexes added on text/image columns
+- [ ] `@pxt.query` functions use `.similarity(string=...)` with keyword argument
+- [ ] `@pxt.udf` tools have type annotations and docstrings (LLM reads these for tool selection)
+- [ ] Tools bundled with `pxt.tools()` — passed to both the LLM call and `invoke_tools()`
+- [ ] Agent table has all needed columns (prompt, system_prompt, max_tokens, etc.)
+- [ ] Computed column chain is in correct order (each column depends only on prior columns)
+- [ ] `invoke_tools()` import matches the LLM provider (e.g., `anthropic.invoke_tools` for `anthropic.messages`)
+- [ ] Test insert produces a non-null answer; check `errortype` columns if null
+- [ ] To fix a broken computed column: `drop_column()` then recreate (do NOT just re-run)
 
 ### Local LLM Pipeline (Ollama)
 
@@ -542,6 +604,17 @@ def agent_query(request: QueryRequest):
 `extra="ignore"` is required because `status.rows` dicts contain every column; Pydantic would reject the extras without it.
 
 Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) | [core-api.md → Serving](core-api.md#serving-fastapirouter)
+
+#### FastAPI Serving Checklist
+
+- [ ] Schema defined in a separate file (e.g., `setup_pixeltable.py`) that runs on import
+- [ ] Router uses `FastAPIRouter` (not plain `APIRouter`) from `pixeltable.serving`
+- [ ] `add_insert_route` uses `background=True` for tables with many computed columns
+- [ ] `add_insert_route` specifies `uploadfile_inputs` for file/document columns
+- [ ] `add_query_route` wraps a `@pxt.query` function, not raw table queries
+- [ ] Endpoints use `def` not `async def` (Pixeltable is synchronous)
+- [ ] Business logic lives in `@pxt.udf` / `@pxt.query`, not endpoint handlers
+- [ ] Tested with `uvicorn main:app --reload` and verified via `/docs` Swagger UI
 
 ### Export Workflow
 

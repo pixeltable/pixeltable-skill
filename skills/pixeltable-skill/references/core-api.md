@@ -725,33 +725,58 @@ See [workflows.md → FastAPIRouter](workflows.md#fastapirouter-declarative-serv
 
 ### pxt serve (CLI)
 
-For quick prototyping or production without writing Python, define routes in a TOML file:
+Define routes in `pyproject.toml` (standard Python convention) or a standalone `pixeltable.toml`, then run `pxt serve`:
 
 ```toml
-# service.toml
-[service]
-name = "my-api"
+# In pyproject.toml (alongside [project] and dependencies)
+
+[[tool.pixeltable.service]]
+name = "pipeline"
 prefix = "/api"
+port = 8000
+modules = ["schema"]       # imports schema.py on startup
 
-[[endpoints]]
-route_type = "query"
+[[tool.pixeltable.service.routes]]
+type = "query"
 path = "/search"
-query = "search_docs"
-table = "myapp.documents"
+query = "schema.search_documents"   # dotted path to @pxt.query function
+method = "post"
 
-[[endpoints]]
-route_type = "insert"
-path = "/ingest"
-table = "myapp.documents"
-inputs = ["document", "title"]
+[[tool.pixeltable.service.routes]]
+type = "insert"
+path = "/ingest/document"
+table = "pipeline.documents"
+inputs = ["title", "body", "source_id"]
 outputs = ["uuid"]
+
+[[tool.pixeltable.service.routes]]
+type = "delete"
+path = "/delete/document"
+table = "pipeline.documents"
 ```
 
 ```bash
-pxt serve service.toml --port 8000
+PYTHONPATH=. pxt serve pipeline        # serves at http://localhost:8000
+PYTHONPATH=. pxt serve pipeline --port 9000
 ```
 
-`pxt serve` generates a FastAPI app from the TOML config. Same capabilities as `FastAPIRouter` (insert, query, delete, background jobs). See [HTTP Serving docs](https://docs.pixeltable.com/howto/deployment/serving).
+Insert routes can auto-export to a serving DB on every request:
+
+```toml
+[[tool.pixeltable.service.routes]]
+type = "insert"
+path = "/ingest/document"
+table = "pipeline.documents"
+inputs = ["title", "body", "source_id"]
+outputs = ["uuid"]
+
+[tool.pixeltable.service.routes.export_sql]
+db_connect = "postgresql+psycopg://user:pass@host/db"
+table = "processed_documents"
+method = "insert"
+```
+
+`pxt serve` generates a complete FastAPI app with OpenAPI docs at `/docs`. Same capabilities as `FastAPIRouter` (insert, query, delete, background jobs). See the [Starter Kit `serving/` directory](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/serving) for a working example.
 
 ---
 

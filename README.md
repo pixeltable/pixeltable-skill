@@ -4,24 +4,23 @@ Agent Skill that teaches AI coding assistants to write correct [Pixeltable](http
 
 ## Install
 
-### Any agent (40+ supported via [npx skills](https://github.com/vercel-labs/skills))
+### Claude Code
+
+```
+/plugin marketplace add pixeltable/pixeltable-skill
+/plugin install pixeltable-skill@pixeltable-skill
+```
+
+### Cursor, Copilot, Windsurf, and 40+ agents ([npx skills](https://github.com/vercel-labs/skills))
 
 ```bash
 npx skills add pixeltable/pixeltable-skill
 ```
 
-### Claude Code plugin
+### Any LLM (paste URL into context)
 
-```bash
-/plugin marketplace add pixeltable/pixeltable-skill
-/plugin install pixeltable-skill@pixeltable-skill
-```
-
-### Manual
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main/install.sh | bash -s -- --platform claude-code
-```
+- [llms.txt](https://www.pixeltable.com/llms.txt)
+- [llms-full.txt](https://docs.pixeltable.com/llms-full.txt)
 
 ## What's Inside
 
@@ -46,7 +45,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). All content lives in `skills/pixeltable-
 ## Links
 
 - [Pixeltable Docs](https://docs.pixeltable.com/) · [GitHub](https://github.com/pixeltable/pixeltable) · [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) · [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) · [Discord](https://discord.gg/QPyqFYx2UN)
-- LLM docs: [llms.txt](https://www.pixeltable.com/llms.txt) · [llms-full.txt](https://docs.pixeltable.com/llms-full.txt)
+- Scaffold a project: `uvx pixeltable-new myapp` ([pixeltable-new](https://github.com/pixeltable/pixeltable-new))
 
 ## License
 

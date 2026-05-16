@@ -89,6 +89,19 @@ Jump to the right section based on what you're building:
 
 See [Common Pitfalls](#common-pitfalls) below for full details and code examples.
 
+## Starting a New Project
+
+Scaffold a complete Pixeltable project from the [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) in one command:
+
+```bash
+uvx pixeltable-new myapp                # default: declarative serving pattern
+uvx pixeltable-new myapp --serving      # declarative API from TOML config
+uvx pixeltable-new myapp --backend      # full FastAPI + React web app
+uvx pixeltable-new myapp --batch        # batch processing script with export_sql
+```
+
+Then modify `schema.py` to define your tables, computed columns, and embedding indexes. Run `pxt serve <service-name>` (serving), `uvicorn main:app` (backend), or `python pipeline.py` (batch) to start.
+
 ## Core Concepts
 
 ### Tables and Column Types
@@ -461,6 +474,7 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 
 ## Resources
 
+- [pixeltable-new](https://github.com/pixeltable/pixeltable-new) — `uvx pixeltable-new myapp` to scaffold a project from the starter kit
 - [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — three deployment patterns:
   - `backend/` + `frontend/`: FastAPI + React web app with agent, search, and data upload
   - `batch/`: pure Python script for batch processing (no HTTP server), deploy as Cloud Run Job, K8s Job, ECS Fargate, or Lambda

@@ -94,13 +94,13 @@ See [Common Pitfalls](#common-pitfalls) below for full details and code examples
 Scaffold a complete Pixeltable project from the [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) in one command:
 
 ```bash
-# Application templates (full-stack vertical apps, each replaces a paid SaaS)
-uvx pixeltable-new --template multimodal-rag my-kb        # your own Vectara
-uvx pixeltable-new --template video-intel my-video-app    # your own Twelve Labs
-uvx pixeltable-new --template agent my-agent              # your own Mem0
-uvx pixeltable-new --template audio-intel my-podcast-app  # your own Otter.ai
-uvx pixeltable-new --template content-pipeline my-pipe    # your own Cloudinary AI
-uvx pixeltable-new --template data-lab my-dataset         # your own Roboflow
+# Application templates (each builds on a structural pattern)
+uvx pixeltable-new --template multimodal-rag my-kb        # serving + backend (web UI)
+uvx pixeltable-new --template video-intel my-video-app    # serving (pure declarative)
+uvx pixeltable-new --template agent my-agent              # serving + backend (web UI)
+uvx pixeltable-new --template audio-intel my-podcast-app  # serving + backend (web UI)
+uvx pixeltable-new --template content-pipeline my-pipe    # batch (pipeline.py)
+uvx pixeltable-new --template data-lab my-dataset         # batch (export.py)
 
 # Structural patterns (API/pipeline scaffolds)
 uvx pixeltable-new myapp                # default: declarative serving pattern
@@ -111,7 +111,7 @@ uvx pixeltable-new myapp --batch        # batch processing script with export_sq
 uvx pixeltable-new --list               # show all patterns + templates
 ```
 
-Then modify `schema.py` to define your tables, computed columns, and embedding indexes. Run `pxt serve <service-name>` (serving/templates), `uvicorn main:app` (backend), or `python pipeline.py` (batch) to start.
+Each template builds on one of the three structural patterns (serving, backend, batch), so you already know how to run and deploy it.
 
 ## Core Concepts
 
@@ -489,9 +489,9 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 ## Resources
 
 - [pixeltable-new](https://github.com/pixeltable/pixeltable-new) — `uvx pixeltable-new myapp` to scaffold a project from the starter kit
-- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — structural patterns + application templates:
-  - **Templates** (full-stack vertical apps): `multimodal-rag`, `video-intel`, `agent`, `audio-intel`, `content-pipeline`, `data-lab`
-  - **Patterns** (API/pipeline scaffolds): `backend/` (FastAPI API), `serving/` (pxt serve), `batch/` (batch processing)
+- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — 3 patterns + 6 templates:
+  - **Patterns**: `serving/` (pxt serve), `backend/` (FastAPI API), `batch/` (batch processing)
+  - **Templates** (each builds on a pattern): `multimodal-rag` (serving+backend), `video-intel` (serving), `agent` (serving+backend), `audio-intel` (serving+backend), `content-pipeline` (batch), `data-lab` (batch)
 - [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) — Explore Pixeltable tables via MCP
 - [LLM Docs](https://docs.pixeltable.com/llms-full.txt) — Complete documentation as plain text | [llms.txt](https://www.pixeltable.com/llms.txt)
 

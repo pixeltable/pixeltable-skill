@@ -94,13 +94,24 @@ See [Common Pitfalls](#common-pitfalls) below for full details and code examples
 Scaffold a complete Pixeltable project from the [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) in one command:
 
 ```bash
+# Application templates (full-stack vertical apps, each replaces a paid SaaS)
+uvx pixeltable-new --template multimodal-rag my-kb        # your own Vectara
+uvx pixeltable-new --template video-intel my-video-app    # your own Twelve Labs
+uvx pixeltable-new --template agent my-agent              # your own Mem0
+uvx pixeltable-new --template audio-intel my-podcast-app  # your own Otter.ai
+uvx pixeltable-new --template content-pipeline my-pipe    # your own Cloudinary AI
+uvx pixeltable-new --template data-lab my-dataset         # your own Roboflow
+
+# Structural patterns (API/pipeline scaffolds)
 uvx pixeltable-new myapp                # default: declarative serving pattern
-uvx pixeltable-new myapp --serving      # declarative API from TOML config
-uvx pixeltable-new myapp --backend      # full FastAPI + React web app
+uvx pixeltable-new myapp --backend      # FastAPI API scaffold (headless)
 uvx pixeltable-new myapp --batch        # batch processing script with export_sql
+
+# Discovery
+uvx pixeltable-new --list               # show all patterns + templates
 ```
 
-Then modify `schema.py` to define your tables, computed columns, and embedding indexes. Run `pxt serve <service-name>` (serving), `uvicorn main:app` (backend), or `python pipeline.py` (batch) to start.
+Then modify `schema.py` to define your tables, computed columns, and embedding indexes. Run `pxt serve <service-name>` (serving/templates), `uvicorn main:app` (backend), or `python pipeline.py` (batch) to start.
 
 ## Core Concepts
 
@@ -475,10 +486,9 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 ## Resources
 
 - [pixeltable-new](https://github.com/pixeltable/pixeltable-new) — `uvx pixeltable-new myapp` to scaffold a project from the starter kit
-- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — three deployment patterns:
-  - `backend/` + `frontend/`: FastAPI + React web app with agent, search, and data upload
-  - `batch/`: pure Python script for batch processing (no HTTP server), deploy as Cloud Run Job, K8s Job, ECS Fargate, or Lambda
-  - `serving/`: declarative API via `pxt serve` (routes from TOML config, zero web code)
+- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — structural patterns + application templates:
+  - **Templates** (full-stack vertical apps): `multimodal-rag`, `video-intel`, `agent`, `audio-intel`, `content-pipeline`, `data-lab`
+  - **Patterns** (API/pipeline scaffolds): `backend/` (FastAPI API), `serving/` (pxt serve), `batch/` (batch processing)
 - [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) — Explore Pixeltable tables via MCP
 - [LLM Docs](https://docs.pixeltable.com/llms-full.txt) — Complete documentation as plain text | [llms.txt](https://www.pixeltable.com/llms.txt)
 

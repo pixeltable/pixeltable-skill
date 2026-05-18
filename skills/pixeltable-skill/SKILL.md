@@ -200,7 +200,7 @@ from pixeltable.functions.video import frame_iterator
 from pixeltable.functions.string import string_splitter
 from pixeltable.functions.audio import audio_splitter
 
-# Chunk documents into 300-token pieces
+# Chunk documents into 300-token pieces (requires: pip install tiktoken)
 chunks = pxt.create_view(
     'my_project.doc_chunks', t,
     iterator=document_splitter(t.doc, separators='token_limit', limit=300),
@@ -432,6 +432,9 @@ t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
 | 5 | `{'type':'image', 'data': t.image}` in messages | Use `{'type':'image_url', 'image_url':{'url': t.image}}` |
 | 6 | `t.content.similarity(query)` (positional) | `t.content.similarity(string=query)` (keyword) |
 | 7 | Schema corruption (`IntegrityError`) | `pip install -U pixeltable && rm -rf ~/.pixeltable` |
+| 8 | `.collect()` or `pxt.get_table()` inside `@pxt.query` | `@pxt.query` compiles the body at decoration time with expression placeholders — don't call `.collect()`, `insert()`, or reference tables that may not exist. Use a plain `def` for imperative logic |
+| 9 | `'id': pxt.String` as primary key | PK columns must be non-nullable. Use `pxt.Required[pxt.String]` or `uuid7()` as a computed default |
+| 10 | Module-level `Table` object used in FastAPI endpoint | `Table` objects are thread-bound. Call `pxt.get_table()` inside each endpoint function, not at module level |
 
 Full examples in [core-api.md → Common Pitfalls](references/core-api.md#common-pitfalls).
 

@@ -1054,6 +1054,81 @@ sim = t.content.similarity(string=query_text)  # NOT .similarity(query_text)
 
 Schema corruption (`IntegrityError`): `pip install -U pixeltable && rm -rf ~/.pixeltable`
 
+### `@pxt.query` Eager Compilation
+
+`@pxt.query` compiles the function body at **decoration time** by calling it with expression placeholders. This means:
+
+```python
+# WRONG — .collect() executes during decoration, not at call time
+@pxt.query
+def find_similar(ref_id: str):
+    ref = t.where(t.uuid == ref_id).select(t.embedding).collect()  # FAILS at decoration
+    return t.order_by(t.embedding.similarity(ref[0]['embedding'])).limit(5)
+
+# CORRECT — use a plain def for imperative logic that needs .collect()
+def find_similar(ref_id: str) -> list[dict]:
+    ref = t.where(t.uuid == ref_id).select(t.embedding).collect()
+    return list(t.order_by(t.embedding.similarity(ref[0]['embedding'])).limit(5).collect())
+
+# WRONG — references a table that may not exist yet
+@pxt.query
+def search():
+    t = pxt.get_table('maybe.missing')  # FAILS if table doesn't exist at decoration time
+    return t.select(t.col)
+```
+
+### Nullable Primary Keys
+
+Primary key columns must be non-nullable. Bare `pxt.String` is nullable by default:
+
+```python
+# WRONG — nullable PK rejected at table creation
+t = pxt.create_table('dir.items', {
+    'id': pxt.String,  # nullable!
+}, primary_key=['id'])
+
+# CORRECT — explicit non-nullable
+t = pxt.create_table('dir.items', {
+    'id': pxt.Required[pxt.String],
+}, primary_key=['id'])
+
+# CORRECT — uuid7() computed default (recommended)
+from pixeltable.functions.uuid import uuid7
+t = pxt.create_table('dir.items', {
+    'content': pxt.String,
+    'uuid': uuid7(),
+}, primary_key=['uuid'])
+```
+
+### Thread-Safety in FastAPI
+
+`Table` objects are bound to the thread that created them. In FastAPI (which dispatches sync endpoints to a thread pool), call `pxt.get_table()` inside each endpoint:
+
+```python
+# WRONG — module-level Table used across threads
+docs = pxt.get_table('app.documents')
+
+@app.get('/count')
+def count():
+    return {'count': docs.count()}  # fails: wrong thread
+
+# CORRECT — get a fresh handle per request
+@app.get('/count')
+def count():
+    docs = pxt.get_table('app.documents')
+    return {'count': docs.count()}
+```
+
+### `document_splitter` with `token_limit`
+
+The `token_limit` separator requires the `tiktoken` package:
+
+```bash
+pip install tiktoken
+```
+
+Without it, `document_splitter(t.doc, separators='token_limit', ...)` raises `RequestError: This feature requires the tiktoken package`.
+
 ## Performance Tips
 
 - Batch inserts for efficiency

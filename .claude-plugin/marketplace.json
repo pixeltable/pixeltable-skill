@@ -12,7 +12,7 @@
     {
       "name": "pixeltable-skill",
       "description": "Build multimodal AI applications with Pixeltable — tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
-      "source": "https://github.com/pixeltable/pixeltable-skill",
+      "source": "./",
       "strict": false,
       "skills": [
         "./"

@@ -315,7 +315,9 @@ def assemble_context(question: str, tool_outputs: list | None, doc_context: list
     doc_str = '\n'.join(
         f"- {item.get('text', '')}" for item in (doc_context or []) if isinstance(item, dict)
     ) or 'N/A'
-    return f"QUESTION: {question}\n\n[TOOL RESULTS]\n{tool_str}\n\n[DOCUMENTS]\n{doc_str}"
+    return (f"QUESTION: {question}\n\n"
+            f"<tool_results>\n{tool_str}\n</tool_results>\n\n"
+            f"<retrieved_documents>\n{doc_str}\n</retrieved_documents>")
 
 agent = pxt.create_table('my_project.agent', {
     'prompt': pxt.String, 'timestamp': pxt.Timestamp,

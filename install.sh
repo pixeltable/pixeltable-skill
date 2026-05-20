@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # Pixeltable Skill Installer
+# Prefer: npx skills add pixeltable/pixeltable-skill (audited, no curl|bash)
 # Usage:
 #   Interactive:  ./install.sh
 #   Direct:       ./install.sh --platform claude-code --target ./my-project
-#   Curl:         curl -fsSL https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main/install.sh | bash -s -- --platform claude-code
 
 REPO_URL="https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main"
 REF_FILES="core-api providers workflows video-rag-agents agents-memory-mcp ml-data-pipeline agentic-patterns anti-patterns"

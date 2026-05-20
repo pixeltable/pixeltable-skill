@@ -115,7 +115,7 @@ def assemble_context(
     parts = [f"QUESTION: {question}"]
 
     tool_str = str(tool_outputs) if tool_outputs else 'N/A'
-    parts.append(f"\n[TOOL RESULTS]\n{tool_str}")
+    parts.append(f"\n<tool_results>\n{tool_str}\n</tool_results>")
 
     if transcript_context:
         transcript_str = '\n'.join(
@@ -124,7 +124,7 @@ def assemble_context(
         ) or 'N/A'
     else:
         transcript_str = 'N/A'
-    parts.append(f"\n[TRANSCRIPT EXCERPTS]\n{transcript_str}")
+    parts.append(f"\n<transcript_excerpts>\n{transcript_str}\n</transcript_excerpts>")
 
     if frame_context:
         frame_str = '\n'.join(
@@ -133,7 +133,7 @@ def assemble_context(
         ) or 'N/A'
     else:
         frame_str = 'N/A'
-    parts.append(f"\n[VISUAL DESCRIPTIONS]\n{frame_str}")
+    parts.append(f"\n<visual_descriptions>\n{frame_str}\n</visual_descriptions>")
 
     return '\n'.join(parts)
 

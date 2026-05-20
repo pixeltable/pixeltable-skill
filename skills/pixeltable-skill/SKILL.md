@@ -95,12 +95,13 @@ Scaffold a complete Pixeltable project from the [Starter Kit](https://github.com
 
 ```bash
 # Application templates (each builds on a structural pattern)
-uvx pixeltable-new --template multimodal-rag my-kb        # serving + backend (web UI)
-uvx pixeltable-new --template video-intel my-video-app    # serving (pure declarative)
-uvx pixeltable-new --template agent my-agent              # serving + backend (web UI)
-uvx pixeltable-new --template audio-intel my-podcast-app  # serving + backend (web UI)
-uvx pixeltable-new --template content-pipeline my-pipe    # batch (pipeline.py)
-uvx pixeltable-new --template data-lab my-dataset         # batch (export.py)
+uvx pixeltable-new --template knowledge-base my-kb             # web UI + API
+uvx pixeltable-new --template chat-agent my-agent              # web UI + API
+uvx pixeltable-new --template audio-transcription my-podcast   # web UI + API
+uvx pixeltable-new --template full-stack-showcase my-sitewatch # web UI + API (complete reference app)
+uvx pixeltable-new --template video-search my-video-app        # API only
+uvx pixeltable-new --template media-indexing my-pipe           # API + batch
+uvx pixeltable-new --template image-dataset my-dataset         # API + batch
 
 # Structural patterns (API/pipeline scaffolds)
 uvx pixeltable-new myapp                # default: declarative serving pattern
@@ -492,8 +493,8 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 
 - [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — 3 structural patterns + 7 application templates:
   - **Patterns**: `backend/` (FastAPI + React), `batch/` (no HTTP server), `serving/` (`pxt serve` + TOML)
-  - **app.py templates** (have UI, run `python app.py`): `multimodal-rag`, `agent`, `audio-intel`, `full-stack-showcase`
-  - **pxt-serve templates** (API only, run `python schema.py` then `pxt serve <name>`): `video-intel`, `content-pipeline`, `data-lab`
+  - **app.py templates** (have UI, run `python app.py`): `knowledge-base`, `chat-agent`, `audio-transcription`, `full-stack-showcase`
+  - **pxt-serve templates** (API only, run `python schema.py` then `pxt serve <name>`): `video-search`, `media-indexing`, `image-dataset`
   - All `app.py` templates include port auto-detection (probes upward from 8000; override with `PORT` env var)
   - Scaffold with [`pixeltable-new`](https://github.com/pixeltable/pixeltable-new): `uvx pixeltable-new --template <name> my-app`
 - [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) — Explore Pixeltable tables via MCP

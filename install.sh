@@ -70,13 +70,13 @@ install_skill() {
   local script_dir
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo ".")"
 
-  if [[ -f "$script_dir/SKILL.md" ]]; then
-    cp "$script_dir/SKILL.md" "$skill_dest/"
-    cp "$script_dir/references/"*.md "$skill_dest/references/"
+  if [[ -f "$script_dir/skills/pixeltable-skill/SKILL.md" ]]; then
+    cp "$script_dir/skills/pixeltable-skill/SKILL.md" "$skill_dest/"
+    cp "$script_dir/skills/pixeltable-skill/references/"*.md "$skill_dest/references/"
   else
-    curl -fsSL "$REPO_URL/SKILL.md" -o "$skill_dest/SKILL.md"
+    curl -fsSL "$REPO_URL/skills/pixeltable-skill/SKILL.md" -o "$skill_dest/SKILL.md"
     for ref_file in $REF_FILES; do
-      curl -fsSL "$REPO_URL/references/${ref_file}.md" -o "$skill_dest/references/${ref_file}.md"
+      curl -fsSL "$REPO_URL/skills/pixeltable-skill/references/${ref_file}.md" -o "$skill_dest/references/${ref_file}.md"
     done
   fi
 

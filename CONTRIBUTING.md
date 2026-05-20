@@ -15,11 +15,10 @@ Thanks for your interest in improving the Pixeltable Skill! This guide covers ho
 
 ```
 pixeltable-skill/
-├── skills/pixeltable-skill/   # All skill content lives here
-│   ├── SKILL.md               # Core instructions (<500 lines)
-│   └── references/            # Detailed reference (loaded on demand)
-├── install.sh                 # Installer for Claude Code and Cursor
-└── .claude-plugin/            # Claude Code plugin metadata
+├── SKILL.md               # Core instructions (<500 lines)
+├── references/            # Detailed reference (loaded on demand)
+├── install.sh             # Installer for Claude Code and Cursor
+└── .claude-plugin/        # Claude Code plugin metadata
 ```
 
 ## What to Contribute

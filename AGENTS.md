@@ -5,17 +5,19 @@ This repo contains the **Pixeltable Agent Skill** — documentation that teaches
 ## Structure
 
 ```
-skills/pixeltable-skill/
+pixeltable-skill/             (repo root = the skill)
 ├── SKILL.md              ← Main skill file (frontmatter + task router + core patterns)
-└── references/           ← Deep-dive files loaded on demand
-    ├── core-api.md
-    ├── providers.md
-    ├── workflows.md
-    ├── anti-patterns.md
-    ├── agents-memory-mcp.md
-    ├── video-rag-agents.md
-    ├── ml-data-pipeline.md
-    └── agentic-patterns.md
+├── references/           ← Deep-dive files loaded on demand
+│   ├── core-api.md
+│   ├── providers.md
+│   ├── workflows.md
+│   ├── anti-patterns.md
+│   ├── agents-memory-mcp.md
+│   ├── video-rag-agents.md
+│   ├── ml-data-pipeline.md
+│   └── agentic-patterns.md
+├── install.sh
+└── .claude-plugin/
 ```
 
 ## Rules
@@ -38,5 +40,5 @@ skills/pixeltable-skill/
 ## Do NOT
 
 - Add examples using deprecated APIs (`FrameIterator`, `openai.vision`, positional `.similarity()`)
-- Create new top-level files — all skill content lives under `skills/pixeltable-skill/`
+- Create new top-level directories — all skill content lives at the root (`SKILL.md` + `references/`)
 - Modify `install.sh` or `.claude-plugin/` without understanding the plugin distribution system

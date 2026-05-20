@@ -15,7 +15,7 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/pixeltable-skill"
+        "."
       ],
       "category": "data-infrastructure",
       "tags": ["pixeltable", "multimodal", "rag", "embeddings", "vector-search", "udf", "openai", "anthropic", "huggingface", "video", "audio", "images", "documents", "agents", "tools", "mcp", "fastapi"],

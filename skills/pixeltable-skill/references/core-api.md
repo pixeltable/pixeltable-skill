@@ -729,17 +729,18 @@ Define routes in `pyproject.toml` (standard Python convention) or a standalone `
 
 ```toml
 # In pyproject.toml (alongside [project] and dependencies)
+# Requires [build-system] + [tool.setuptools] py-modules = ["schema"]
+# so pxt serve can import schema.py without PYTHONPATH hacks.
 
 [[tool.pixeltable.service]]
 name = "pipeline"
 prefix = "/api"
 port = 8000
-modules = ["schema"]       # imports schema.py on startup
 
 [[tool.pixeltable.service.routes]]
 type = "query"
 path = "/search"
-query = "schema.search_documents"   # dotted path to @pxt.query function
+query = "schema:search_documents"   # colon-separated: module:attribute
 method = "post"
 
 [[tool.pixeltable.service.routes]]
@@ -756,8 +757,8 @@ table = "pipeline.documents"
 ```
 
 ```bash
-PYTHONPATH=. pxt serve pipeline        # serves at http://localhost:8000
-PYTHONPATH=. pxt serve pipeline --port 9000
+pxt serve pipeline        # serves at http://localhost:8000
+pxt serve pipeline --port 9000
 ```
 
 Insert routes can auto-export to a serving DB on every request:

@@ -490,10 +490,12 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 
 ## Resources
 
-- [pixeltable-new](https://github.com/pixeltable/pixeltable-new) — `uvx pixeltable-new myapp` to scaffold a project from the starter kit
-- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — 3 patterns + 6 templates:
-  - **Patterns**: `serving/` (pxt serve), `backend/` (FastAPI API), `batch/` (batch processing)
-  - **Templates** (each builds on a pattern): `multimodal-rag` (serving+backend), `video-intel` (serving), `agent` (serving+backend), `audio-intel` (serving+backend), `content-pipeline` (batch), `data-lab` (batch)
+- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — 3 structural patterns + 7 application templates:
+  - **Patterns**: `backend/` (FastAPI + React), `batch/` (no HTTP server), `serving/` (`pxt serve` + TOML)
+  - **app.py templates** (have UI, run `python app.py`): `multimodal-rag`, `agent`, `audio-intel`, `full-stack-showcase`
+  - **pxt-serve templates** (API only, run `python schema.py` then `pxt serve <name>`): `video-intel`, `content-pipeline`, `data-lab`
+  - All `app.py` templates include port auto-detection (probes upward from 8000; override with `PORT` env var)
+  - Scaffold with [`pixeltable-new`](https://github.com/pixeltable/pixeltable-new): `uvx pixeltable-new --template <name> my-app`
 - [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) — Explore Pixeltable tables via MCP
 - [LLM Docs](https://docs.pixeltable.com/llms-full.txt) — Complete documentation as plain text | [llms.txt](https://www.pixeltable.com/llms.txt)
 

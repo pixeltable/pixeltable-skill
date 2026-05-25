@@ -1,8 +1,48 @@
 # Pixeltable Agent Framework Integrations
 
-Python toolkits for using Pixeltable with popular agent frameworks.
+Python packages for using Pixeltable with popular AI frameworks.
 
-## Agno
+## LangChain (`langchain-pixeltable`)
+
+Drop-in VectorStore that lets any LangChain chain or retriever use Pixeltable as its vector backend.
+
+```python
+from langchain_pixeltable import PixeltableVectorStore
+from langchain_openai import OpenAIEmbeddings
+
+vs = PixeltableVectorStore.from_texts(
+    texts=["hello", "world"],
+    embedding=OpenAIEmbeddings(),
+    table_name="mydir.docs",
+)
+retriever = vs.as_retriever(search_kwargs={"k": 5})
+```
+
+```bash
+pip install langchain-pixeltable
+```
+
+## LlamaIndex (`llama-index-vector-stores-pixeltable`)
+
+VectorStore integration that plugs into LlamaIndex's `VectorStoreIndex` and query engine pipeline.
+
+```python
+from llama_index.vector_stores.pixeltable import PixeltableVectorStore
+from llama_index.core import VectorStoreIndex, StorageContext
+
+vector_store = PixeltableVectorStore(table_name="mydir.docs", embed_dim=1536)
+storage_context = StorageContext.from_defaults(vector_store=vector_store)
+index = VectorStoreIndex.from_documents(documents, storage_context=storage_context)
+query_engine = index.as_query_engine()
+```
+
+```bash
+pip install llama-index-vector-stores-pixeltable
+```
+
+## Agno (`integrations/agno/`)
+
+Toolkit class that gives Agno agents full access to Pixeltable operations.
 
 ```python
 from agno.agent import Agent
@@ -12,9 +52,11 @@ agent = Agent(tools=[PixeltableTools()])
 agent.print_response("Create a table for articles with text and image columns")
 ```
 
-**Tools provided:** `list_tables`, `create_table`, `get_table_schema`, `insert_rows`, `query_table`, `add_computed_column`, `add_embedding_index`, `similarity_search`, `drop_table`
+**Tools:** `list_tables`, `create_table`, `get_table_schema`, `insert_rows`, `query_table`, `add_computed_column`, `add_embedding_index`, `similarity_search`, `drop_table`
 
-## CrewAI
+## CrewAI (`integrations/crewai/`)
+
+Individual `BaseTool` subclasses for CrewAI agents.
 
 ```python
 from crewai import Agent
@@ -39,11 +81,4 @@ researcher = Agent(
 )
 ```
 
-**Tools provided:** `pixeltable_list_tables`, `pixeltable_create_table`, `pixeltable_insert`, `pixeltable_query`, `pixeltable_similarity_search`, `pixeltable_get_schema`
-
-## Requirements
-
-```
-pip install pixeltable agno        # for Agno
-pip install pixeltable crewai      # for CrewAI
-```
+**Tools:** `pixeltable_list_tables`, `pixeltable_create_table`, `pixeltable_insert`, `pixeltable_query`, `pixeltable_similarity_search`, `pixeltable_get_schema`

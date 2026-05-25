@@ -101,28 +101,17 @@ class PixeltableVectorStore(VectorStore):
                 self._id_col: pxt.String,
                 self._text_col: pxt.String,
                 self._metadata_col: pxt.Json,
-                self._embedding_col: pxt.Array[(float, embed_dim)],
+                self._embedding_col: pxt.Array[(embed_dim,), pxt.Float],
             },
             if_exists='ignore',
         )
         t = self._table
         t.add_embedding_index(
             self._embedding_col,
-            string_embed=self._make_pxt_embed_fn(),
             metric=self._metric,
             if_exists='ignore',
         )
         return t
-
-    def _make_pxt_embed_fn(self) -> pxt.Function:
-        """Wrap the LangChain Embeddings object as a Pixeltable UDF."""
-        lc_embedding = self._embedding
-
-        @pxt.udf
-        def _langchain_embed(text: str) -> np.ndarray:
-            return np.array(lc_embedding.embed_query(text), dtype=np.float32)
-
-        return _langchain_embed
 
     def add_texts(
         self,
@@ -213,8 +202,9 @@ class PixeltableVectorStore(VectorStore):
         id_col = getattr(t, self._id_col)
         embed_col = getattr(t, self._embedding_col)
 
-        sim = embed_col.similarity(string=query)
-        df = (
+        query_vec = np.array(self._embedding.embed_query(query), dtype=np.float32)
+        sim = embed_col.similarity(vector=query_vec)
+        result_set = (
             t.order_by(sim, asc=False)
             .limit(k)
             .select(text_col, meta_col, id_col, sim=sim)
@@ -222,7 +212,7 @@ class PixeltableVectorStore(VectorStore):
         )
 
         results = []
-        for _, row in df.iterrows():
+        for row in result_set:
             metadata = row[self._metadata_col] if row[self._metadata_col] else {}
             doc = Document(
                 page_content=row[self._text_col],
@@ -251,7 +241,7 @@ class PixeltableVectorStore(VectorStore):
         embed_col = getattr(t, self._embedding_col)
 
         sim = embed_col.similarity(vector=np.array(embedding, dtype=np.float32))
-        df = (
+        result_set = (
             t.order_by(sim, asc=False)
             .limit(k)
             .select(text_col, meta_col, id_col)
@@ -259,7 +249,7 @@ class PixeltableVectorStore(VectorStore):
         )
 
         results = []
-        for _, row in df.iterrows():
+        for row in result_set:
             metadata = row[self._metadata_col] if row[self._metadata_col] else {}
             doc = Document(
                 page_content=row[self._text_col],

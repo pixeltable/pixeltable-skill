@@ -115,7 +115,7 @@ class PixeltableVectorStore(BasePydanticVectorStore):
                 _REF_DOC_ID_COL: pxt.String,
                 _TEXT_COL: pxt.String,
                 _METADATA_COL: pxt.Json,
-                _EMBEDDING_COL: pxt.Array[(float, dim)],
+                _EMBEDDING_COL: pxt.Array[(dim,), pxt.Float],
             },
             if_exists='ignore',
         )
@@ -222,7 +222,7 @@ class PixeltableVectorStore(BasePydanticVectorStore):
         else:
             raise ValueError('Either query_embedding or query_str must be provided.')
 
-        df = (
+        result_set = (
             t.order_by(sim, asc=False)
             .limit(k)
             .select(text_col, meta_col, id_col, sim=sim)
@@ -233,7 +233,7 @@ class PixeltableVectorStore(BasePydanticVectorStore):
         similarities: List[float] = []
         ids: List[str] = []
 
-        for _, row in df.iterrows():
+        for row in result_set:
             meta_dict = row[_METADATA_COL] if row[_METADATA_COL] else {}
 
             try:
@@ -243,7 +243,10 @@ class PixeltableVectorStore(BasePydanticVectorStore):
                 node = TextNode(
                     text=row[_TEXT_COL],
                     id_=row[_NODE_ID_COL],
-                    metadata={k: v for k, v in meta_dict.items() if k.startswith('_') is False},
+                    metadata={
+                        key: val for key, val in meta_dict.items()
+                        if not key.startswith('_')
+                    },
                 )
 
             nodes.append(node)

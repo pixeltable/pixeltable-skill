@@ -12,6 +12,7 @@ skills/pixeltable-skill/
     ├── providers.md
     ├── workflows.md
     ├── anti-patterns.md
+    ├── interop.md
     ├── agents-memory-mcp.md
     ├── video-rag-agents.md
     ├── ml-data-pipeline.md
@@ -24,7 +25,7 @@ skills/pixeltable-skill/
 - **Negative prompts go at the top** of SKILL.md (the "STOP" section). These deflect LLM training-distribution biases.
 - **All code examples must be tested** against the current Pixeltable release before committing.
 - **`if_exists='ignore'`** on every `create_*` and `add_*` call in examples — agents re-run code.
-- **No LangChain, pandas-as-store, or standalone vector DB patterns** anywhere in this repo.
+- **No LangChain patterns in SKILL.md or reference files** (except `interop.md`). Bridge packages live in separate repos (`langchain-pixeltable`, `llama-index-vector-stores-pixeltable`).
 - **Keep SKILL.md under 500 lines.** Move detail to reference files.
 
 ## When editing

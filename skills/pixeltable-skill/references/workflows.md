@@ -433,7 +433,7 @@ class SearchResponse(BaseModel):
 @app.post("/api/search", response_model=SearchResponse)
 def search(body: SearchRequest):                    # sync, not async
     table = pxt.get_table('app.chunks')
-    sim = table.text.similarity(body.query)
+    sim = table.text.similarity(string=body.query)
     result = (
         table.where(sim > 0.3)
         .order_by(sim, asc=False)

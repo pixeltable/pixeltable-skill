@@ -11,6 +11,13 @@ Agent Skill that teaches AI coding assistants to write correct [Pixeltable](http
 /plugin install pixeltable-skill@pixeltable-skill
 ```
 
+### Codex
+
+```bash
+codex plugin marketplace add pixeltable/pixeltable-skill --ref main
+codex plugin add pixeltable-skill@pixeltable-skill
+```
+
 ### Cursor, Copilot, Windsurf, and 40+ agents ([npx skills](https://github.com/vercel-labs/skills))
 
 ```bash

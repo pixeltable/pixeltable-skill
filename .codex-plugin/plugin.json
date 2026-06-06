@@ -1,0 +1,39 @@
+{
+  "name": "pixeltable-skill",
+  "version": "2.3.0",
+  "description": "Build multimodal AI applications with Pixeltable.",
+  "author": {
+    "name": "Pixeltable",
+    "url": "https://github.com/pixeltable"
+  },
+  "homepage": "https://docs.pixeltable.com/",
+  "repository": "https://github.com/pixeltable/pixeltable-skill",
+  "license": "Apache-2.0",
+  "keywords": [
+    "pixeltable",
+    "multimodal",
+    "rag",
+    "embeddings",
+    "agents",
+    "computed-columns"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Pixeltable",
+    "shortDescription": "Build Pixeltable apps, RAG pipelines, agents, and multimodal workflows",
+    "longDescription": "Use Pixeltable to build multimodal AI applications with declarative tables, computed columns, embeddings, retrieval, provider integrations, and production workflow patterns.",
+    "developerName": "Pixeltable",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://docs.pixeltable.com/",
+    "brandColor": "#2563EB",
+    "defaultPrompt": [
+      "Build a Pixeltable RAG pipeline",
+      "Create a multimodal Pixeltable app",
+      "Debug this Pixeltable workflow"
+    ]
+  }
+}

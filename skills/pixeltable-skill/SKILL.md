@@ -10,9 +10,12 @@ description: >
   computation, version control, similarity search, FastAPI serving, and production
   patterns. Do NOT use for general Python or direct PostgreSQL administration.
 license: Apache-2.0
+allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.3.0
+  version: 2.3.1
+  type: documentation
+  executes-code: false
   category: data-infrastructure
   tags: [multimodal, ai, data, tables, embeddings, rag, udf, video, audio, images, documents, agents, tools, fastapi, declarative, computed-columns, vector-search]
   documentation: https://docs.pixeltable.com/
@@ -355,61 +358,11 @@ result = agent.where(agent.prompt == 'What is quantum computing?').select(agent.
 
 ## AI Provider Integrations
 
-Built-in functions for 25+ providers in `pixeltable.functions.*`:
-
-| Provider | Module | Key Functions |
-|----------|--------|---------------|
-| OpenAI | `openai` | `chat_completions` (supports multimodal/vision via messages), `embeddings`, `image_generations`, `speech`, `transcriptions` |
-| Anthropic | `anthropic` | `messages`, `invoke_tools` |
-| Gemini | `gemini` | `generate_content`, `invoke_tools` |
-| Hugging Face | `huggingface` | `clip`, `sentence_transformer`, `detr_for_object_detection` |
-| Together | `together` | `chat_completions`, `embeddings`, `image_generations` |
-| Fireworks | `fireworks` | `chat_completions`, `embeddings` |
-| Ollama | `ollama` | `chat_completions`, `embeddings` |
-| Mistral | `mistralai` | `chat_completions`, `embeddings` |
-| Groq | `groq` | `chat_completions`, `invoke_tools` |
-| DeepSeek | `deepseek` | `chat_completions` |
-| Replicate | `replicate` | `run` |
-| Voyage AI | `voyageai` | `embed` |
-| Bedrock | `bedrock` | `converse`, `invoke_tools` |
-| OpenRouter | `openrouter` | `chat_completions` |
-| Whisper | `whisper` | `transcribe` (local transcription) |
-| WhisperX | `whisperx` | `transcribe` (local, with speaker diarization) |
-| Twelve Labs | `twelvelabs` | `embed` (video understanding) |
-| Jina AI | `jina` | `embeddings`, `rerank` |
-| BFL FLUX | `bfl` | `generate`, `edit`, `expand`, `fill` (image generation/editing) |
-| RunwayML | `runwayml` | `text_to_video`, `image_to_video`, `text_to_image`, `video_to_video` |
-| fal.ai | `fal` | `run` (execute any fal.ai model) |
-| Reve | `reve` | `create`, `edit`, `remix` (image generation) |
-| Microsoft Fabric | `fabric` | `chat_completions`, `embeddings` (Azure OpenAI via Fabric) |
-| llama.cpp | `llama_cpp` | `create_chat_completion` (local GGUF models) |
-| YOLOX | `yolox` | `yolox` (object detection) |
+25+ providers in `pixeltable.functions.*` — see [providers.md → Quick Reference](references/providers.md#quick-reference) for the full table and examples.
 
 ## Import/Export
 
-```python
-# From CSV / Parquet
-t = pxt.create_table('dir.from_csv', source='data.csv')
-t = pxt.create_table('dir.from_parquet', source='data.parquet')
-
-# With schema overrides (remap columns to media types)
-t = pxt.create_table('dir.data', source='data.csv',
-    schema_overrides={'image_col': pxt.Image, 'doc_col': pxt.Document})
-
-# From Hugging Face
-from pixeltable.io import import_huggingface_dataset
-import datasets
-ds = datasets.load_dataset('squad', split='train[:1000]')
-t = import_huggingface_dataset('dir.squad', ds)
-
-# From pandas
-from pixeltable.io import import_pandas
-t = import_pandas('dir.from_df', df)
-
-# Export
-from pixeltable.io import export_parquet
-export_parquet(t, 'output/')
-```
+See [core-api.md → Import](references/core-api.md) and [core-api.md → Export](references/core-api.md#export-csv-json-parquet-lancedb).
 
 ## Idempotent Operations and Error Handling
 
@@ -434,7 +387,7 @@ t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
 | 4 | Fix code + re-run with `if_exists='ignore'` | Must `t.drop_column('col')` then recreate — re-run is a no-op |
 | 5 | `{'type':'image', 'data': t.image}` in messages | Use `{'type':'image_url', 'image_url':{'url': t.image}}` |
 | 6 | `t.content.similarity(query)` (positional) | `t.content.similarity(string=query)` (keyword) |
-| 7 | Schema corruption (`IntegrityError`) | `pip install -U pixeltable && rm -rf ~/.pixeltable` |
+| 7 | Schema corruption (`IntegrityError`) | Try `pxt.drop_dir('my_project', force=True)` first; last resort (dev only, manual, with backup): upgrade pixeltable, then delete only the `~/.pixeltable` directory — never in production |
 | 8 | `.collect()` or `pxt.get_table()` inside `@pxt.query` | `@pxt.query` compiles the body at decoration time with expression placeholders — don't call `.collect()`, `insert()`, or reference tables that may not exist. Use a plain `def` for imperative logic |
 | 9 | `'id': pxt.String` as primary key | PK columns must be non-nullable. Use `pxt.Required[pxt.String]` or `uuid7()` as a computed default |
 | 10 | Module-level `Table` object used in FastAPI endpoint | `Table` objects are thread-bound. Call `pxt.get_table()` inside each endpoint function, not at module level |
@@ -491,14 +444,9 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 
 ## Resources
 
-- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — 3 structural patterns + 7 application templates:
-  - **Patterns**: `backend/` (FastAPI + React), `batch/` (no HTTP server), `serving/` (`pxt serve` + TOML)
-  - **app.py templates** (have UI, run `python app.py`): `knowledge-base`, `chat-agent`, `audio-transcription`, `full-stack-showcase`
-  - **pxt-serve templates** (API only, run `python schema.py` then `pxt serve <service-name>`, where the service name is set in `pyproject.toml` and differs from the scaffold name): `video-search` → `pxt serve videointel`, `media-indexing` → `pxt serve pipeline`, `image-dataset` → `pxt serve datalab`
-  - All `app.py` templates include port auto-detection (probes upward from 8000; override with `PORT` env var)
-  - Scaffold with [`pixeltable-new`](https://github.com/pixeltable/pixeltable-new): `uvx pixeltable-new --template <name> my-app`
+- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — 3 patterns (`backend`, `batch`, `serving`) + 7 templates; scaffold with `uvx pixeltable-new --template <name> my-app`
 - [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) — Explore Pixeltable tables via MCP
-- [LLM Docs](https://docs.pixeltable.com/llms-full.txt) — Complete documentation as plain text | [llms.txt](https://www.pixeltable.com/llms.txt)
+- [LLM Docs](https://docs.pixeltable.com/llms-full.txt) | [llms.txt](https://www.pixeltable.com/llms.txt)
 
 ## Reference Files
 

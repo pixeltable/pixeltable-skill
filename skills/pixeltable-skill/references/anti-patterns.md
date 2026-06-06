@@ -10,6 +10,7 @@ These are structural — getting any one wrong means the entire solution is non-
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -42,6 +43,7 @@ chunks.add_embedding_index('text', embedding=embeddings(model='text-embedding-3-
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 import pandas as pd
 
 df = pd.read_csv('data.csv')
@@ -74,6 +76,7 @@ df = t.select(t.text, t.summary).collect().to_pandas()
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 results = []
 for _, row in df.iterrows():
     response = openai.chat.completions.create(
@@ -105,6 +108,7 @@ t.add_computed_column(
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 import chromadb
 from chromadb.utils import embedding_functions
 
@@ -135,6 +139,7 @@ results = t.order_by(sim, asc=False).limit(5).select(t.text, sim).collect()
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 messages = [{"role": "user", "content": user_query}]
 while True:
     response = openai.chat.completions.create(model="gpt-4o", messages=messages, tools=tools)
@@ -196,6 +201,7 @@ agent.insert([{'prompt': 'What is the weather in NYC?'}])
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 embeddings_cache = []
 for text in texts:
     emb = openai.embeddings.create(input=text, model="text-embedding-3-small")
@@ -213,6 +219,7 @@ t.add_embedding_index('text', embedding=embeddings(model='text-embedding-3-small
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 import cv2
 cap = cv2.VideoCapture('video.mp4')
 frames = []
@@ -237,6 +244,7 @@ frames = pxt.create_view('app.frames', videos,
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 import psycopg2
 conn = psycopg2.connect(dbname='pixeltable', host='/tmp/.s.PGSQL.5432')
 cur = conn.cursor()
@@ -249,6 +257,7 @@ cur.execute("SELECT * FROM ...")  # NEVER DO THIS
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 @app.post("/query")
 async def query_endpoint(q: str):
     results = t.where(t.text.contains(q)).collect()  # May deadlock
@@ -267,6 +276,7 @@ def query_endpoint(q: str):
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 pxt.drop_table('app.data', force=True)
 t = pxt.create_table('app.data', {'text': pxt.String})
 ```
@@ -280,6 +290,7 @@ t = pxt.create_table('app.data', {'text': pxt.String}, if_exists='ignore')
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 # Bug in summary prompt — "fix" by re-running:
 t.add_computed_column(summary=fixed_expression, if_exists='ignore')
 # ↑ SILENT NO-OP — column already exists with old logic
@@ -295,6 +306,7 @@ t.add_computed_column(summary=fixed_expression)
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 from pixeltable.functions.openai import chat_completions
 t.add_computed_column(resp=chat_completions(..., api_key='sk-abc123'))
 ```
@@ -309,6 +321,7 @@ api_key = 'sk-...'
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 import whisper
 model = whisper.load_model("base")
 for audio_file in audio_files:
@@ -330,6 +343,7 @@ t.add_computed_column(
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 from pydantic import BaseModel
 
 class Document(BaseModel):
@@ -354,6 +368,7 @@ t.add_embedding_index('content', embedding=embed_fn, if_exists='ignore')
 
 **Wrong:**
 ```python
+# ANTI-PATTERN — illustrative only, do not copy
 chat_history = []  # Lost on restart
 # or
 import redis

@@ -923,7 +923,7 @@ Custom resource pools for non-built-in APIs:
 ```python
 @pxt.udf(resource_pool='request-rate:my_service')
 def call_custom_api(prompt: str) -> str:
-    return requests.post('https://my-api.com/generate', json={'prompt': prompt}).json()['text']
+    return requests.post('https://example.com/generate', json={'prompt': prompt}).json()['text']
 ```
 
 ### Media Destinations (Cloud Storage)
@@ -1053,7 +1053,7 @@ messages=[{'role': 'user', 'content': [
 sim = t.content.similarity(string=query_text)  # NOT .similarity(query_text)
 ```
 
-Schema corruption (`IntegrityError`): `pip install -U pixeltable && rm -rf ~/.pixeltable`
+Schema corruption (`IntegrityError`): try `pxt.drop_dir('my_project', force=True)` first. Last resort (development only — run manually with backup, never in production): upgrade pixeltable (`pip install -U pixeltable`), then delete only the `~/.pixeltable` directory.
 
 ### `@pxt.query` Eager Compilation
 

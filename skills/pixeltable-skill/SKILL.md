@@ -13,7 +13,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.4.0
+  version: 2.4.1
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -104,13 +104,12 @@ Scaffold a complete Pixeltable project from the [Starter Kit](https://github.com
 
 ```bash
 # Application templates (each builds on a structural pattern)
-uvx pixeltable-new --template knowledge-base my-kb             # web UI + API
-uvx pixeltable-new --template chat-agent my-agent              # web UI + API
-uvx pixeltable-new --template audio-transcription my-podcast   # web UI + API
-uvx pixeltable-new --template full-stack-showcase my-sitewatch # web UI + API (complete reference app)
-uvx pixeltable-new --template video-search my-video-app        # API only
-uvx pixeltable-new --template media-indexing my-pipe           # API + batch
-uvx pixeltable-new --template image-dataset my-dataset         # API + batch
+uvx pixeltable-new --template multimodal-rag my-rag      # serving + backend: docs/images/video/audio unified search
+uvx pixeltable-new --template agent my-agent             # serving + backend: persistent agent, memory, tools, MCP
+uvx pixeltable-new --template audio-intel my-podcast     # serving + backend: transcription, summarization, search
+uvx pixeltable-new --template video-intel my-video       # serving: frames, transcription, detection, search
+uvx pixeltable-new --template content-pipeline my-pipe   # batch: S3 ingest, process, export to your DB
+uvx pixeltable-new --template data-lab my-dataset        # batch: auto-annotate, curate, version, PyTorch export
 
 # Structural patterns (API/pipeline scaffolds)
 uvx pixeltable-new myapp                # default: declarative serving pattern
@@ -450,7 +449,7 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 
 ## Resources
 
-- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — 3 patterns (`backend`, `batch`, `serving`) + 7 templates; scaffold with `uvx pixeltable-new --template <name> my-app`
+- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — 3 patterns (`backend`, `batch`, `serving`) + 6 templates (`multimodal-rag`, `agent`, `audio-intel`, `video-intel`, `content-pipeline`, `data-lab`); scaffold with `uvx pixeltable-new --template <name> my-app`
 - [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) — Explore Pixeltable tables via MCP
 - [LLM Docs](https://docs.pixeltable.com/llms-full.txt) | [llms.txt](https://www.pixeltable.com/llms.txt)
 

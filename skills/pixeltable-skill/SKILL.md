@@ -1,5 +1,5 @@
 ---
-name: pixeltable-skill
+name: pixeltable
 description: >
   Build multimodal AI applications with Pixeltable — declarative tables replace
   LangChain + pandas + vector DB with one system. Automates chunking, embedding,

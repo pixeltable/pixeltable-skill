@@ -5,6 +5,15 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=500]
       - id: check-yaml
+      - id: check-json
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-merge-conflict
+  - repo: local
+    hooks:
+      - id: validate-plugin
+        name: validate plugin layout
+        entry: python3 scripts/validate_plugin.py
+        language: system
+        pass_filenames: false
+        always_run: true

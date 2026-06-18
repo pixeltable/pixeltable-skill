@@ -1,0 +1,37 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate plugin layout
+        run: python3 scripts/validate_plugin.py
+
+      - name: Hook unit tests
+        run: python3 tests/test_hooks.py
+
+      - name: Lint hooks and scripts (ruff)
+        run: |
+          pip install ruff
+          ruff check hooks/ scripts/ tests/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Plugin discovery (npx plugins)
+        run: npx -y plugins discover .
+
+      - name: Skill discovery (npx skills)
+        run: npx -y skills add . --list -y || npx -y skills add . --list

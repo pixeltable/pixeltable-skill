@@ -76,11 +76,25 @@ def main():
         check("name:" in fm, f"{rel}: missing 'name' in frontmatter")
         check("description:" in fm, f"{rel}: missing 'description' in frontmatter")
 
-    # 4. Listed command/agent files exist
+    # 4a. Any command/agent files listed in .claude-plugin/plugin.json must exist
     claude = parsed.get(".claude-plugin/plugin.json") or {}
     for key in ("commands", "agents"):
         for rel in claude.get(key, []):
             check((ROOT / rel).is_file(), f".claude-plugin/plugin.json: {key} file not found: {rel}")
+
+    # 4b. Auto-discovered commands have a `description`; agents have `name` + `description`
+    for cmd in (ROOT / "commands").glob("*.md"):
+        check("description:" in frontmatter(cmd), f"commands/{cmd.name}: missing 'description'")
+    agent_files = list((ROOT / "agents").glob("*.md"))
+    for ag in agent_files:
+        fm = frontmatter(ag)
+        check("name:" in fm, f"agents/{ag.name}: missing 'name'")
+        check("description:" in fm, f"agents/{ag.name}: missing 'description'")
+        # tools, if present, must be a comma-separated string (not a YAML/JSON list)
+        for line in fm.splitlines():
+            if line.strip().startswith("tools:"):
+                val = line.split(":", 1)[1].strip()
+                check(not val.startswith("["), f"agents/{ag.name}: 'tools' must be comma-separated, not a list")
 
     if errors:
         print(f"FAIL ({len(errors)} of {checks} checks):", file=sys.stderr)

@@ -71,9 +71,10 @@ Before submitting, verify:
 1. YAML frontmatter in `SKILL.md` is valid (name in kebab-case, no XML tags)
 2. All code examples are syntactically correct Python
 3. Provider examples match the current Pixeltable API
-4. The install script works: `./install.sh --platform claude-code --target /tmp/test`
-5. Plugin layout validates: `python3 scripts/validate_plugin.py`
-6. Discovery resolves: `npx plugins discover .` and `npx skills add . --list`
+4. Scaffold/template names match the starter-kit repos (`pixeltable-new` `TEMPLATES` and `pixeltable-app-template/templates/`), not a possibly-stale published `uvx pixeltable-new --list`
+5. The install script works: `./install.sh --platform claude-code --target /tmp/test`
+6. Plugin layout validates: `python3 scripts/validate_plugin.py`
+7. Discovery resolves: `npx plugins discover .` and `npx skills add . --list`
 
 ### No XML Tags
 

@@ -48,6 +48,7 @@ Skill splitting; telemetry; `.md.tmpl` build pipeline; golden-snapshot/fuzz suit
 - **SKILL.md is the entry point.** It must be self-contained for the common case; reference files are for deep dives.
 - **Negative prompts go at the top** of SKILL.md (the "STOP" section). These deflect LLM training-distribution biases.
 - **All code examples must be tested** against the current Pixeltable release before committing.
+- **Scaffolding/template names** (in SKILL.md "Starting a New Project", `commands/scaffold.md`, and README) are sourced from the starter-kit repos — `pixeltable-new` (`TEMPLATES` in `src/pixeltable_new/new.py`) and `pixeltable-app-template/templates/` — NOT from `uvx pixeltable-new --list`, whose published build can lag the repos. Current templates: `knowledge-base`, `chat-agent`, `audio-transcription`, `video-search`, `media-indexing`, `image-dataset`, `full-stack-showcase` (patterns: `serving`, `backend`, `batch`). The scaffold guidance must run `--list` first and fall back to the underlying pattern on version skew.
 - **`if_exists='ignore'`** on every `create_*` and `add_*` call in examples — agents re-run code.
 - **No LangChain, pandas-as-store, or standalone vector DB patterns** anywhere in this repo.
 - **Keep SKILL.md under 500 lines.** Move detail to reference files.

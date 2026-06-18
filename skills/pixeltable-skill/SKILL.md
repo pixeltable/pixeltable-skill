@@ -13,7 +13,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.4.2
+  version: 2.4.3
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -100,27 +100,29 @@ See [Common Pitfalls](#common-pitfalls) below for full details and code examples
 
 ## Starting a New Project
 
-Scaffold a complete Pixeltable project from the [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit). The three **structural patterns** are the reliable path — always prefer them:
+Scaffold a complete project from the [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) with `uvx pixeltable-new`. Run `uvx pixeltable-new --list` first to see the options available on your installed version, then pick one.
+
+**Application templates** — a full app (schema + API/UI) for a use case:
 
 ```bash
-uvx pixeltable-new myapp                # serving (default): declarative API from a TOML config
-uvx pixeltable-new myapp --backend      # FastAPI API scaffold (headless, no frontend)
+uvx pixeltable-new --template knowledge-base my-kb        # serving + backend: docs/images/video/audio upload, unified search + RAG Q&A
+uvx pixeltable-new --template chat-agent my-agent         # serving + backend: persistent agent, durable memory, tool calling, MCP
+uvx pixeltable-new --template audio-transcription my-pod  # serving + backend: transcription, summarization, semantic search
+uvx pixeltable-new --template video-search my-video       # serving: frames, transcription, detection, temporal search
+uvx pixeltable-new --template media-indexing my-pipe      # batch: ingest from S3, process all modalities, export
+uvx pixeltable-new --template image-dataset my-dataset    # batch: auto-annotate, curate, version, export to PyTorch
+uvx pixeltable-new --template full-stack-showcase my-app  # serving + backend: complete reference app (Gemini + DETR + Whisper, React UI)
+```
+
+**Structural patterns** — bare API/pipeline scaffolds (each template builds on one of these):
+
+```bash
+uvx pixeltable-new myapp                # serving (default): declarative API from schema.py
+uvx pixeltable-new myapp --backend      # FastAPI scaffold (headless): setup_pixeltable.py + main.py
 uvx pixeltable-new myapp --batch        # batch processing script with export_sql
-uvx pixeltable-new --list               # show current patterns + templates
 ```
 
-**Application templates** layer a full app (schema + app + UI) on top of one of those patterns. Run `--list` for the current set (e.g. `multimodal-rag`, `agent`, `audio-intel`, `video-intel`, `content-pipeline`, `data-lab`). Templates depend on the starter-kit being in sync, so a `--template` fetch can fail with "No files found" / "starter kit may have been restructured". When that happens, fall back to the structural pattern the template builds on — do NOT retry other template names:
-
-```bash
-uvx pixeltable-new --template multimodal-rag my-rag   # serving + backend  → on failure: --backend
-uvx pixeltable-new --template agent my-agent          # serving + backend  → on failure: --backend
-uvx pixeltable-new --template audio-intel my-podcast  # serving + backend  → on failure: --backend
-uvx pixeltable-new --template video-intel my-video    # serving            → on failure: default serving
-uvx pixeltable-new --template content-pipeline my-pipe # batch             → on failure: --batch
-uvx pixeltable-new --template data-lab my-dataset     # batch              → on failure: --batch
-```
-
-A new project directory must not already exist; pick a fresh name (or remove the old directory) rather than scaffolding into an existing one.
+Pick a fresh directory name (the generator refuses to overwrite an existing one) and follow the **Next steps** it prints. Template slugs are descriptive use-case names; if `--list` on your machine shows different names or a `--template` fetch fails (network, or a version skew between your installed `pixeltable-new` and the starter kit), use a name from `--list` or fall back to the structural pattern the template builds on — do NOT retry guessed template names.
 
 ## Core Concepts
 
@@ -449,7 +451,7 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 
 ## Resources
 
-- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — 3 patterns (`backend`, `batch`, `serving`) + 6 templates (`multimodal-rag`, `agent`, `audio-intel`, `video-intel`, `content-pipeline`, `data-lab`); scaffold with `uvx pixeltable-new --template <name> my-app`
+- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — 3 patterns (`serving`, `backend`, `batch`) + 7 templates (`knowledge-base`, `chat-agent`, `audio-transcription`, `video-search`, `media-indexing`, `image-dataset`, `full-stack-showcase`); scaffold with `uvx pixeltable-new --template <name> my-app`
 - [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) — Explore Pixeltable tables via MCP
 - [LLM Docs](https://docs.pixeltable.com/llms-full.txt) | [llms.txt](https://www.pixeltable.com/llms.txt)
 

@@ -67,7 +67,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). The skill content lives in `skills/pixel
 
 - [Pixeltable Docs](https://docs.pixeltable.com/) · [GitHub](https://github.com/pixeltable/pixeltable) · [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) · [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) · [Discord](https://discord.gg/QPyqFYx2UN)
 - Scaffold a project: `uvx pixeltable-new myapp` ([pixeltable-new](https://github.com/pixeltable/pixeltable-new))
-- Application templates: `uvx pixeltable-new --template <name> my-app` — `multimodal-rag`, `agent`, `audio-intel`, `video-intel`, `content-pipeline`, `data-lab`
+- Application templates: `uvx pixeltable-new --template <name> my-app` — `knowledge-base`, `chat-agent`, `audio-transcription`, `video-search`, `media-indexing`, `image-dataset`, `full-stack-showcase`
 
 ## License
 

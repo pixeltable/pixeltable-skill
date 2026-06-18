@@ -5,5 +5,16 @@
   "author": {
     "name": "Pixeltable",
     "url": "https://github.com/pixeltable"
-  }
+  },
+  "commands": [
+    "./commands/scaffold.md",
+    "./commands/rag.md",
+    "./commands/add-provider.md",
+    "./commands/debug.md"
+  ],
+  "agents": [
+    "./agents/pixeltable-rag-builder.md",
+    "./agents/pixeltable-pipeline-architect.md",
+    "./agents/pixeltable-debugger.md"
+  ]
 }

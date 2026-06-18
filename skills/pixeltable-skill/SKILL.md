@@ -13,7 +13,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.4.1
+  version: 2.4.2
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -100,27 +100,27 @@ See [Common Pitfalls](#common-pitfalls) below for full details and code examples
 
 ## Starting a New Project
 
-Scaffold a complete Pixeltable project from the [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) in one command:
+Scaffold a complete Pixeltable project from the [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit). The three **structural patterns** are the reliable path — always prefer them:
 
 ```bash
-# Application templates (each builds on a structural pattern)
-uvx pixeltable-new --template multimodal-rag my-rag      # serving + backend: docs/images/video/audio unified search
-uvx pixeltable-new --template agent my-agent             # serving + backend: persistent agent, memory, tools, MCP
-uvx pixeltable-new --template audio-intel my-podcast     # serving + backend: transcription, summarization, search
-uvx pixeltable-new --template video-intel my-video       # serving: frames, transcription, detection, search
-uvx pixeltable-new --template content-pipeline my-pipe   # batch: S3 ingest, process, export to your DB
-uvx pixeltable-new --template data-lab my-dataset        # batch: auto-annotate, curate, version, PyTorch export
-
-# Structural patterns (API/pipeline scaffolds)
-uvx pixeltable-new myapp                # default: declarative serving pattern
-uvx pixeltable-new myapp --backend      # FastAPI API scaffold (headless)
+uvx pixeltable-new myapp                # serving (default): declarative API from a TOML config
+uvx pixeltable-new myapp --backend      # FastAPI API scaffold (headless, no frontend)
 uvx pixeltable-new myapp --batch        # batch processing script with export_sql
-
-# Discovery
-uvx pixeltable-new --list               # show all patterns + templates
+uvx pixeltable-new --list               # show current patterns + templates
 ```
 
-Each template builds on one of the three structural patterns (serving, backend, batch), so you already know how to run and deploy it.
+**Application templates** layer a full app (schema + app + UI) on top of one of those patterns. Run `--list` for the current set (e.g. `multimodal-rag`, `agent`, `audio-intel`, `video-intel`, `content-pipeline`, `data-lab`). Templates depend on the starter-kit being in sync, so a `--template` fetch can fail with "No files found" / "starter kit may have been restructured". When that happens, fall back to the structural pattern the template builds on — do NOT retry other template names:
+
+```bash
+uvx pixeltable-new --template multimodal-rag my-rag   # serving + backend  → on failure: --backend
+uvx pixeltable-new --template agent my-agent          # serving + backend  → on failure: --backend
+uvx pixeltable-new --template audio-intel my-podcast  # serving + backend  → on failure: --backend
+uvx pixeltable-new --template video-intel my-video    # serving            → on failure: default serving
+uvx pixeltable-new --template content-pipeline my-pipe # batch             → on failure: --batch
+uvx pixeltable-new --template data-lab my-dataset     # batch              → on failure: --batch
+```
+
+A new project directory must not already exist; pick a fresh name (or remove the old directory) rather than scaffolding into an existing one.
 
 ## Core Concepts
 

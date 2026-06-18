@@ -9,27 +9,28 @@ Arguments: `$ARGUMENTS`
 
 Steps:
 
-1. ALWAYS run `uvx pixeltable-new --list` FIRST to get the authoritative list of templates and patterns. Never invent or guess a template name — only use a name that appears in that output. (Current templates: `multimodal-rag`, `video-intel`, `agent`, `audio-intel`, `content-pipeline`, `data-lab`; structural patterns: `serving` (default), `backend`, `batch`. The `--list` output is the source of truth and may change between releases.)
+1. Run `uvx pixeltable-new --list` FIRST to see the current patterns and templates. Never invent or guess a name — only use one that appears in that output. There are two kinds:
+   - **Structural patterns** (`serving` (default), `backend`, `batch`) — these always work and are the reliable path.
+   - **Application templates** (e.g. `multimodal-rag`, `agent`, `audio-intel`, `video-intel`, `content-pipeline`, `data-lab`) — full schema + app + UI layered on a pattern. These depend on the starter-kit being in sync and CAN currently fail to fetch ("No files found" / "starter kit may have been restructured").
 
-2. Map the user's request to the closest listed option:
-   - A "RAG app" / multimodal search / docs+images+video+audio Q&A → `multimodal-rag` (serving + backend).
-   - A chatbot / tool-calling agent / persistent memory / MCP → `agent`.
-   - Audio / podcast / transcription + summarization → `audio-intel`.
-   - Video frames / detection / transcription / search → `video-intel`.
-   - Enterprise media processing / S3 ingest / export to a DB → `content-pipeline` (batch).
-   - ML dataset engineering / auto-annotate / version / PyTorch export → `data-lab` (batch).
-   - A headless API with no specific template fit → structural pattern `--backend`.
-   - A one-shot pipeline / ingest-compute-export → structural pattern `--batch`.
-   - Unsure → default structural pattern (declarative `serving`).
-   If the chosen name is not in the `--list` output, pick the nearest listed name; do NOT retry with a fabricated `--template` value.
+2. Choose a target. Each template maps to a pattern; if the template is unavailable, the pattern is your fallback:
+   - "RAG app" / multimodal search / docs+images+video+audio Q&A → `multimodal-rag` → fallback `--backend`.
+   - chatbot / tool-calling agent / persistent memory / MCP → `agent` → fallback `--backend`.
+   - audio / podcast / transcription + summarization → `audio-intel` → fallback `--backend`.
+   - video frames / detection / transcription / search → `video-intel` → fallback default `serving`.
+   - enterprise media / S3 ingest / export to a DB → `content-pipeline` → fallback `--batch`.
+   - ML dataset / auto-annotate / version / PyTorch export → `data-lab` → fallback `--batch`.
+   - headless API, no specific template fit → `--backend` directly.
+   - one-shot ingest-compute-export → `--batch` directly.
+   - unsure → default `serving`.
 
-3. Generate using a verified name. Examples:
+3. Pick a fresh project directory name (the generator refuses to write into an existing directory). Then generate:
 
 ```bash
-uvx pixeltable-new --template multimodal-rag my-rag-app   # template
+uvx pixeltable-new --template multimodal-rag my-rag-app   # template (try first if requested)
 uvx pixeltable-new my-app --backend                       # structural pattern, no --template
 ```
 
-4. If a `--template` fetch fails, fall back to the closest structural pattern (`--backend` / `--batch` / default) instead of guessing another template name. State clearly which template or pattern you actually used and why.
+4. If the `--template` command fails with "No files found" / "restructured", immediately run the mapped structural pattern instead. Do NOT retry other template names, and do NOT hand-write the app yourself. If the directory already exists, choose a new name rather than deleting the user's existing directory without asking.
 
-5. After scaffolding, summarize the generated layout, how to run it, and the next computed columns the user is likely to add. Do NOT hand-write boilerplate that the template already provides.
+5. State clearly which template or pattern you actually used (and, if you fell back, why). Then summarize the generated layout, how to run it (`uv sync` → `uv run python setup_pixeltable.py` → `uv run uvicorn main:app --reload`), and the next computed columns the user is likely to add. Do NOT hand-write boilerplate the scaffold already provides.

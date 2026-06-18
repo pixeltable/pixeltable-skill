@@ -5,7 +5,7 @@
   },
   "plugins": [
     {
-      "name": "pixeltable-skill",
+      "name": "pixeltable",
       "source": {
         "source": "local",
         "path": "./plugins/pixeltable-skill"

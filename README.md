@@ -4,24 +4,32 @@ Agent Skill that teaches AI coding assistants to write correct [Pixeltable](http
 
 ## Install
 
-### Claude Code
+**Which path?** Use `npx plugins add` for the full plugin (skill + agents + slash commands) on Claude Code and Cursor. Use `npx skills add` to install just the skill content across 40+ agents (Copilot, Windsurf, Gemini, etc.) or in CI. Both work; they're complementary.
+
+### Plugin — Claude Code & Cursor ([npx plugins](https://github.com/vercel-labs/plugins))
+
+```bash
+npx plugins add pixeltable/pixeltable-skill
+```
+
+### Skill only — Cursor, Copilot, Windsurf, and 40+ agents ([npx skills](https://github.com/vercel-labs/skills))
+
+```bash
+npx skills add pixeltable/pixeltable-skill
+```
+
+### Claude Code (manual marketplace)
 
 ```
 /plugin marketplace add pixeltable/pixeltable-skill
-/plugin install pixeltable-skill@pixeltable-skill
+/plugin install pixeltable@pixeltable-skill
 ```
 
 ### Codex
 
 ```bash
 codex plugin marketplace add pixeltable/pixeltable-skill --ref main
-codex plugin add pixeltable-skill@pixeltable-skill
-```
-
-### Cursor, Copilot, Windsurf, and 40+ agents ([npx skills](https://github.com/vercel-labs/skills))
-
-```bash
-npx skills add pixeltable/pixeltable-skill
+codex plugin add pixeltable@pixeltable-skill
 ```
 
 ### Any LLM (paste URL into context)
@@ -32,7 +40,7 @@ npx skills add pixeltable/pixeltable-skill
 ## What's Inside
 
 ```
-skills/pixeltable-skill/
+skills/pixeltable-skill/        # The skill (content core)
 ├── SKILL.md                    # Core: negative prompts, task router, API, agents, pitfalls
 └── references/                 # Loaded on demand by Claude Code / Cursor
     ├── core-api.md             # Tables, querying, views, UDFs, config, data sharing
@@ -43,11 +51,17 @@ skills/pixeltable-skill/
     ├── ml-data-pipeline.md     # Ingest, enrich, version, PyTorch export
     ├── agentic-patterns.md     # 6 patterns + 2 reasoning strategies
     └── anti-patterns.md        # 15 training-distribution biases with wrong/right code
+
+commands/                       # Slash commands: /pixeltable:scaffold, rag, add-provider, debug
+agents/                         # Specialists: rag-builder, pipeline-architect, debugger
+hooks/                          # Optional pure-Python hooks (Claude Code): orientation + anti-pattern validation
 ```
+
+The plugin install (`npx plugins add`) bundles the skill, commands, agents, and hooks. The skill install (`npx skills add`) delivers just the skill content. Hooks run on Claude Code; Cursor honors session-start context only.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). All content lives in `skills/pixeltable-skill/`.
+See [CONTRIBUTING.md](CONTRIBUTING.md). The skill content lives in `skills/pixeltable-skill/`; run `python3 scripts/validate_plugin.py` after structural changes.
 
 ## Links
 

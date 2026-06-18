@@ -13,13 +13,19 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.3.1
+  version: 2.4.0
   type: documentation
   executes-code: false
   category: data-infrastructure
   tags: [multimodal, ai, data, tables, embeddings, rag, udf, video, audio, images, documents, agents, tools, fastapi, declarative, computed-columns, vector-search]
   documentation: https://docs.pixeltable.com/
   support: https://github.com/pixeltable/pixeltable/discussions
+  priority: 6
+  pathPatterns: ["**/*.py"]
+  importPatterns: ["pixeltable", "import pixeltable as pxt", "from pixeltable"]
+  promptSignals:
+    phrases: ["pixeltable", "computed column", "embedding index", "add_embedding_index", "create_view", "document_splitter", "invoke_tools"]
+    minScore: 6
 ---
 
 ## What is Pixeltable?

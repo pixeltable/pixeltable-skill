@@ -13,14 +13,30 @@ Thanks for your interest in improving the Pixeltable Skill! This guide covers ho
 
 ## Repository Structure
 
+This repo is an agent **plugin**: one skill (the content core) wrapped with commands, agents, and optional hooks.
+
 ```
 pixeltable-skill/
-├── skills/pixeltable-skill/   # All skill content lives here
+├── skills/pixeltable-skill/   # THE skill — do not split
 │   ├── SKILL.md               # Core instructions (<500 lines)
 │   └── references/            # Detailed reference (loaded on demand)
+├── commands/                  # Slash commands (Markdown): /pixeltable:scaffold, rag, add-provider, debug
+├── agents/                    # Specialist subagents (Markdown)
+├── hooks/                     # Optional pure-Python hooks + hooks.json (Claude Code)
+├── scripts/validate_plugin.py # Manifest + frontmatter validator
 ├── install.sh                 # Installer for Claude Code and Cursor
-└── .claude-plugin/            # Claude Code plugin metadata
+├── .plugin/ .cursor-plugin/   # Vendor-neutral + Cursor manifests (npx plugins)
+├── .claude-plugin/            # Claude Code plugin + marketplace metadata
+├── .codex-plugin/ .agents/    # Codex + universal-agents metadata
+└── package.json               # pi.skills (npx skills)
 ```
+
+Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claude Code + Cursor) or `npx skills add pixeltable/pixeltable-skill` (skill only, 40+ agents). Keep both working.
+
+### Conventions
+- Plugin identity is `pixeltable` (commands render as `/pixeltable:<name>`); keep all manifest `name`/`version` fields in sync.
+- Hooks are **pure Python** (`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/*.py"`) — no Node/Bun/TypeScript.
+- Run `python3 scripts/validate_plugin.py` before submitting structural changes.
 
 ## What to Contribute
 
@@ -56,6 +72,8 @@ Before submitting, verify:
 2. All code examples are syntactically correct Python
 3. Provider examples match the current Pixeltable API
 4. The install script works: `./install.sh --platform claude-code --target /tmp/test`
+5. Plugin layout validates: `python3 scripts/validate_plugin.py`
+6. Discovery resolves: `npx plugins discover .` and `npx skills add . --list`
 
 ### No XML Tags
 

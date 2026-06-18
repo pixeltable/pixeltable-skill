@@ -1,6 +1,6 @@
 {
-  "name": "pixeltable-skill",
-  "version": "2.3.0",
+  "name": "pixeltable",
+  "version": "2.4.0",
   "description": "Build multimodal AI applications with Pixeltable.",
   "author": {
     "name": "Pixeltable",

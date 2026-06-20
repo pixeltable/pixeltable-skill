@@ -15,8 +15,8 @@ Complete reference for table operations, querying, computed columns, views, embe
 - [Table Operations](#table-operations)
 - [Snapshots](#snapshots)
 - [Tools and Agents](#tools-and-agents) (create tools, agent pipeline, MCP)
-- [Serving (FastAPIRouter)](#serving-fastapirouter) (add_insert_route, add_query_route, add_delete_route, background jobs, pxt serve)
-- [Export](#export-csv-json-parquet-lancedb) (CSV, JSON, Parquet, LanceDB, SQL)
+- [Serving (FastAPIRouter)](#serving-fastapirouter) (add_insert_route, add_update_route, add_query_route, add_delete_route, background jobs, pxt serve)
+- [Export](#export-csv-json-parquet-lancedb-iceberg) (CSV, JSON, Parquet, LanceDB, Iceberg, SQL)
 - [Configuration](#configuration) (API keys, config.toml, rate limiting, media destinations, pxtfs://)
 - [Performance Tips](#performance-tips)
 
@@ -701,6 +701,14 @@ router.add_query_route(path="/list", query=list_docs, method="get")
 # GET /api/data/list → { "rows": [...] }
 ```
 
+### add_update_route
+
+```python
+# Update by primary key — recomputes dependent computed columns
+router.add_update_route(docs, path="/update", inputs=["title"], outputs=["uuid", "title", "summary"])
+# POST /api/data/update {"uuid": "...", "title": "..."} → updated row fields
+```
+
 ### add_delete_route
 
 ```python
@@ -725,59 +733,19 @@ See [workflows.md → FastAPIRouter](workflows.md#fastapirouter-declarative-serv
 
 ### pxt serve (CLI)
 
-Define routes in `pyproject.toml` (standard Python convention) or a standalone `pixeltable.toml`, then run `pxt serve`:
+Declarative HTTP serving without application code. Requires `pip install 'pixeltable[serve]'`.
 
-```toml
-# In pyproject.toml (alongside [project] and dependencies)
-# Requires [build-system] + [tool.setuptools] py-modules = ["schema"]
-# so pxt serve can import schema.py without PYTHONPATH hacks.
-
-[[tool.pixeltable.service]]
-name = "pipeline"
-prefix = "/api"
-port = 8000
-
-[[tool.pixeltable.service.routes]]
-type = "query"
-path = "/search"
-query = "schema:search_documents"   # colon-separated: module:attribute
-method = "post"
-
-[[tool.pixeltable.service.routes]]
-type = "insert"
-path = "/ingest/document"
-table = "pipeline.documents"
-inputs = ["title", "body", "source_id"]
-outputs = ["uuid"]
-
-[[tool.pixeltable.service.routes]]
-type = "delete"
-path = "/delete/document"
-table = "pipeline.documents"
-```
+Define routes in `pyproject.toml` (`[[tool.pixeltable.service]]`) or a standalone `service.toml` (`[[service]]`), then:
 
 ```bash
-pxt serve pipeline        # serves at http://localhost:8000
-pxt serve pipeline --port 9000
+pxt serve my-service                    # from pyproject.toml
+pxt serve my-service --config service.toml --port 9000
+pxt serve my-service --dry-run --json   # CI validation
 ```
 
-Insert routes can auto-export to a serving DB on every request:
+Query routes use dotted Python paths (e.g. `myapp.queries.search_docs`), not colon syntax. Full command reference, single-endpoint modes, and flag tables: [cli.md](cli.md).
 
-```toml
-[[tool.pixeltable.service.routes]]
-type = "insert"
-path = "/ingest/document"
-table = "pipeline.documents"
-inputs = ["title", "body", "source_id"]
-outputs = ["uuid"]
-
-[tool.pixeltable.service.routes.export_sql]
-db_connect = "postgresql+psycopg://user:pass@host/db"
-table = "processed_documents"
-method = "insert"
-```
-
-`pxt serve` generates a complete FastAPI app with OpenAPI docs at `/docs`. Same capabilities as `FastAPIRouter` (insert, query, delete, background jobs). See the [Starter Kit `serving/` directory](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/serving) for a working example.
+See [HTTP Serving Guide](https://docs.pixeltable.com/howto/deployment/serving) for TOML field reference and [Starter Kit `serving/`](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/serving) for a working example.
 
 ---
 
@@ -797,7 +765,7 @@ replica.pull()   # fetch latest from source
 replica.push()   # push local changes to source
 ```
 
-## Export (CSV, JSON, Parquet, LanceDB)
+## Export (CSV, JSON, Parquet, LanceDB, Iceberg)
 
 ```python
 import pixeltable as pxt
@@ -815,6 +783,9 @@ pxt.io.export_parquet(t, '/data/documents.parquet')
 
 # Export to LanceDB (vector DB)
 pxt.io.export_lancedb(t, db_uri='/data/lance', table_name='docs')
+
+# Export to Apache Iceberg (requires: pip install pyiceberg)
+# pxt.io.export_iceberg(t, catalog=iceberg_catalog, table_name='ns.my_table')
 
 # Export filtered query results
 results = t.where(t.score > 0.8).select(t.title, t.score)

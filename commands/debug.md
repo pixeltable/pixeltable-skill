@@ -9,7 +9,7 @@ Symptom: `$ARGUMENTS`
 
 Checklist:
 
-1. Inspect state — `t.describe()`, `t.select(...).collect()`, and check for error columns: a computed column stores `<col>_errortype` / `<col>_errormsg` for rows that failed.
+1. Inspect state — CLI first: `pxt describe my_dir/my_table`, `pxt errors my_dir/my_table`, `pxt status`. Then SDK: `t.describe()`, `t.select(...).collect()`, and check for error columns: a computed column stores `<col>_errortype` / `<col>_errormsg` for rows that failed.
 2. Failed computed columns: retry with `t.recompute_columns('<col>')` after fixing the cause (e.g. rate limits, bad input). Re-inserting does NOT recompute existing rows.
 3. Wrong column logic: `if_exists='ignore'` will silently skip an existing column. To change logic you must `t.drop_column('<col>')` then re-add it.
 4. Common deprecated/incorrect APIs to flag and fix:

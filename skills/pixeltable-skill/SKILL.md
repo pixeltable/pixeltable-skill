@@ -7,13 +7,14 @@ description: >
   Anthropic, Gemini, etc.) via computed columns that run on insert. Use when
   building RAG pipelines, processing images/video/audio/documents, orchestrating
   LLM inference, or deploying agents with persistent memory. Covers incremental
-  computation, version control, similarity search, FastAPI serving, and production
-  patterns. Do NOT use for general Python or direct PostgreSQL administration.
+  computation, version control, similarity search, the `pxt` CLI (inspect, debug,
+  serve, deploy), FastAPI serving, and production patterns. Do NOT use for general
+  Python or direct PostgreSQL administration.
 license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.4.3
+  version: 2.5.0
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -23,8 +24,9 @@ metadata:
   priority: 6
   pathPatterns: ["**/*.py"]
   importPatterns: ["pixeltable", "import pixeltable as pxt", "from pixeltable"]
+  bashPatterns: ['^\s*pxt(?:\s|$)']
   promptSignals:
-    phrases: ["pixeltable", "computed column", "embedding index", "add_embedding_index", "create_view", "document_splitter", "invoke_tools"]
+    phrases: ["pixeltable", "computed column", "embedding index", "add_embedding_index", "create_view", "document_splitter", "invoke_tools", "pxt serve", "pxt shell", "pxt errors", "pxt dashboard"]
     minScore: 6
 ---
 
@@ -80,7 +82,7 @@ Jump to the right section based on what you're building:
 | Compare multiple AI providers | [workflows.md → Multi-Provider Comparison](references/workflows.md#multi-provider-comparison) |
 | Build a FastAPI web app (hand-written endpoints) | [workflows.md → FastAPI App Pattern](references/workflows.md#fastapi-app-pattern) |
 | Serve tables/queries via FastAPIRouter (v0.6+) | [workflows.md → FastAPIRouter](references/workflows.md#fastapirouter-declarative-serving-v06) and [core-api.md → Serving](references/core-api.md#serving-fastapirouter) |
-| Serve via CLI (`pxt serve` + TOML config) | [core-api.md → pxt serve](references/core-api.md#pxt-serve-cli) |
+| Inspect/debug/serve/deploy via CLI (`pxt ls`, `errors`, `serve`, `deploy`, `dashboard`) | [cli.md](references/cli.md) |
 | Store media in Pixeltable Cloud (`pxtfs://`) | [core-api.md → Media Destinations](references/core-api.md#media-destinations-cloud-storage) |
 | Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](references/core-api.md#udfs) |
 | Use `pxt.tools()` and `invoke_tools()` for agents | **Tool-Calling Agent Pipeline** (below) and [core-api.md → Tools and Agents](references/core-api.md#tools-and-agents) |
@@ -401,23 +403,18 @@ t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
 
 Full examples in [core-api.md → Common Pitfalls](references/core-api.md#common-pitfalls).
 
-## Table Management
+## pxt CLI (v0.6+)
 
-```python
-pxt.list_tables()
-t = pxt.get_table('my_project.my_table')
-pxt.drop_table('my_project.my_table')
-pxt.drop_dir('my_project', force=True)
-t.describe()
-t.columns()
+Inspect, debug, and serve without Python boilerplate. Backed by a local daemon (`127.0.0.1:22089`; override `PXT_PORT`). Use `--json` for scripting; `pxt <cmd> --help` for flags — never guess.
 
-# Snapshots (point-in-time copy)
-snap = pxt.create_snapshot('my_project.snapshot_v1', t, if_exists='ignore')
-
-# Update and delete
-t.update({'score': 1.0}, where=t.category == 'important')
-t.delete(where=t.is_active == False)
+```bash
+pxt ls -l | pxt describe my_dir/my_table | pxt errors my_dir/my_table
+pxt rows my_dir/my_table -n 5 | pxt shell          # many commands
+pxt serve my-service --config service.toml         # HTTP API
+pxt dashboard | pxt deploy production
 ```
+
+SDK for pipelines; CLI for inspection, debugging, serving, and CI validation (`--dry-run --json`). Full reference: [cli.md](references/cli.md).
 
 ## Building Apps with Pixeltable
 
@@ -459,6 +456,7 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 
 | File | Coverage |
 |------|----------|
+| [cli.md](references/cli.md) | **`pxt` CLI** — inspect, query, debug, serve, deploy, dashboard, `--json` scripting |
 | [core-api.md](references/core-api.md) | Tables, querying, views, embeddings, UDFs, tools, **serving (FastAPIRouter)**, B-tree indexes, recompute, config, data sharing, SQL export |
 | [providers.md](references/providers.md) | Quick-reference table + full examples for all 25+ AI providers |
 | [workflows.md](references/workflows.md) | RAG, video analysis, image classification, audio, multi-provider, agent, **batch processing**, FastAPI, **FastAPIRouter**, export |

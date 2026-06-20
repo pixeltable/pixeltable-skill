@@ -14,7 +14,7 @@ Use this table to find the correct import, function, and output accessor for eac
 | OpenAI Transcription | `from pixeltable.functions.openai import transcriptions` | `transcriptions(audio=..., model='whisper-1')` | `.text` |
 | OpenAI DALL-E | `from pixeltable.functions.openai import image_generations` | `image_generations(prompt=..., model='dall-e-3')` | `.data[0].url` |
 | Anthropic | `from pixeltable.functions.anthropic import messages` | `messages(messages=..., model='claude-sonnet-4-20250514', max_tokens=1024)` | `.content[0].text` |
-| Gemini | `from pixeltable.functions.gemini import generate_content, embed_content` | `generate_content(contents=..., model='gemini-2.0-flash')` | *(returns text directly)* |
+| Gemini | `from pixeltable.functions.gemini import generate_content, embed_content` | `generate_content(contents=..., model='gemini-2.5-flash')` | *(returns text directly)* |
 | Together | `from pixeltable.functions.together import chat_completions` | `chat_completions(messages=..., model='meta-llama/...')` | `.choices[0].message.content` |
 | Fireworks | `from pixeltable.functions.fireworks import chat_completions` | `chat_completions(messages=..., model='accounts/fireworks/...')` | `.choices[0].message.content` |
 | Ollama | `from pixeltable.functions.ollama import chat_completions` | `chat_completions(messages=..., model='llama3.1')` | `.choices[0].message.content` |
@@ -35,6 +35,7 @@ Use this table to find the correct import, function, and output accessor for eac
 | Reve | `from pixeltable.functions.reve import create` | `create(prompt=...)` | *(returns Image directly)* |
 | Fabric | `from pixeltable.functions.fabric import chat_completions` | `chat_completions(messages=..., model='gpt-4.1')` | `.choices[0].message.content` |
 | llama.cpp | `from pixeltable.functions.llama_cpp import create_chat_completion` | `create_chat_completion(messages=..., repo_id='...', repo_filename='*q5_k_m.gguf')` | `.choices[0].message.content` |
+| vLLM (Local) | `from pixeltable.functions.vllm import chat_completions, generate` | `chat_completions(messages=..., model='Qwen/Qwen2.5-0.5B-Instruct')` | *(returns VllmRequestOutput dict)* |
 | YOLOX | `from pixeltable.functions.yolox import yolox` | `yolox(image=...)` | *(returns detection JSON)* |
 | Replicate | `from pixeltable.functions.replicate import run` | `run(input=json, model='owner/model')` | *(returns JSON)* |
 | Bedrock | `from pixeltable.functions.bedrock import converse` | `converse(messages=..., model='...')` | `.output.message.content[0].text` |
@@ -194,7 +195,7 @@ t.add_computed_column(
 from pixeltable.functions.gemini import generate_content, embed_content
 
 # Text generation
-t.add_computed_column(response=generate_content(contents=t.prompt, model='gemini-2.0-flash'), if_exists='ignore')
+t.add_computed_column(response=generate_content(contents=t.prompt, model='gemini-2.5-flash'), if_exists='ignore')
 
 # Embeddings (for add_embedding_index)
 t.add_embedding_index(
@@ -204,7 +205,7 @@ t.add_embedding_index(
 
 # Multimodal: pass images alongside text
 t.add_computed_column(
-    vision=generate_content(contents=[t.image, t.prompt], model='gemini-2.0-flash'),
+    vision=generate_content(contents=[t.image, t.prompt], model='gemini-2.5-flash'),
     if_exists='ignore',
 )
 ```
@@ -578,6 +579,28 @@ t.add_computed_column(
 t.add_computed_column(
     tool_results=invoke_tools(tools, t.response),
     if_exists='ignore')
+```
+
+## vLLM (Local)
+
+High-throughput local LLM inference with HuggingFace models. Requires `pip install vllm`.
+
+```python
+from pixeltable.functions.vllm import chat_completions, generate
+
+t.add_computed_column(
+    result=chat_completions(t.messages, model='Qwen/Qwen2.5-0.5B-Instruct'),
+    if_exists='ignore',
+)
+
+t.add_computed_column(
+    completion=generate(
+        t.prompt,
+        model='Qwen/Qwen2.5-0.5B-Instruct',
+        sampling_params={'max_tokens': 256, 'temperature': 0.7},
+    ),
+    if_exists='ignore',
+)
 ```
 
 ## YOLOX

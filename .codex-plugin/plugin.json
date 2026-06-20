@@ -1,6 +1,6 @@
 {
   "name": "pixeltable",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Build multimodal AI applications with Pixeltable.",
   "author": {
     "name": "Pixeltable",
@@ -20,8 +20,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Pixeltable",
-    "shortDescription": "Build Pixeltable apps, RAG pipelines, agents, and multimodal workflows",
-    "longDescription": "Use Pixeltable to build multimodal AI applications with declarative tables, computed columns, embeddings, retrieval, provider integrations, and production workflow patterns.",
+    "shortDescription": "Build Pixeltable apps with declarative tables, pxt CLI, RAG, agents, and serving",
+    "longDescription": "Use Pixeltable to build multimodal AI applications with declarative tables, computed columns, embeddings, retrieval, provider integrations, the pxt CLI (inspect, serve, deploy), and production workflow patterns.",
     "developerName": "Pixeltable",
     "category": "Developer Tools",
     "capabilities": [
@@ -31,9 +31,9 @@
     "websiteURL": "https://docs.pixeltable.com/",
     "brandColor": "#2563EB",
     "defaultPrompt": [
-      "Build a Pixeltable RAG pipeline",
-      "Create a multimodal Pixeltable app",
-      "Debug this Pixeltable workflow"
+      "Scaffold a Pixeltable project with uvx pixeltable-new",
+      "Build a RAG pipeline with the pixeltable skill",
+      "Debug this Pixeltable workflow with pxt errors"
     ]
   }
 }

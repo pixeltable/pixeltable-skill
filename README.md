@@ -44,6 +44,7 @@ skills/pixeltable-skill/        # The skill (content core)
 ├── SKILL.md                    # Core: negative prompts, task router, API, agents, pitfalls
 └── references/                 # Loaded on demand by Claude Code / Cursor
     ├── core-api.md             # Tables, querying, views, UDFs, config, data sharing
+    ├── cli.md                  # pxt CLI — inspect, debug, serve, deploy
     ├── providers.md            # 25+ AI providers with quick-reference table
     ├── workflows.md            # RAG, video, image, audio, FastAPI, export
     ├── video-rag-agents.md     # Video + transcript search + agent
@@ -52,8 +53,8 @@ skills/pixeltable-skill/        # The skill (content core)
     ├── agentic-patterns.md     # 6 patterns + 2 reasoning strategies
     └── anti-patterns.md        # 15 training-distribution biases with wrong/right code
 
-commands/                       # Slash commands: /pixeltable:scaffold, rag, add-provider, debug
-agents/                         # Specialists: rag-builder, pipeline-architect, debugger
+commands/                       # Slash commands: /pixeltable:scaffold, add-provider
+agents/                         # Specialists: pipeline-architect, debugger
 hooks/                          # Optional pure-Python hooks (Claude Code): orientation + anti-pattern validation
 ```
 

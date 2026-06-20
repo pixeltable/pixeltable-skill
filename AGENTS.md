@@ -17,8 +17,8 @@ skills/pixeltable-skill/
     ├── ml-data-pipeline.md
     └── agentic-patterns.md
 
-commands/                 ← Slash commands (Markdown): scaffold, rag, add-provider, debug
-agents/                   ← Specialist subagents (Markdown): rag-builder, pipeline-architect, debugger
+commands/                 ← Slash commands (Markdown): scaffold, add-provider
+agents/                   ← Specialist subagents (Markdown): pipeline-architect, debugger
 hooks/                    ← OPTIONAL pure-Python hooks + hooks.json (Claude Code)
 scripts/validate_plugin.py← Manifest + frontmatter validator
 
@@ -37,7 +37,7 @@ package.json (pi.skills)
 - **Hooks are pure Python**, invoked as `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.py"` (use `python3`, never `python`). No Node/Bun/TypeScript anywhere in the repo.
 - **Hook reach:** full on Claude Code; Cursor honors only `sessionStart` injection (`postToolUse` `additional_context` is an unfixed Cursor bug); skills-only installs get no hooks.
 - **Plugin and skill are both named `pixeltable`** so commands render as `/pixeltable:<name>` and `/pixeltable` loads the skill. The skill still lives in the `skills/pixeltable-skill/` folder (folder name is just a container; the SKILL.md `name` frontmatter is authoritative).
-- **Keep all manifest versions in sync** when bumping (`2.5.0` currently).
+- **Keep all manifest versions in sync** when bumping (`2.5.1` currently).
 - **Run `python3 scripts/validate_plugin.py`** after structural changes.
 
 ### Deliberately NOT in this repo (skip-list)

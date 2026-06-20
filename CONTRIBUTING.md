@@ -20,8 +20,8 @@ pixeltable-skill/
 ├── skills/pixeltable-skill/   # THE skill — do not split
 │   ├── SKILL.md               # Core instructions (<500 lines)
 │   └── references/            # Detailed reference (loaded on demand)
-├── commands/                  # Slash commands (Markdown): /pixeltable:scaffold, rag, add-provider, debug
-├── agents/                    # Specialist subagents (Markdown)
+├── commands/                  # Slash commands (Markdown): /pixeltable:scaffold, add-provider
+├── agents/                    # Specialist subagents (Markdown): pipeline-architect, debugger
 ├── hooks/                     # Optional pure-Python hooks + hooks.json (Claude Code)
 ├── scripts/validate_plugin.py # Manifest + frontmatter validator
 ├── install.sh                 # Installer for Claude Code and Cursor
@@ -72,9 +72,10 @@ Before submitting, verify:
 2. All code examples are syntactically correct Python
 3. Provider examples match the current Pixeltable API
 4. Scaffold/template names match the starter-kit repos (`pixeltable-new` `TEMPLATES` and `pixeltable-app-template/templates/`), not a possibly-stale published `uvx pixeltable-new --list`
-5. The install script works: `./install.sh --platform claude-code --target /tmp/test`
+5. The install script works: `./install.sh --platform claude-code --target /tmp/test` and `./install.sh --platform cursor-skill`
 6. Plugin layout validates: `python3 scripts/validate_plugin.py`
 7. Discovery resolves: `npx plugins discover .` and `npx skills add . --list`
+8. Cursor install (from repo): `npx plugins add . -y --target cursor` then restart Agent; verify `/pixeltable:scaffold` and 9 files under `~/.cursor/skills/pixeltable-skill/references/` (or plugin cache)
 
 ### No XML Tags
 

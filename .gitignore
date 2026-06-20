@@ -17,3 +17,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Local npx skills/plugins install artifacts (do not commit)
+.agents/skills/
+skills-lock.json

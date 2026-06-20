@@ -8,7 +8,7 @@
       "name": "pixeltable",
       "source": {
         "source": "local",
-        "path": "./plugins/pixeltable-skill"
+        "path": "./"
       },
       "policy": {
         "installation": "AVAILABLE",

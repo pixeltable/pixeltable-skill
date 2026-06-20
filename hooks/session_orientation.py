@@ -15,7 +15,8 @@ ORIENTATION = (
     "(use computed columns); a separate vector DB (use `add_embedding_index` + "
     "`column.similarity(string=query)`); manual agent `while` loops (model the agent as a table). "
     "Import `frame_iterator` from `pixeltable.functions.video`; for images use `chat_completions` "
-    "with `image_url` blocks. Use the `pixeltable` skill for full guidance."
+    "with `image_url` blocks. Use `pxt` CLI for inspect/debug/serve; prefer `FastAPIRouter` over "
+    "hand-written endpoints. Use the `pixeltable` skill for full guidance."
 )
 
 DEP_FILES = ["pyproject.toml", "requirements.txt", "Pipfile", "setup.cfg", "setup.py", "uv.lock"]

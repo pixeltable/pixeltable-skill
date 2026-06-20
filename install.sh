@@ -8,7 +8,7 @@ set -euo pipefail
 #   Direct:       ./install.sh --platform claude-code --target ./my-project
 
 REPO_URL="https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main"
-REF_FILES="core-api providers workflows video-rag-agents agents-memory-mcp ml-data-pipeline agentic-patterns anti-patterns"
+REF_FILES="core-api cli providers workflows video-rag-agents agents-memory-mcp ml-data-pipeline agentic-patterns anti-patterns"
 
 TARGET_DIR=""
 PLATFORM=""
@@ -80,7 +80,7 @@ install_skill() {
     done
   fi
 
-  echo "  Installed: $skill_dest/SKILL.md + references/ (7 files)"
+  echo "  Installed: $skill_dest/SKILL.md + references/ (9 files)"
 }
 
 # Direct mode

@@ -1,19 +1,16 @@
 {
   "name": "pixeltable",
   "description": "Build multimodal AI applications with Pixeltable -- tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "author": {
     "name": "Pixeltable",
     "url": "https://github.com/pixeltable"
   },
   "commands": [
     "./commands/scaffold.md",
-    "./commands/rag.md",
-    "./commands/add-provider.md",
-    "./commands/debug.md"
+    "./commands/add-provider.md"
   ],
   "agents": [
-    "./agents/pixeltable-rag-builder.md",
     "./agents/pixeltable-pipeline-architect.md",
     "./agents/pixeltable-debugger.md"
   ]

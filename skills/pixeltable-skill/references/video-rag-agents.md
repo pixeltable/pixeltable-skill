@@ -84,14 +84,14 @@ def search_video_frames(query_text: str):
     """Search video frames by visual similarity using CLIP."""
     sim = frames.frame.similarity(string=query_text)
     return frames.order_by(sim, asc=False).limit(10).select(
-        frames.description, frames.thumbnail, sim=sim)
+        frames.description, frames.thumbnail, score=sim)
 
 @pxt.query
 def search_transcripts(query_text: str):
     """Search video transcripts by semantic similarity."""
     sim = sentences.text.similarity(string=query_text)
     return sentences.where(sim > 0.5).order_by(sim, asc=False).select(
-        sentences.text, sim=sim).limit(20)
+        sentences.text, score=sim).limit(20)
 
 @pxt.udf
 def web_search(keywords: str) -> str:

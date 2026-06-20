@@ -17,7 +17,7 @@ Steps:
    - "RAG app" / docs+images+video+audio upload + unified search + Q&A → `knowledge-base` → fallback `--backend`.
    - chatbot / tool-calling agent / persistent memory / MCP → `chat-agent` → fallback `--backend`.
    - audio / podcast / transcription + summarization → `audio-transcription` → fallback `--backend`.
-   - video frames / detection / transcription / temporal search → `video-search` → fallback default `serving`.
+   - video frames / detection / transcription / temporal search → `video-search` → fallback default `serving`. Run with `pxt serve videointel`.
    - enterprise media / S3 ingest / process all modalities / export → `media-indexing` → fallback `--batch`.
    - ML dataset / auto-annotate / curate / version / PyTorch export → `image-dataset` → fallback `--batch`.
    - complete reference app (Gemini + DETR + Whisper, React UI) → `full-stack-showcase` → fallback `--backend`.
@@ -32,6 +32,15 @@ uvx pixeltable-new --template knowledge-base my-rag-app   # template
 uvx pixeltable-new my-app --backend                       # structural pattern, no --template
 ```
 
-4. If the `--template` command reports an unknown name or "No files found" / "restructured" (a version skew between the installed `pixeltable-new` and the starter kit), re-check `--list` and use a listed name, or run the mapped structural pattern instead. Do NOT retry guessed template names, and do NOT hand-write the app yourself. If the directory already exists, choose a new name rather than deleting the user's existing directory without asking.
+4. If the `--template` command reports an unknown name or "No files found" / "restructured":
+   - Re-check `--list` and use a listed canonical name (or a legacy alias shown there, e.g. `video-intel` → `video-search` in pixeltable-new 0.4.2+).
+   - Upgrade: `uvx --from pixeltable-new==0.4.2 pixeltable-new --template video-search my-app`
+   - Last resort: run the mapped structural pattern (`serving`, `backend`, or `batch`) and adapt from [workflows.md](../skills/pixeltable-skill/references/workflows.md) (e.g. Video Analysis Pipeline).
+   - If the directory already exists (including empty dirs left by a failed scaffold), choose a new name or remove the empty directory — do not delete a populated project without asking.
+   - Do NOT retry guessed template names.
 
-5. State clearly which template or pattern you actually used (and, if you fell back, why). Then follow the **Next steps** the generator prints to run it (templates: `uv sync` → `uv run python app.py`; backend: `uv sync` → `uv run python setup_pixeltable.py` → `uv run uvicorn main:app --reload`), and suggest the next computed columns the user is likely to add. Do NOT hand-write boilerplate the scaffold already provides.
+5. State clearly which template or pattern you actually used (and, if you fell back, why). Then follow the **Next steps** the generator prints:
+   - `video-search`: `uv sync` → `uv run python schema.py` → `uv run pxt serve videointel`
+   - Templates with `app.py`: `uv sync` → `uv run python app.py`
+   - `backend`: `uv sync` → `uv run python setup_pixeltable.py` → `uv run uvicorn main:app --reload`
+   - Do NOT hand-write boilerplate the scaffold already provides.

@@ -31,6 +31,12 @@ CHECKS = [
         "`column.similarity(string=query)`.",
     ),
     (
+        re.compile(r"@pxt\.query[\s\S]*?sim=sim"),
+        "error",
+        "`sim=sim` in `@pxt.query` breaks `.collect()` and `pxt serve`. Alias similarity as "
+        "`score=sim` (any name other than `sim`).",
+    ),
+    (
         re.compile(
             r"^\s*(?:from|import)\s+(langchain|langgraph|llama_index|llama-index|haystack|"
             r"chromadb|faiss|pinecone|qdrant|weaviate|pgvector)\b",

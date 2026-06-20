@@ -130,7 +130,7 @@ results = frames.order_by(sim, asc=False).limit(10).select(
 def search_transcripts(query_text: str):
     sim = sentences.text.similarity(string=query_text)
     return sentences.where(sim > 0.7).order_by(sim, asc=False).select(
-        sentences.text, sim=sim
+        sentences.text, score=sim
     ).limit(20)
 ```
 
@@ -270,7 +270,7 @@ images.add_embedding_index('image',
 def search_documents(query_text: str):
     sim = chunks.text.similarity(string=query_text)
     return chunks.where(sim > 0.5).order_by(sim, asc=False).select(
-        chunks.text, sim=sim).limit(20)
+        chunks.text, score=sim).limit(20)
 
 @pxt.query
 def search_images(query_text: str):
@@ -278,7 +278,7 @@ def search_images(query_text: str):
     return images.where(sim > 0.25).order_by(sim, asc=False).select(
         encoded_image=pxt_image.b64_encode(
             pxt_image.thumbnail(images.image, size=(224, 224)), 'png'),
-        sim=sim).limit(5)
+        score=sim).limit(5)
 
 @pxt.udf
 def web_search(keywords: str) -> str:
@@ -406,7 +406,7 @@ chunks.add_embedding_index('text', string_embed=embed_fn, if_exists='ignore')
 def search_documents(query_text: str):
     sim = chunks.text.similarity(string=query_text)
     return chunks.where(sim > 0.5).order_by(sim, asc=False).select(
-        chunks.text, sim=sim, title=chunks.title
+        chunks.text, score=sim, title=chunks.title
     ).limit(20)
 ```
 
@@ -437,7 +437,7 @@ def search(body: SearchRequest):                    # sync, not async
     result = (
         table.where(sim > 0.3)
         .order_by(sim, asc=False)
-        .select(text=table.text, sim=sim, title=table.title)
+        .select(text=table.text, score=sim, title=table.title)
         .limit(20)
         .collect()
     )
@@ -494,7 +494,7 @@ def list_docs():
 def search_docs(query_text: str):
     sim = chunks.text.similarity(string=query_text)
     return chunks.where(sim > 0.3).order_by(sim, asc=False).select(
-        text=chunks.text, sim=sim, title=chunks.title).limit(20)
+        text=chunks.text, score=sim, title=chunks.title).limit(20)
 
 router.add_query_route(path="/list", query=list_docs, method="get")
 router.add_query_route(path="/search", query=search_docs, method="post")
@@ -611,7 +611,7 @@ export_sql(
 # Verify semantic search works
 sim = schema.sentences.text.similarity(string='test query')
 results = (schema.sentences.order_by(sim, asc=False)
-           .limit(3).select(schema.sentences.text, sim=sim).collect())
+           .limit(3).select(schema.sentences.text, score=sim).collect())
 ```
 
 Key points:

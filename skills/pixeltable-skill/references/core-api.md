@@ -688,7 +688,7 @@ Parameters:
 def search_docs(query_text: str):
     sim = chunks.text.similarity(string=query_text)
     return chunks.where(sim > 0.3).order_by(sim, asc=False).select(
-        text=chunks.text, sim=sim).limit(20)
+        text=chunks.text, score=sim).limit(20)
 
 router.add_query_route(path="/search", query=search_docs, method="post")
 # POST /api/data/search {"query_text": "..."} → { "rows": [...] }

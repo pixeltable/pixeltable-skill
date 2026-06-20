@@ -46,7 +46,7 @@ def recall_chat_history(query_text: str, user_id: str, top_k: int = 5):
         .where((chat_history.user_id == user_id) & (sim > 0.5))
         .order_by(sim, asc=False)
         .limit(top_k)
-        .select(chat_history.role, chat_history.content, sim=sim)
+        .select(chat_history.role, chat_history.content, score=sim)
     )
 
 # ── 2. Memory: Knowledge Bank ───────────────────────────────────────
@@ -70,7 +70,7 @@ def recall_memories(query_text: str, user_id: str, top_k: int = 3):
         .where((memory_bank.user_id == user_id) & (sim > 0.5))
         .order_by(sim, asc=False)
         .limit(top_k)
-        .select(memory_bank.content, memory_bank.category, sim=sim)
+        .select(memory_bank.content, memory_bank.category, score=sim)
     )
 
 # Seed memories

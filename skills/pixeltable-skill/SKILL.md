@@ -14,7 +14,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.5.1
+  version: 2.5.2
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -66,6 +66,7 @@ Jump to the right section based on what you're building:
 | Use MCP tools with an agent | [agents-memory-mcp.md → Adding MCP Tools](references/agents-memory-mcp.md#adding-mcp-tools) |
 | Use `invoke_tools()` with OpenAI, Groq, Gemini, Bedrock | [agents-memory-mcp.md → Multi-Provider](references/agents-memory-mcp.md#multi-provider-invoke_tools) |
 | Build a video RAG agent (video + search + agent) | [video-rag-agents.md](references/video-rag-agents.md) — dedicated combined recipe |
+| Spin up a quick video frame search app | **Starting a New Project** (`--template video-search`) → `pxt serve videointel` |
 | Process video (frames, transcription, visual search) | [workflows.md → Video Analysis Pipeline](references/workflows.md#video-analysis-pipeline) |
 | Process images (classify, tag, search) | [workflows.md → Image Classification and Search](references/workflows.md#image-classification-and-search) |
 | Process audio (transcribe, summarize) | [workflows.md → Audio Transcription](references/workflows.md#audio-transcription-and-analysis) |
@@ -102,7 +103,7 @@ See [Common Pitfalls](#common-pitfalls) below for full details and code examples
 
 ## Starting a New Project
 
-Scaffold a complete project from the [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) with `uvx pixeltable-new`. Run `uvx pixeltable-new --list` first to see the options available on your installed version, then pick one.
+Scaffold a complete project from the [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) with `uvx pixeltable-new` (0.4.2+). Run `uvx pixeltable-new --list` first to see the options available on your installed version, then pick one. Legacy aliases (`video-intel`, etc.) still work in 0.4.2+ but prefer canonical names below.
 
 **Application templates** — a full app (schema + API/UI) for a use case:
 
@@ -110,11 +111,13 @@ Scaffold a complete project from the [Starter Kit](https://github.com/pixeltable
 uvx pixeltable-new --template knowledge-base my-kb        # serving + backend: docs/images/video/audio upload, unified search + RAG Q&A
 uvx pixeltable-new --template chat-agent my-agent         # serving + backend: persistent agent, durable memory, tool calling, MCP
 uvx pixeltable-new --template audio-transcription my-pod  # serving + backend: transcription, summarization, semantic search
-uvx pixeltable-new --template video-search my-video       # serving: frames, transcription, detection, temporal search
+uvx pixeltable-new --template video-search my-video       # serving: frames, transcription, detection, search → pxt serve videointel
 uvx pixeltable-new --template media-indexing my-pipe      # batch: ingest from S3, process all modalities, export
 uvx pixeltable-new --template image-dataset my-dataset    # batch: auto-annotate, curate, version, export to PyTorch
 uvx pixeltable-new --template full-stack-showcase my-app  # serving + backend: complete reference app (Gemini + DETR + Whisper, React UI)
 ```
+
+**Video-search quickstart:** `uv sync` → `uv run python schema.py` → `uv run pxt serve videointel` (service name is `videointel`, not `pipeline`).
 
 **Structural patterns** — bare API/pipeline scaffolds (each template builds on one of these):
 
@@ -400,6 +403,8 @@ t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
 | 8 | `.collect()` or `pxt.get_table()` inside `@pxt.query` | `@pxt.query` compiles the body at decoration time with expression placeholders — don't call `.collect()`, `insert()`, or reference tables that may not exist. Use a plain `def` for imperative logic |
 | 9 | `'id': pxt.String` as primary key | PK columns must be non-nullable. Use `pxt.Required[pxt.String]` or `uuid7()` as a computed default |
 | 10 | Module-level `Table` object used in FastAPI endpoint | `Table` objects are thread-bound. Call `pxt.get_table()` inside each endpoint function, not at module level |
+| 11 | `@pxt.query` with `.select(..., sim=sim)` | Use `score=sim` — aliasing the output column `sim` breaks `.collect()` and `pxt serve` query routes |
+| 12 | Returning raw `pxt.Image`/`pxt.Video` from `pxt serve` query routes | Return `b64_encode(thumbnail(...))` strings — raw media columns fail Pydantic serialization |
 
 Full examples in [core-api.md → Common Pitfalls](references/core-api.md#common-pitfalls).
 
@@ -421,6 +426,7 @@ SDK for pipelines; CLI for inspection, debugging, serving, and CI validation (`-
 - Pixeltable IS the data layer — no ORM, no SQLAlchemy
 - **Prefer `FastAPIRouter`** (v0.6+) over hand-written endpoints — `add_insert_route`, `add_query_route`, `add_delete_route` generate endpoints from tables and `@pxt.query` functions
 - Use `background=True` on `add_insert_route` for long-running inserts (returns a job handle, client polls for completion)
+- In `@pxt.query` functions served via `pxt serve`, alias similarity as `score=sim` (not `sim=sim`) and return thumbnails—not raw `Image` columns
 - FastAPI endpoints: use `def` not `async def` (Pixeltable is synchronous)
 - Business logic in `@pxt.udf` / `@pxt.query`, not in endpoint handlers
 - Schema in one file, queries co-located with routes in each router file

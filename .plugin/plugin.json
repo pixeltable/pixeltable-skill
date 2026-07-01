@@ -1,6 +1,6 @@
 {
   "name": "pixeltable",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "description": "Build multimodal AI applications with Pixeltable — declarative tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
   "author": {
     "name": "Pixeltable",

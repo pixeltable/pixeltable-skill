@@ -14,7 +14,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.5.2
+  version: 2.5.3
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -86,6 +86,7 @@ Jump to the right section based on what you're building:
 | Inspect/debug/serve/deploy via CLI (`pxt ls`, `errors`, `serve`, `deploy`, `dashboard`) | [cli.md](references/cli.md) |
 | Store media in Pixeltable Cloud (`pxtfs://`) | [core-api.md → Media Destinations](references/core-api.md#media-destinations-cloud-storage) |
 | Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](references/core-api.md#udfs) |
+| Write custom aggregates (`@pxt.uda`) | [core-api.md → User-Defined Aggregates](references/core-api.md#user-defined-aggregates-uda) |
 | Use `pxt.tools()` and `invoke_tools()` for agents | **Tool-Calling Agent Pipeline** (below) and [core-api.md → Tools and Agents](references/core-api.md#tools-and-agents) |
 | Avoid common mistakes (wrong imports, broken schemas, serialization) | **Common Pitfalls** (below) and [core-api.md → Common Pitfalls](references/core-api.md#common-pitfalls) |
 | Understand what NOT to use with Pixeltable (LangChain, pandas, vector DBs) | [anti-patterns.md](references/anti-patterns.md) — 15 training-distribution biases with wrong/right code |
@@ -291,6 +292,9 @@ t.add_computed_column(
 
 ### User-Defined Functions (UDFs)
 
+`@pxt.udf` — one input row → one output; use in `add_computed_column` and agent tools.
+`@pxt.uda` — many rows → one value; use in `select()` / `group_by()` queries only. See [core-api.md → UDAs](references/core-api.md#user-defined-aggregates-uda).
+
 ```python
 @pxt.udf
 def clean_text(text: str) -> str:
@@ -463,7 +467,7 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 | File | Coverage |
 |------|----------|
 | [cli.md](references/cli.md) | **`pxt` CLI** — inspect, query, debug, serve, deploy, dashboard, `--json` scripting |
-| [core-api.md](references/core-api.md) | Tables, querying, views, embeddings, UDFs, tools, **serving (FastAPIRouter)**, B-tree indexes, recompute, config, data sharing, SQL export |
+| [core-api.md](references/core-api.md) | Tables, querying, views, embeddings, UDFs, **UDAs**, tools, **serving (FastAPIRouter)**, B-tree indexes, recompute, config, data sharing, SQL export |
 | [providers.md](references/providers.md) | Quick-reference table + full examples for all 25+ AI providers |
 | [workflows.md](references/workflows.md) | RAG, video analysis, image classification, audio, multi-provider, agent, **batch processing**, FastAPI, **FastAPIRouter**, export |
 | [video-rag-agents.md](references/video-rag-agents.md) | Video + transcript/frame retrieval + tool-calling agent |

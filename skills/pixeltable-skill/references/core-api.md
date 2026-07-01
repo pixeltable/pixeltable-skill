@@ -5,12 +5,13 @@ Complete reference for table operations, querying, computed columns, views, embe
 ## Contents
 
 - [Table Creation](#table-creation) (basic, primary key, UUID, from source)
-- [Querying](#querying) (select, where, order by, pandas, Pydantic)
+- [Querying](#querying) (select, where, order by, aggregates, group_by, pandas, Pydantic)
 - [Computed Columns](#computed-columns)
 - [Views](#views) (filtered, document chunking, video frames, string splitting, audio splitting)
 - [Built-in Functions](#built-in-image-functions) (image, video, string)
 - [Embedding Indexes](#embedding-indexes) (add index, similarity search, distance metrics)
-- [UDFs](#udfs) (basic, optional args, batch, aggregate, retrieval)
+- [UDFs](#udfs) (basic, optional args, batch, retrieval)
+- [User-Defined Aggregates (UDA)](#user-defined-aggregates-uda) (custom `@pxt.uda`, group_by, built-ins)
 - [Update and Delete](#update-and-delete)
 - [Table Operations](#table-operations)
 - [Snapshots](#snapshots)
@@ -114,6 +115,22 @@ page2 = t.order_by(t.col2).limit(10, offset=10).collect()
 # Random sample (reproducible with seed)
 sample = t.sample(n=100, seed=42).select(t.col1, t.col2).collect()
 ```
+
+### Aggregates and Group By
+
+UDAs and built-in aggregates run in **queries**, not `add_computed_column`:
+
+```python
+# Global aggregate (built-in or custom @pxt.uda)
+t.select(t.amount.sum()).collect()
+t.select(avg_int(t.value)).collect()
+
+# Per-group aggregation
+t.group_by(t.region).select(t.region, total=t.amount.sum()).collect()
+t.group_by(t.category).select(t.category, avg_val=avg_int(t.value)).collect()
+```
+
+See [User-Defined Aggregates (UDA)](#user-defined-aggregates-uda) for defining custom aggregates.
 
 ### Conversions
 
@@ -245,8 +262,8 @@ t.add_computed_column(
 
 ```python
 from pixeltable.functions.video import (
-    extract_audio, resize, crop, concat_videos,
-    with_audio, pan, mix_audio, overlay_image,
+    extract_audio, resize, crop, concat_videos, concat_videos_agg,
+    make_video, with_audio, pan, mix_audio, overlay_image,
 )
 
 # Extract audio track from video
@@ -264,10 +281,16 @@ t.add_computed_column(
     cropped=crop(t.video, x=100, y=100, w=400, h=300),
     if_exists='ignore')
 
-# Concatenate two videos
+# Concatenate two videos (scalar UDF — fixed pair of inputs)
 t.add_computed_column(
     combined=concat_videos(t.intro_video, t.main_video),
     if_exists='ignore')
+
+# Concatenate many videos from rows (UDA — ordered by timestamp column)
+frames.select(concat_videos_agg(frames.timestamp, frames.video)).collect()
+
+# Combine a sequence of frame images into one video (UDA)
+frames.select(make_video(frames.frame, fps=30)).collect()
 
 # Replace audio track on a video
 t.add_computed_column(
@@ -394,21 +417,52 @@ def batch_process(texts: Batch[str]) -> Batch[list[float]]:
     return model.encode(texts).tolist()
 ```
 
-### Aggregate UDF
+### User-Defined Aggregates (UDA)
+
+Use `@pxt.uda` for **multi-row → single-value** logic (variance, string concat, frame→video). Use `@pxt.udf` for **one-row → one-value** transforms in computed columns.
 
 ```python
 @pxt.uda
-class MyAggregator(pxt.Aggregator):
+class avg_int(pxt.Aggregator):
     def __init__(self):
         self.sum = 0
         self.count = 0
 
     def update(self, val: int) -> None:
-        self.sum += val
-        self.count += 1
+        if val is not None:
+            self.sum += val
+            self.count += 1
 
     def value(self) -> float:
         return self.sum / self.count if self.count > 0 else 0.0
+
+# Use in queries — not add_computed_column
+t.select(avg_int(t.value)).collect()
+t.group_by(t.category).select(t.category, avg_val=avg_int(t.value)).collect()
+```
+
+**UDA class contract:** subclass `pxt.Aggregator` and implement `__init__`, `update`, and `value`. Parameters to `__init__` must be **constants** (not column expressions).
+
+**`@pxt.uda` decorator kwargs:**
+
+| Parameter | Default | Purpose |
+|-----------|---------|---------|
+| `requires_order_by` | `False` | First positional arg is the order key; rows are processed in that order |
+| `allows_std_agg` | `True` | Can run as a plain `SELECT agg(col)` |
+| `allows_window` | `False` | Supports `order_by=` / `group_by=` window-style calls |
+| `type_substitutions` | `None` | Overloaded aggregator signatures |
+
+**Built-in UDAs** (import from the same modules as scalar functions):
+
+```python
+from pixeltable.functions.video import make_video, concat_videos_agg
+from pixeltable.functions.json import make_list
+from pixeltable.functions.vision import mean_ap
+
+frames.select(make_video(frames.frame, fps=30)).collect()
+clips.select(concat_videos_agg(clips.timestamp, clips.video)).collect()
+t.select(make_list(t.metadata)).collect()
+evals.select(mean_ap(evals.eval_dicts)).collect()
 ```
 
 ### Retrieval UDF (for AI Tool Use)

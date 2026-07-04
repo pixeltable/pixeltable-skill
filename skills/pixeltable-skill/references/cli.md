@@ -129,12 +129,11 @@ Generates a FastAPI app with OpenAPI docs at `/docs`. Same capabilities as `Fast
 [[tool.pixeltable.service]]
 name = "my-service"
 port = 8000
-modules = ["schema"]
 
 [[tool.pixeltable.service.routes]]
 type = "query"
 path = "/search"
-query = "myapp.queries.search_docs"
+query = "schema:search_docs"   # module:attribute (the module must be importable)
 method = "post"
 
 [[tool.pixeltable.service.routes]]
@@ -151,14 +150,16 @@ outputs = ["prompt", "result"]
 pxt serve my-service --config service.toml
 ```
 
-Query paths are **dotted Python paths** (e.g. `myapp.queries.search_docs`), resolved at startup.
+Query refs use **`module:attribute` colon syntax** (e.g. `schema:search_docs`), resolved at startup. The referenced module must be importable — declare it via `[tool.setuptools] py-modules = ["schema"]` in `pyproject.toml` (or otherwise put it on `sys.path`).
+
+**Starter-kit service names** (pass as `pxt serve <service-name>`): `serving` / `media-indexing` -> `pipeline`, `video-search` -> `videointel`, `image-dataset` -> `datalab`, `knowledge-base` -> `kb`, `chat-agent` -> `agent`, `audio-transcription` -> `audiointel`, `full-stack-showcase` -> `sitewatch`.
 
 ### Single-endpoint mode (development)
 
 ```bash
 pxt serve insert --table my_dir.my_table --path /generate \
   --inputs prompt --outputs prompt result --port 8000
-pxt serve query --query myapp.queries.search_docs --path /search
+pxt serve query --query schema:search_docs --path /search
 ```
 
 ### Common serve flags

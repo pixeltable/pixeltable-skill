@@ -268,7 +268,7 @@ async def query_endpoint(q: str):
 ```python
 @app.post("/query")
 def query_endpoint(q: str):
-    results = t.where(t.text.contains(q)).select(t.text, t.score).collect()
+    results = t.where(t.text.contains(q)).select(t.text).collect()
     return results.to_pandas().to_dict(orient='records')
 ```
 

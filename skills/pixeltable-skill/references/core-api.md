@@ -603,7 +603,7 @@ def web_search(keywords: str) -> str:
 def search_docs(query_text: str):
     """Search documents by semantic similarity."""
     sim = chunks.text.similarity(string=query_text)
-    return chunks.order_by(sim, asc=False).limit(10).select(chunks.text, sim)
+    return chunks.order_by(sim, asc=False).limit(10).select(chunks.text, score=sim)
 
 tools = pxt.tools(web_search, search_docs)
 ```
@@ -797,7 +797,7 @@ pxt serve my-service --config service.toml --port 9000
 pxt serve my-service --dry-run --json   # CI validation
 ```
 
-Query routes use dotted Python paths (e.g. `myapp.queries.search_docs`), not colon syntax. Full command reference, single-endpoint modes, and flag tables: [cli.md](cli.md).
+Query routes use `module:attribute` colon paths (e.g. `schema:search_docs`), resolved at startup. Full command reference, single-endpoint modes, and flag tables: [cli.md](cli.md).
 
 See [HTTP Serving Guide](https://docs.pixeltable.com/howto/deployment/serving) for TOML field reference and [Starter Kit `serving/`](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/serving) for a working example.
 

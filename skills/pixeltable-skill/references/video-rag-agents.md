@@ -247,5 +247,5 @@ The pipeline is a chain of computed columns. Inserting a row into `agent` trigge
 
 - **Swap providers**: Replace `messages` (Anthropic) with `chat_completions` (OpenAI/Together/etc.) — see [providers.md](providers.md#quick-reference) for import and output shapes
 - **Add document RAG**: Add a `document_splitter` view and a `search_documents` query function to the tools list
-- **Use local models**: Replace OpenAI transcription with `whisper.transcribe()` and use `ollama.chat_completions` for the LLM — see [workflows.md → Local LLM Pipeline](workflows.md#local-llm-pipeline-ollama)
+- **Use local models**: Replace OpenAI transcription with `transcribe()` (`from pixeltable.functions.whisper import transcribe`) and use `chat_completions` (`from pixeltable.functions.ollama import chat_completions`) for the LLM — see [workflows.md → Local LLM Pipeline](workflows.md#local-llm-pipeline-ollama)
 - **Serve via API**: Wrap the pipeline in a FastAPI endpoint — see [workflows.md → FastAPI App Pattern](workflows.md#fastapi-app-pattern)

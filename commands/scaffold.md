@@ -40,7 +40,9 @@ uvx pixeltable-new my-app --backend                       # structural pattern, 
    - Do NOT retry guessed template names.
 
 5. State clearly which template or pattern you actually used (and, if you fell back, why). Then follow the **Next steps** the generator prints:
-   - `video-search`: `uv sync` → `uv run python schema.py` → `uv run pxt serve videointel`
-   - Templates with `app.py`: `uv sync` → `uv run python app.py`
-   - `backend`: `uv sync` → `uv run python setup_pixeltable.py` → `uv run uvicorn main:app --reload`
+   - **pxt-serve templates** (no `app.py`): `uv sync` → `uv run python schema.py` → `uv run pxt serve <service-name>` — `video-search` → `videointel`, `media-indexing` → `pipeline`, `image-dataset` → `datalab`.
+   - **`app.py` templates**: `uv sync` → `uv run python app.py`. A `pxt serve` route set exists as an API-only alternative (`knowledge-base` → `kb`, `chat-agent` → `agent`, `audio-transcription` → `audiointel`, `full-stack-showcase` → `sitewatch`) — do NOT run `app.py` and `pxt serve` at the same time; they bind the same port.
+   - **`full-stack-showcase`**: build the React UI first — `cd frontend && npm install && npm run build && cd ..` — then `uv run python app.py`, or the UI 404s.
+   - **`serving`** (default pattern): `uv sync` → `uv run python schema.py` → `uv run pxt serve pipeline`
+   - **`backend`**: `uv sync` → `uv run python setup_pixeltable.py` → `uv run uvicorn main:app --reload`
    - Do NOT hand-write boilerplate the scaffold already provides.

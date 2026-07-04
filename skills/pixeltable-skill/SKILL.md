@@ -14,7 +14,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.5.3
+  version: 2.5.4
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -110,7 +110,7 @@ Scaffold a complete project from the [Starter Kit](https://github.com/pixeltable
 
 ```bash
 uvx pixeltable-new --template knowledge-base my-kb        # serving + backend: docs/images/video/audio upload, unified search + RAG Q&A
-uvx pixeltable-new --template chat-agent my-agent         # serving + backend: persistent agent, durable memory, tool calling, MCP
+uvx pixeltable-new --template chat-agent my-agent         # serving + backend: persistent agent, durable memory, tool calling, MCP-ready
 uvx pixeltable-new --template audio-transcription my-pod  # serving + backend: transcription, summarization, semantic search
 uvx pixeltable-new --template video-search my-video       # serving: frames, transcription, detection, search → pxt serve videointel
 uvx pixeltable-new --template media-indexing my-pipe      # batch: ingest from S3, process all modalities, export

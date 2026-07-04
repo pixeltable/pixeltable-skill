@@ -10,6 +10,7 @@ Checks:
 Exit non-zero if any check fails. Intended for CI / pre-commit.
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -95,6 +96,34 @@ def main():
             if line.strip().startswith("tools:"):
                 val = line.split(":", 1)[1].strip()
                 check(not val.startswith("["), f"agents/{ag.name}: 'tools' must be comma-separated, not a list")
+
+    # 5. Version sync across all versioned manifests + SKILL.md frontmatter
+    versions = {}
+    version_getters = {
+        ".plugin/plugin.json": lambda d: d.get("version"),
+        ".cursor-plugin/plugin.json": lambda d: d.get("version"),
+        ".claude-plugin/plugin.json": lambda d: d.get("version"),
+        ".claude-plugin/marketplace.json": lambda d: (d.get("metadata") or {}).get("version"),
+        ".codex-plugin/plugin.json": lambda d: d.get("version"),
+        "package.json": lambda d: d.get("version"),
+    }
+    for rel, getter in version_getters.items():
+        data = parsed.get(rel)
+        if data is None:
+            continue
+        v = getter(data)
+        check(v is not None, f"{rel}: missing version field")
+        if v is not None:
+            versions[rel] = v
+    for sf in skill_files:
+        m = re.search(r"^\s*version:\s*(.+?)\s*$", frontmatter(sf), re.MULTILINE)
+        if m:
+            versions[str(sf.relative_to(ROOT))] = m.group(1).strip().strip("\"'")
+    check(
+        len(set(versions.values())) <= 1,
+        "version mismatch (all manifests + SKILL.md must match): "
+        + "; ".join(f"{k}={v}" for k, v in sorted(versions.items())),
+    )
 
     if errors:
         print(f"FAIL ({len(errors)} of {checks} checks):", file=sys.stderr)

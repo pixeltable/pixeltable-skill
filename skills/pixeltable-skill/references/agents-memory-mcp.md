@@ -249,11 +249,11 @@ The agent pipeline works with any provider that supports tool calling:
 
 | Provider | Import | invoke_tools |
 |----------|--------|-------------|
-| OpenAI | `from pixeltable.functions.openai import invoke_tools` | `openai.invoke_tools(tools, response)` |
-| Anthropic | `from pixeltable.functions.anthropic import invoke_tools` | `anthropic.invoke_tools(tools, response)` |
-| Groq | `from pixeltable.functions.groq import invoke_tools` | `groq.invoke_tools(tools, response)` |
-| Gemini | `from pixeltable.functions.gemini import invoke_tools` | `gemini.invoke_tools(tools, response)` |
-| Bedrock | `from pixeltable.functions.bedrock import invoke_tools` | `bedrock.invoke_tools(tools, response)` |
+| OpenAI | `from pixeltable.functions.openai import invoke_tools as openai_invoke_tools` | `openai_invoke_tools(tools, response)` |
+| Anthropic | `from pixeltable.functions.anthropic import invoke_tools as anthropic_invoke_tools` | `anthropic_invoke_tools(tools, response)` |
+| Groq | `from pixeltable.functions.groq import invoke_tools as groq_invoke_tools` | `groq_invoke_tools(tools, response)` |
+| Gemini | `from pixeltable.functions.gemini import invoke_tools as gemini_invoke_tools` | `gemini_invoke_tools(tools, response)` |
+| Bedrock | `from pixeltable.functions.bedrock import invoke_tools as bedrock_invoke_tools` | `bedrock_invoke_tools(tools, response)` |
 
 To switch providers, change the import and the LLM call function. The `tools` object and `invoke_tools()` pattern stay the same.
 
@@ -272,7 +272,7 @@ To switch providers, change the import and the LLM call function. The `tools` ob
 - **Add document RAG**: Create a document chunking view and add a `search_documents` query to the tools list
 - **Add image memory**: Use CLIP embeddings on an image column for visual memory recall
 - **Serve via API**: Wrap in a FastAPI endpoint — see [workflows.md → FastAPI App Pattern](workflows.md#fastapi-app-pattern)
-- **Use Anthropic instead**: Swap `chat_completions` → `messages` and `openai.invoke_tools` → `anthropic.invoke_tools` — see [providers.md → Quick Reference](providers.md#quick-reference)
+- **Use Anthropic instead**: Swap `chat_completions` → `messages` and `openai_invoke_tools` → `anthropic_invoke_tools` (updating the import accordingly) — see [providers.md → Quick Reference](providers.md#quick-reference)
 
 ## Agent with Memory Checklist
 

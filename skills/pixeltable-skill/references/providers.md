@@ -30,7 +30,7 @@ Use this table to find the correct import, function, and output accessor for eac
 | Jina AI | `from pixeltable.functions.jina import embeddings` | `embeddings(text=..., model='jina-embeddings-v3')` | *(use as embedding index)* |
 | Twelve Labs | `from pixeltable.functions.twelvelabs import embed` | `embed(video_segment=..., model_name='marengo3.0')` | *(use as video embedding index)* |
 | BFL FLUX | `from pixeltable.functions.bfl import generate` | `generate(prompt=..., width=1024, height=1024)` | *(returns Image directly)* |
-| RunwayML | `from pixeltable.functions.runwayml import text_to_video` | `text_to_video(prompt=..., model='gen4.5')` | `['output'][0]` cast to `pxt.Video` |
+| RunwayML | `from pixeltable.functions.runwayml import text_to_video` | `text_to_video(prompt=..., model='gen4.5')` | `.astype(pxt.Video)` |
 | fal.ai | `from pixeltable.functions.fal import run` | `run(input=json, app='fal-ai/flux/schnell')` | *(returns JSON)* |
 | Reve | `from pixeltable.functions.reve import create` | `create(prompt=...)` | *(returns Image directly)* |
 | Fabric | `from pixeltable.functions.fabric import chat_completions` | `chat_completions(messages=..., model='gpt-4.1')` | `.choices[0].message.content` |

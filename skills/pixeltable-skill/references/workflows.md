@@ -13,6 +13,7 @@ Complete, production-ready workflow templates combining multiple Pixeltable feat
 - [Local LLM Pipeline (Ollama)](#local-llm-pipeline-ollama)
 - [FastAPI App Pattern](#fastapi-app-pattern) (hand-written endpoints)
 - [FastAPIRouter — Declarative Serving (v0.6+)](#fastapirouter-declarative-serving-v06) (preferred)
+- [Batch Processing Pattern](#batch-processing-pattern)
 - [Export Workflow](#export-workflow)
 
 ---
@@ -47,7 +48,7 @@ docs.insert([
 @pxt.query
 def retrieve(question: str, top_k: int = 5):
     sim = chunks.text.similarity(string=question)
-    return chunks.order_by(sim, asc=False).limit(top_k).select(chunks.text, chunks.title, sim)
+    return chunks.order_by(sim, asc=False).limit(top_k).select(chunks.text, chunks.title, score=sim)
 
 context = retrieve('What is machine learning?').collect()
 ```
@@ -423,7 +424,7 @@ class SearchRequest(BaseModel):
 
 class SearchResult(BaseModel):
     text: str
-    sim: float
+    score: float
     title: str | None = None
 
 class SearchResponse(BaseModel):
@@ -522,7 +523,14 @@ Key points:
 When you do need a hand-written endpoint (multi-table side effects, conditional logic), use `return_rows=True` to read computed columns back without a follow-up query:
 
 ```python
+from typing import Any
 from pydantic import BaseModel
+import pixeltable as pxt
+
+# `router` is the FastAPIRouter defined in the example above.
+
+class QueryRequest(BaseModel):
+    prompt: str
 
 class AgentResult(BaseModel):
     model_config = {"extra": "ignore"}
@@ -531,6 +539,8 @@ class AgentResult(BaseModel):
 
 @router.post("/query")
 def agent_query(request: QueryRequest):
+    agent_table = pxt.get_table("app.agent")           # get handles inside the endpoint
+    chat_table = pxt.get_table("app.chat_history")
     status = agent_table.insert(
         [{"prompt": request.prompt}], return_rows=True
     )

@@ -17,7 +17,7 @@ Use this table to find the correct import, function, and output accessor for eac
 | Gemini | `from pixeltable.functions.gemini import generate_content, embed_content` | `generate_content(contents=..., model='gemini-2.5-flash')` | *(returns text directly)* |
 | Together | `from pixeltable.functions.together import chat_completions` | `chat_completions(messages=..., model='meta-llama/...')` | `.choices[0].message.content` |
 | Fireworks | `from pixeltable.functions.fireworks import chat_completions` | `chat_completions(messages=..., model='accounts/fireworks/...')` | `.choices[0].message.content` |
-| Ollama | `from pixeltable.functions.ollama import chat_completions` | `chat_completions(messages=..., model='llama3.1')` | `.choices[0].message.content` |
+| Ollama | `from pixeltable.functions.ollama import chat, generate, embed` | `chat(messages=..., model='llama3.1')` | `.message.content` |
 | Mistral | `from pixeltable.functions.mistralai import chat_completions` | `chat_completions(messages=..., model='mistral-large-latest')` | `.choices[0].message.content` |
 | Groq | `from pixeltable.functions.groq import chat_completions` | `chat_completions(messages=..., model='llama-3.1-70b-versatile')` | `.choices[0].message.content` |
 | DeepSeek | `from pixeltable.functions.deepseek import chat_completions` | `chat_completions(messages=..., model='deepseek-chat')` | `.choices[0].message.content` |
@@ -241,19 +241,25 @@ t.add_computed_column(
 ## Ollama (Local)
 
 ```python
-from pixeltable.functions.ollama import chat_completions, embeddings
+from pixeltable.functions.ollama import chat, generate, embed
 
 # Chat
 t.add_computed_column(
-    response=chat_completions(
+    response=chat(
         messages=[{'role': 'user', 'content': t.prompt}],
         model='llama3.1'
-    ).choices[0].message.content,
+    ).message.content,
+    if_exists='ignore',
+)
+
+# Text generation
+t.add_computed_column(
+    completion=generate(prompt=t.prompt, model='llama3.1').response,
     if_exists='ignore',
 )
 
 # Embeddings
-t.add_computed_column(embed=embeddings(input=t.text, model='nomic-embed-text'), if_exists='ignore')
+t.add_computed_column(embedding=embed(input=t.text, model='nomic-embed-text'), if_exists='ignore')
 ```
 
 ## Mistral AI

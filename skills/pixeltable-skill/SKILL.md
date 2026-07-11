@@ -14,7 +14,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.5.4
+  version: 2.5.5
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -79,7 +79,6 @@ Jump to the right section based on what you're building:
 | Configure rate limits, media storage, API keys | [core-api.md → Configuration](references/core-api.md#configuration) |
 | Export to CSV, JSON, Parquet, LanceDB | [core-api.md → Export](references/core-api.md#export-csv-json-parquet-lancedb) |
 | Export to SQL databases (Postgres, Snowflake, SQLite) | [core-api.md → Export to SQL](references/core-api.md#export-to-sql-databases) |
-| Share tables across teams (`publish`, `replicate`) | [core-api.md → Data Sharing](references/core-api.md#data-sharing-and-replication) |
 | Compare multiple AI providers | [workflows.md → Multi-Provider Comparison](references/workflows.md#multi-provider-comparison) |
 | Build a FastAPI web app (hand-written endpoints) | [workflows.md → FastAPI App Pattern](references/workflows.md#fastapi-app-pattern) |
 | Serve tables/queries via FastAPIRouter (v0.6+) | [workflows.md → FastAPIRouter](references/workflows.md#fastapirouter-declarative-serving-v06) and [core-api.md → Serving](references/core-api.md#serving-fastapirouter) |
@@ -238,10 +237,14 @@ sentences = pxt.create_view(
     if_exists='ignore'
 )
 
-# Split audio into 30-second chunks
-audio_chunks = pxt.create_view(
-    'my_project.audio_chunks', t,
-    iterator=audio_splitter(audio=t.audio, duration=30.0),
+# Split audio into ~30s segments (exactly one of duration or max_size required).
+# Optional: min_silence_len / silence_thresh / trim_leading_silence for speech-aware cuts;
+# or max_size=24*1024*1024 for API byte budgets. Outputs: segment_start, segment_end, audio_segment.
+audio_segments = pxt.create_view(
+    'my_project.audio_segments', t,
+    iterator=audio_splitter(
+        audio=t.audio, duration=30.0, min_silence_len=0.3, trim_leading_silence=True
+    ),
     if_exists='ignore'
 )
 
@@ -467,7 +470,7 @@ Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-sta
 | File | Coverage |
 |------|----------|
 | [cli.md](references/cli.md) | **`pxt` CLI** — inspect, query, debug, serve, deploy, dashboard, `--json` scripting |
-| [core-api.md](references/core-api.md) | Tables, querying, views, embeddings, UDFs, **UDAs**, tools, **serving (FastAPIRouter)**, B-tree indexes, recompute, config, data sharing, SQL export |
+| [core-api.md](references/core-api.md) | Tables, querying, views, embeddings, UDFs, **UDAs**, tools, **serving (FastAPIRouter)**, B-tree indexes, recompute, config, SQL export |
 | [providers.md](references/providers.md) | Quick-reference table + full examples for all 25+ AI providers |
 | [workflows.md](references/workflows.md) | RAG, video analysis, image classification, audio, multi-provider, agent, **batch processing**, FastAPI, **FastAPIRouter**, export |
 | [video-rag-agents.md](references/video-rag-agents.md) | Video + transcript/frame retrieval + tool-calling agent |

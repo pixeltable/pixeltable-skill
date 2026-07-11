@@ -215,8 +215,13 @@ from pixeltable.functions.audio import audio_splitter
 
 sentences = pxt.create_view('dir.sentences', t,
     iterator=string_splitter(text=t.content, separators='sentence'), if_exists='ignore')
-audio_chunks = pxt.create_view('dir.audio_chunks', t,
-    iterator=audio_splitter(audio=t.audio, duration=30.0), if_exists='ignore')
+# Exactly one of duration or max_size; optional min_silence_len / trim_leading_silence.
+# Outputs: segment_start, segment_end, audio_segment
+audio_segments = pxt.create_view('dir.audio_segments', t,
+    iterator=audio_splitter(
+        audio=t.audio, duration=30.0, min_silence_len=0.3, trim_leading_silence=True
+    ), if_exists='ignore')
+# Or: audio_splitter(audio=t.audio, max_size=24 * 1024 * 1024)
 ```
 
 ## Built-in Image Functions
@@ -763,6 +768,23 @@ router.add_update_route(docs, path="/update", inputs=["title"], outputs=["uuid",
 # POST /api/data/update {"uuid": "...", "title": "..."} → updated row fields
 ```
 
+### add_compute_route
+
+Materialize computed columns for a request **without persisting** the row (same shape as insert):
+
+```python
+# Preview / dry-run: run the table's computed columns, return the row, do not insert
+router.add_compute_route(
+    docs, path="/preview", inputs=["document"], outputs=["document", "summary"]
+)
+# POST /api/data/preview {"document": "..."} → computed fields; table unchanged
+
+# Or call the table API directly in Python:
+rows = docs.compute([{'document': 'report.pdf'}])
+```
+
+For declarative TOML / `pxt serve`, `type = "compute"` is currently an insert alias — use the Python `FastAPIRouter` API for true non-persisting compute.
+
 ### add_delete_route
 
 ```python
@@ -802,22 +824,6 @@ Query routes use `module:attribute` colon paths (e.g. `schema:search_docs`), res
 See [HTTP Serving Guide](https://docs.pixeltable.com/howto/deployment/serving) for TOML field reference and [Starter Kit `serving/`](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/serving) for a working example.
 
 ---
-
-## Data Sharing and Replication
-
-Share tables across teams or environments:
-
-```python
-# Publish a table version (makes it shareable)
-t.publish()
-
-# Replicate a published table (creates a local synchronized copy)
-replica = pxt.replicate('dir.local_copy', source_table_uri)
-
-# Sync changes
-replica.pull()   # fetch latest from source
-replica.push()   # push local changes to source
-```
 
 ## Export (CSV, JSON, Parquet, LanceDB, Iceberg)
 

@@ -89,19 +89,21 @@ videos.add_computed_column(
     audio=extract_audio(videos.video, format='mp3'),
     if_exists='ignore')
 
-audio_chunks = pxt.create_view('video.audio_chunks', videos,
-    iterator=audio_splitter(audio=videos.audio, duration=30.0),
+audio_segments = pxt.create_view('video.audio_segments', videos,
+    iterator=audio_splitter(
+        audio=videos.audio, duration=30.0, min_silence_len=0.3, trim_leading_silence=True
+    ),
     if_exists='ignore')
 
-audio_chunks.add_computed_column(
+audio_segments.add_computed_column(
     transcription=transcriptions(
-        audio=audio_chunks.audio_chunk, model='whisper-1'),
+        audio=audio_segments.audio_segment, model='whisper-1'),
     if_exists='ignore')
 
 sentences = pxt.create_view('video.sentences',
-    audio_chunks.where(audio_chunks.transcription != None),
+    audio_segments.where(audio_segments.transcription != None),
     iterator=string_splitter(
-        text=audio_chunks.transcription.text, separators='sentence'),
+        text=audio_segments.transcription.text, separators='sentence'),
     if_exists='ignore')
 
 embed_fn = sentence_transformer.using(model_id='all-MiniLM-L6-v2')
@@ -353,19 +355,19 @@ result = agent.order_by(agent.timestamp, asc=False).limit(1).select(agent.answer
 
 ```python
 import pixeltable as pxt
-from pixeltable.functions.ollama import chat_completions, embeddings
+from pixeltable.functions.ollama import chat, embed
 
 pxt.create_dir('local', if_exists='ignore')
 t = pxt.create_table('local.data', {'text': pxt.String}, if_exists='ignore')
 
 t.add_computed_column(
-    analysis=chat_completions(
+    analysis=chat(
         messages=[{'role': 'user', 'content': 'Analyze: ' + t.text}],
         model='llama3.1'
-    ).choices[0].message.content, if_exists='ignore')
+    ).message.content, if_exists='ignore')
 
 t.add_embedding_index('text',
-    embedding=embeddings.using(model='nomic-embed-text'),
+    embedding=embed.using(model='nomic-embed-text'),
     if_exists='ignore')
 
 t.insert([{'text': 'Machine learning fundamentals'}])

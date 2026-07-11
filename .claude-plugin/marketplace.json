@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Build multimodal AI applications with Pixeltable — tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
-    "version": "2.5.4"
+    "version": "2.5.5"
   },
   "plugins": [
     {

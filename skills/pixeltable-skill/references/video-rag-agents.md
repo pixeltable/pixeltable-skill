@@ -59,19 +59,21 @@ videos.add_computed_column(
     audio=extract_audio(videos.video, format='mp3'),
     if_exists='ignore')
 
-audio_chunks = pxt.create_view('vrag.audio_chunks', videos,
-    iterator=audio_splitter(audio=videos.audio, duration=30.0),
+audio_segments = pxt.create_view('vrag.audio_segments', videos,
+    iterator=audio_splitter(
+        audio=videos.audio, duration=30.0, min_silence_len=0.3, trim_leading_silence=True
+    ),
     if_exists='ignore')
 
-audio_chunks.add_computed_column(
+audio_segments.add_computed_column(
     transcription=transcriptions(
-        audio=audio_chunks.audio_chunk, model='whisper-1'),
+        audio=audio_segments.audio_segment, model='whisper-1'),
     if_exists='ignore')
 
 sentences = pxt.create_view('vrag.sentences',
-    audio_chunks.where(audio_chunks.transcription != None),
+    audio_segments.where(audio_segments.transcription != None),
     iterator=string_splitter(
-        text=audio_chunks.transcription.text, separators='sentence'),
+        text=audio_segments.transcription.text, separators='sentence'),
     if_exists='ignore')
 
 embed_fn = sentence_transformer.using(model_id='all-MiniLM-L6-v2')
@@ -247,5 +249,5 @@ The pipeline is a chain of computed columns. Inserting a row into `agent` trigge
 
 - **Swap providers**: Replace `messages` (Anthropic) with `chat_completions` (OpenAI/Together/etc.) — see [providers.md](providers.md#quick-reference) for import and output shapes
 - **Add document RAG**: Add a `document_splitter` view and a `search_documents` query function to the tools list
-- **Use local models**: Replace OpenAI transcription with `transcribe()` (`from pixeltable.functions.whisper import transcribe`) and use `chat_completions` (`from pixeltable.functions.ollama import chat_completions`) for the LLM — see [workflows.md → Local LLM Pipeline](workflows.md#local-llm-pipeline-ollama)
+- **Use local models**: Replace OpenAI transcription with `transcribe()` (`from pixeltable.functions.whisper import transcribe`) and use `chat` (`from pixeltable.functions.ollama import chat`) for the LLM — see [workflows.md → Local LLM Pipeline](workflows.md#local-llm-pipeline-ollama)
 - **Serve via API**: Wrap the pipeline in a FastAPI endpoint — see [workflows.md → FastAPI App Pattern](workflows.md#fastapi-app-pattern)

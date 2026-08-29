@@ -33,7 +33,7 @@ CHECKS = [
     (
         re.compile(r"@pxt\.query[\s\S]*?sim=sim"),
         "error",
-        "`sim=sim` in `@pxt.query` breaks `.collect()` and `pxt serve`. Alias similarity as "
+        "`sim=sim` in `@pxt.query` breaks `.collect()` and FastAPIRouter query routes. Alias similarity as "
         "`score=sim` (any name other than `sim`).",
     ),
     (

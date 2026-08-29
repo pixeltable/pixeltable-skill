@@ -1,6 +1,6 @@
 {
   "name": "pixeltable",
-  "version": "2.5.5",
+  "version": "2.6.0",
   "description": "Build multimodal AI applications with Pixeltable.",
   "author": {
     "name": "Pixeltable",
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "Pixeltable",
     "shortDescription": "Build Pixeltable apps with declarative tables, pxt CLI, RAG, agents, and serving",
-    "longDescription": "Use Pixeltable to build multimodal AI applications with declarative tables, computed columns, embeddings, retrieval, provider integrations, the pxt CLI (inspect, serve, deploy), and production workflow patterns.",
+    "longDescription": "Use Pixeltable to build multimodal AI applications with declarative tables, computed columns, embeddings, retrieval, provider integrations, the pxt CLI (schema, service, inspect), and production workflow patterns.",
     "developerName": "Pixeltable",
     "category": "Developer Tools",
     "capabilities": [

@@ -1,20 +1,20 @@
 ---
 name: pixeltable
 description: >
-  Build multimodal AI applications with Pixeltable — declarative tables replace
+  Build multimodal AI applications with Pixeltable -- declarative tables replace
   LangChain + pandas + vector DB with one system. Automates chunking, embedding,
   retrieval, tool-calling agents, and 25+ AI provider integrations (OpenAI,
   Anthropic, Gemini, etc.) via computed columns that run on insert. Use when
   building RAG pipelines, processing images/video/audio/documents, orchestrating
   LLM inference, or deploying agents with persistent memory. Covers incremental
-  computation, version control, similarity search, the `pxt` CLI (inspect, debug,
-  serve, deploy), FastAPI serving, and production patterns. Do NOT use for general
+  computation, version control, similarity search, the `pxt` CLI (schema, service,
+  inspect), FastAPI serving, and production patterns. Do NOT use for general
   Python or direct PostgreSQL administration.
 license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.5.5
+  version: 2.6.0
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -26,25 +26,25 @@ metadata:
   importPatterns: ["pixeltable", "import pixeltable as pxt", "from pixeltable"]
   bashPatterns: ['^\s*pxt(?:\s|$)']
   promptSignals:
-    phrases: ["pixeltable", "computed column", "embedding index", "add_embedding_index", "create_view", "document_splitter", "invoke_tools", "pxt serve", "pxt shell", "pxt errors", "pxt dashboard"]
+    phrases: ["pixeltable", "computed column", "embedding index", "add_embedding_index", "TableModel", "create_view", "document_splitter", "invoke_tools", "pxt schema", "pxt service", "pxt shell", "pxt errors", "pxt dashboard"]
     minScore: 6
 ---
 
 ## What is Pixeltable?
 
-Open-source Python library for **declarative multimodal AI data infrastructure** — tables, computed columns, embedding indexes, and 25+ AI providers in one interface.
+Open-source Python library for **declarative multimodal AI data infrastructure** -- tables, computed columns, embedding indexes, and 25+ AI providers in one interface.
 
-`pip install pixeltable` (Python >= 3.10) | [Docs](https://docs.pixeltable.com/) | [GitHub](https://github.com/pixeltable/pixeltable)
+`pip install pixeltable` (Python >= 3.11) | [Docs](https://docs.pixeltable.com/) | [GitHub](https://github.com/pixeltable/pixeltable)
 
-## STOP — Do NOT Use These With Pixeltable
+## STOP -- Do NOT Use These With Pixeltable
 
 **Pixeltable replaces the entire imperative stack you're about to reach for.** If you find yourself importing any of these, you are off-path:
 
-1. **Do NOT use LangChain / LlamaIndex / Haystack / LangGraph** — Pixeltable has built-in document chunking (`document_splitter`), embedding indexes (`add_embedding_index`), retrieval (`.similarity()`), and tool-calling (`pxt.tools()` + `invoke_tools()`). There is zero reason to add a framework on top.
-2. **Do NOT use pandas as a working data store** — Pixeltable tables ARE the store. Use `.collect().to_pandas()` only for final export/visualization, never as an intermediate.
-3. **Do NOT write `for row in ...:` loops calling AI models** — wrap the call in a computed column. Pixeltable handles batching, rate limiting, caching, and retry automatically.
-4. **Do NOT install a separate vector database** (Pinecone, Chroma, FAISS, Qdrant, Weaviate, pgvector) — call `t.add_embedding_index(col, embedding=fn)` and search with `.similarity()`. The index lives inside the table.
-5. **Do NOT write `while not done:` agent loops** — model the agent as a table where inserting a row triggers the entire computed-column chain (LLM → tool selection → tool execution → final answer) declaratively.
+1. **Do NOT use LangChain / LlamaIndex / Haystack / LangGraph** -- Pixeltable has built-in document chunking (`document_splitter`), embedding indexes, retrieval (`.similarity()`), and tool-calling (`pxt.tools()` + `invoke_tools()`). There is zero reason to add a framework on top.
+2. **Do NOT use pandas as a working data store** -- Pixeltable tables ARE the store. Use `.collect().to_pandas()` only for final export/visualization, never as an intermediate.
+3. **Do NOT write `for row in ...:` loops calling AI models** -- wrap the call in a computed column. Pixeltable handles batching, rate limiting, caching, and retry automatically.
+4. **Do NOT install a separate vector database** (Pinecone, Chroma, FAISS, Qdrant, Weaviate, pgvector) -- in an app, declare `__indexes__ = [pxt.EmbeddingIndex(...)]` on the model; in a notebook, call `t.add_embedding_index(col, embedding=fn)`. Search with `.similarity(string=query)`.
+5. **Do NOT write `while not done:` agent loops** -- model the agent as a table where inserting a row triggers the entire computed-column chain (LLM -> tool selection -> tool execution -> final answer) declaratively.
 
 See [anti-patterns.md](references/anti-patterns.md) for the full 15-bias reference with wrong/right code examples.
 
@@ -62,72 +62,85 @@ Jump to the right section based on what you're building:
 | Build semantic search / embedding indexes | **Embedding Indexes** (below) and [core-api.md → Embedding Indexes](references/core-api.md#embedding-indexes) |
 | Build a RAG pipeline | [workflows.md → RAG Pipeline](references/workflows.md#rag-pipeline) |
 | Build a tool-calling agent | **Tool-Calling Agent Pipeline** (below) and [workflows.md → Tool-Calling Agent](references/workflows.md#tool-calling-agent-full-production-example) |
-| Build an agent with persistent memory | [agents-memory-mcp.md](references/agents-memory-mcp.md) — chat history, knowledge bank, user scoping |
+| Build an agent with persistent memory | [agents-memory-mcp.md](references/agents-memory-mcp.md) -- chat history, knowledge bank, user scoping |
 | Use MCP tools with an agent | [agents-memory-mcp.md → Adding MCP Tools](references/agents-memory-mcp.md#adding-mcp-tools) |
 | Use `invoke_tools()` with OpenAI, Groq, Gemini, Bedrock | [agents-memory-mcp.md → Multi-Provider](references/agents-memory-mcp.md#multi-provider-invoke_tools) |
-| Build a video RAG agent (video + search + agent) | [video-rag-agents.md](references/video-rag-agents.md) — dedicated combined recipe |
-| Spin up a quick video frame search app | **Starting a New Project** (`--template video-search`) → `pxt serve videointel` |
+| Build a video RAG agent (video + search + agent) | [video-rag-agents.md](references/video-rag-agents.md) -- dedicated combined recipe |
+| Spin up a video frame search app | **Starting a New Project** (`--template video-search`) then `pxt schema update` + `pxt service update` |
 | Process video (frames, transcription, visual search) | [workflows.md → Video Analysis Pipeline](references/workflows.md#video-analysis-pipeline) |
 | Process images (classify, tag, search) | [workflows.md → Image Classification and Search](references/workflows.md#image-classification-and-search) |
 | Process audio (transcribe, summarize) | [workflows.md → Audio Transcription](references/workflows.md#audio-transcription-and-analysis) |
-| Wrangle data for ML training (label, version, export) | [ml-data-pipeline.md](references/ml-data-pipeline.md) — ingest, enrich, snapshot, PyTorch export |
+| Wrangle data for ML training (label, version, export) | [ml-data-pipeline.md](references/ml-data-pipeline.md) -- ingest, enrich, snapshot, PyTorch export |
 | Export to PyTorch, Parquet, or pandas | [ml-data-pipeline.md → Export for Training](references/ml-data-pipeline.md#export-for-training) |
 | Look up structured data with `retrieval_udf` | [ml-data-pipeline.md → Retrieval UDFs](references/ml-data-pipeline.md#retrieval-udfs-for-structured-data-lookup) |
-| Retry failed computed columns | **Error Handling** (below) — `recompute_columns()` |
-| Use agentic patterns (chaining, routing, parallelization, eval-optimize) | [agentic-patterns.md](references/agentic-patterns.md) — 6 patterns + 2 reasoning strategies |
+| Retry failed computed columns | **Error Handling** (below) -- `recompute_columns()` |
+| Use agentic patterns (chaining, routing, parallelization, eval-optimize) | [agentic-patterns.md](references/agentic-patterns.md) -- 6 patterns + 2 reasoning strategies |
 | Run batch processing (ingest, compute, export, exit) | [workflows.md → Batch Processing](references/workflows.md#batch-processing-pattern) |
 | Configure rate limits, media storage, API keys | [core-api.md → Configuration](references/core-api.md#configuration) |
 | Export to CSV, JSON, Parquet, LanceDB | [core-api.md → Export](references/core-api.md#export-csv-json-parquet-lancedb) |
 | Export to SQL databases (Postgres, Snowflake, SQLite) | [core-api.md → Export to SQL](references/core-api.md#export-to-sql-databases) |
 | Compare multiple AI providers | [workflows.md → Multi-Provider Comparison](references/workflows.md#multi-provider-comparison) |
 | Build a FastAPI web app (hand-written endpoints) | [workflows.md → FastAPI App Pattern](references/workflows.md#fastapi-app-pattern) |
-| Serve tables/queries via FastAPIRouter (v0.6+) | [workflows.md → FastAPIRouter](references/workflows.md#fastapirouter-declarative-serving-v06) and [core-api.md → Serving](references/core-api.md#serving-fastapirouter) |
-| Inspect/debug/serve/deploy via CLI (`pxt ls`, `errors`, `serve`, `deploy`, `dashboard`) | [cli.md](references/cli.md) |
+| Serve tables/queries via FastAPIRouter | [workflows.md → FastAPIRouter](references/workflows.md#fastapirouter-declarative-serving) and [core-api.md → Serving](references/core-api.md#serving-fastapirouter) |
+| Apply schema / start HTTP / inspect via CLI | [cli.md](references/cli.md) -- `pxt schema`, `pxt service`, `ls`, `errors` |
 | Store media in Pixeltable Cloud (`pxtfs://`) | [core-api.md → Media Destinations](references/core-api.md#media-destinations-cloud-storage) |
 | Write UDFs or query functions | **UDFs** / **Query Functions** (below) and [core-api.md → UDFs](references/core-api.md#udfs) |
 | Write custom aggregates (`@pxt.uda`) | [core-api.md → User-Defined Aggregates](references/core-api.md#user-defined-aggregates-uda) |
 | Use `pxt.tools()` and `invoke_tools()` for agents | **Tool-Calling Agent Pipeline** (below) and [core-api.md → Tools and Agents](references/core-api.md#tools-and-agents) |
 | Avoid common mistakes (wrong imports, broken schemas, serialization) | **Common Pitfalls** (below) and [core-api.md → Common Pitfalls](references/core-api.md#common-pitfalls) |
-| Understand what NOT to use with Pixeltable (LangChain, pandas, vector DBs) | [anti-patterns.md](references/anti-patterns.md) — 15 training-distribution biases with wrong/right code |
+| Understand what NOT to use with Pixeltable (LangChain, pandas, vector DBs) | [anti-patterns.md](references/anti-patterns.md) -- 15 training-distribution biases with wrong/right code |
 | Look up a specific provider's import and output shape | [providers.md → Quick Reference](references/providers.md#quick-reference) |
 
-## Critical Warnings — Read Before Writing Code
+## Critical Warnings -- Read Before Writing Code
 
-1. **`openai.vision` does not exist** — use `openai.chat_completions` with `image_url` content blocks
-2. **Cast to `pxt.String` before embedding** — use `.text.astype(pxt.String)` on AI function outputs before `add_embedding_index`
-3. **`if_exists='ignore'` won't fix bugs** — if a computed column has wrong logic, you must `drop_column()` then recreate; re-running is a silent no-op
-4. **Import `frame_iterator` as a function** — `from pixeltable.functions.video import frame_iterator`, NOT `from pixeltable.iterators import FrameIterator`
-5. **Use `string=` keyword in similarity** — always `t.col.similarity(string=query)`, not positional
+1. **`openai.vision` does not exist** -- use `openai.chat_completions` with `image_url` content blocks
+2. **Cast to `pxt.String` before embedding** -- use `.text.astype(pxt.String)` on AI function outputs before indexing
+3. **`if_exists='ignore'` won't fix bugs** -- if a computed column has wrong logic, you must `drop_column()` then recreate; re-running is a silent no-op
+4. **Import `frame_iterator` as a function** -- `from pixeltable.functions.video import frame_iterator`, NOT `from pixeltable.iterators import FrameIterator`
+5. **Use `string=` keyword in similarity** -- always `t.col.similarity(string=query)`, not positional
 
 See [Common Pitfalls](#common-pitfalls) below for full details and code examples.
 
 ## Starting a New Project
 
-Scaffold a complete project from the [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) with `uvx pixeltable-new` (0.4.2+). Run `uvx pixeltable-new --list` first to see the options available on your installed version, then pick one. Legacy aliases (`video-intel`, etc.) still work in 0.4.2+ but prefer canonical names below.
+Scaffold from the [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) with `uvx pixeltable-new`. Run `uvx pixeltable-new --list` first, then pick one.
 
-**Application templates** — a full app (schema + API/UI) for a use case:
-
-```bash
-uvx pixeltable-new --template knowledge-base my-kb        # serving + backend: docs/images/video/audio upload, unified search + RAG Q&A
-uvx pixeltable-new --template chat-agent my-agent         # serving + backend: persistent agent, durable memory, tool calling, MCP-ready
-uvx pixeltable-new --template audio-transcription my-pod  # serving + backend: transcription, summarization, semantic search
-uvx pixeltable-new --template video-search my-video       # serving: frames, transcription, detection, search → pxt serve videointel
-uvx pixeltable-new --template media-indexing my-pipe      # batch: ingest from S3, process all modalities, export
-uvx pixeltable-new --template image-dataset my-dataset    # batch: auto-annotate, curate, version, export to PyTorch
-uvx pixeltable-new --template full-stack-showcase my-app  # serving + backend: complete reference app (Gemini + DETR + Whisper, React UI)
-```
-
-**Video-search quickstart:** `uv sync` → `uv run python schema.py` → `uv run pxt serve videointel` (service name is `videointel`, not `pipeline`).
-
-**Structural patterns** — bare API/pipeline scaffolds (each template builds on one of these):
+**Application templates:**
 
 ```bash
-uvx pixeltable-new myapp                # serving (default): declarative API from schema.py
-uvx pixeltable-new myapp --backend      # FastAPI scaffold (headless): setup_pixeltable.py + main.py
-uvx pixeltable-new myapp --batch        # batch processing script with export_sql
+uvx pixeltable-new --template knowledge-base my-kb        # docs/images/video/audio upload, search + RAG Q&A
+uvx pixeltable-new --template chat-agent my-agent         # persistent agent, durable memory, tool calling
+uvx pixeltable-new --template audio-transcription my-pod  # transcription, summarization, semantic search
+uvx pixeltable-new --template video-search my-video       # frames, transcription, detection, search
+uvx pixeltable-new --template media-indexing my-pipe      # batch: ingest from S3, process, export
+uvx pixeltable-new --template image-dataset my-dataset    # batch: auto-annotate, curate, export to PyTorch
+uvx pixeltable-new --template full-stack-showcase my-app  # Gemini + DETR + Whisper, React UI
 ```
 
-Pick a fresh directory name (the generator refuses to overwrite an existing one) and follow the **Next steps** it prints. Template slugs are descriptive use-case names; if `--list` on your machine shows different names or a `--template` fetch fails (network, or a version skew between your installed `pixeltable-new` and the starter kit), use a name from `--list` or fall back to the structural pattern the template builds on — do NOT retry guessed template names.
+**Structural patterns:**
+
+```bash
+uvx pixeltable-new myapp                # serving (default): TableModel + FastAPIRouter in app.py
+uvx pixeltable-new myapp --backend      # mount the same router on an existing FastAPI app
+uvx pixeltable-new myapp --batch        # batch: ingest, compute, export; no HTTP
+```
+
+Pick a fresh directory name (the generator refuses to overwrite). If `--list` differs or `--template` fails, use a listed name or the structural pattern -- do NOT retry guessed names.
+
+The scaffold writes `pixeltable.toml` (project root). If you copied files by hand:
+
+```bash
+pxt init                          # pixeltable.toml project root; no-op if present
+pxt schema update app.py my_app   # creates catalog dir + tables; does NOT start HTTP
+pxt service update app.py my_app  # starts local HTTP; does NOT create tables
+```
+
+`my_app` is a **catalog** directory, not a folder on disk. There is no `pxt serve`, no `[tool.pixeltable.service]` TOML, and no `pxt app`.
+
+## Apps vs notebooks
+
+- **Apps:** one Python file (`app.py`) holds `TableModel` classes and `FastAPIRouter` routes. Apply tables with `pxt schema update`. Start HTTP with `pxt service update`. Indexes belong on the model (`__indexes__`), not `add_embedding_index()` in the application file.
+- **Notebooks / one-off REPL:** `pxt.create_table()`, `add_computed_column()`, and `add_embedding_index()` are still valid. The Core Concepts examples below use that form.
 
 ## Core Concepts
 
@@ -153,7 +166,7 @@ t = pxt.create_table('my_project.documents', {
 }, if_exists='ignore')
 ```
 
-Available types: `String`, `Int`, `Float`, `Bool`, `Image`, `Video`, `Audio`, `Document`, `Json`, `Array`, `Timestamp`, `Date`, `UUID`, `Binary`. Use `pxt.Required[pxt.String]` for non-nullable.
+Available types: `String`, `Int`, `Float`, `Bool`, `Image`, `Video`, `Audio`, `Document`, `Json`, `Array`, `Timestamp`, `Date`, `UUID`, `Binary`. Types are non-nullable by default. Use `T | None` for optional. Do not teach or use `pxt.Required` (deprecated).
 
 ### Tables with Auto-Generated Keys
 
@@ -237,9 +250,7 @@ sentences = pxt.create_view(
     if_exists='ignore'
 )
 
-# Split audio into ~30s segments (exactly one of duration or max_size required).
-# Optional: min_silence_len / silence_thresh / trim_leading_silence for speech-aware cuts;
-# or max_size=24*1024*1024 for API byte budgets. Outputs: segment_start, segment_end, audio_segment.
+# Split audio into ~30s segments (exactly one of duration or max_size required)
 audio_segments = pxt.create_view(
     'my_project.audio_segments', t,
     iterator=audio_splitter(
@@ -272,13 +283,14 @@ sim = t.image.similarity(string='a photo of a cat')
 results = t.order_by(sim, asc=False).limit(5).select(t.image, sim).collect()
 ```
 
+In an application file, declare the same index on the model: `__indexes__ = [pxt.EmbeddingIndex(body, embedding=embed_fn, name='body_idx')]`.
+
 ### Built-in Image and Video Functions
 
 ```python
 from pixeltable.functions import image as pxt_image
 from pixeltable.functions.video import extract_audio
 
-# Image thumbnails and encoding
 t.add_computed_column(
     thumbnail=pxt_image.b64_encode(
         pxt_image.thumbnail(t.image, size=(320, 320))
@@ -286,7 +298,6 @@ t.add_computed_column(
     if_exists='ignore'
 )
 
-# Extract audio from video
 t.add_computed_column(
     audio=extract_audio(t.video, format='mp3'),
     if_exists='ignore'
@@ -295,8 +306,10 @@ t.add_computed_column(
 
 ### User-Defined Functions (UDFs)
 
-`@pxt.udf` — one input row → one output; use in `add_computed_column` and agent tools.
-`@pxt.uda` — many rows → one value; use in `select()` / `group_by()` queries only. See [core-api.md → UDAs](references/core-api.md#user-defined-aggregates-uda).
+`@pxt.udf` -- one input row -> one output; use in computed columns and agent tools.
+`@pxt.uda` -- many rows -> one value; use in `select()` / `group_by()` queries only. See [core-api.md → UDAs](references/core-api.md#user-defined-aggregates-uda).
+
+A UDF is recorded as a **module path relative to the project root** (`app.excerpt`), not a raw file path. Hosted runtime needs the project packed via `pxt db update-runtime`.
 
 ```python
 @pxt.udf
@@ -304,7 +317,7 @@ def clean_text(text: str) -> str:
     return text.strip().lower()
 
 @pxt.udf
-def safe_length(text: str | None) -> str:
+def safe_length(text: str | None) -> int:
     return 0 if text is None else len(text)
 
 t.add_computed_column(cleaned=clean_text(t.content), if_exists='ignore')
@@ -347,7 +360,6 @@ agent = pxt.create_table('my_project.agent', {
     'system_prompt': pxt.String, 'max_tokens': pxt.Int, 'temperature': pxt.Float,
 }, if_exists='ignore')
 
-# LLM selects tools → execute tools → RAG retrieval → assemble → final answer
 agent.add_computed_column(initial_response=messages(
     model='claude-sonnet-4-20250514',
     messages=[{'role': 'user', 'content': [{'type': 'text', 'text': agent.prompt}]}],
@@ -369,7 +381,6 @@ agent.add_computed_column(final_response=messages(
 
 agent.add_computed_column(answer=agent.final_response.content[0].text, if_exists='ignore')
 
-# Usage
 agent.insert([{'prompt': 'What is quantum computing?', 'timestamp': datetime.now(),
                'system_prompt': 'You are a helpful assistant.', 'max_tokens': 1024}])
 result = agent.where(agent.prompt == 'What is quantum computing?').select(agent.answer).collect()
@@ -377,7 +388,7 @@ result = agent.where(agent.prompt == 'What is quantum computing?').select(agent.
 
 ## AI Provider Integrations
 
-25+ providers in `pixeltable.functions.*` — see [providers.md → Quick Reference](references/providers.md#quick-reference) for the full table and examples.
+25+ providers in `pixeltable.functions.*` -- see [providers.md → Quick Reference](references/providers.md#quick-reference).
 
 ## Import/Export
 
@@ -388,11 +399,8 @@ See [core-api.md → Import](references/core-api.md) and [core-api.md → Export
 CRITICAL: Always use `if_exists='ignore'` on every `create_*` and `add_*` call.
 
 ```python
-# Fault-tolerant inserts
 status = t.insert(rows, on_error='ignore')
-# Inspect errors
 t.where(t.summary.errortype != None).select(t.title, t.summary.errormsg).collect()
-# Retry failed columns
 t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
 ```
 
@@ -400,76 +408,87 @@ t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)
 
 | # | Wrong | Correct |
 |---|-------|---------|
-| 1 | `openai.vision(prompt=..., image=t.image)` | `openai.chat_completions(messages=[{'role':'user','content':[{'type':'text','text':'...'}, {'type':'image_url','image_url':{'url':t.image}}]}], model='gpt-4o-mini').choices[0].message.content` |
+| 1 | `openai.vision(prompt=..., image=t.image)` | `openai.chat_completions` with `image_url` content blocks |
 | 2 | `from pixeltable.iterators import FrameIterator` | `from pixeltable.functions.video import frame_iterator` |
 | 3 | `t.add_embedding_index('transcript', ...)` on Json col | Extract `.text.astype(pxt.String)` first, then index |
-| 4 | Fix code + re-run with `if_exists='ignore'` | Must `t.drop_column('col')` then recreate — re-run is a no-op |
+| 4 | Fix code + re-run with `if_exists='ignore'` | Must `t.drop_column('col')` then recreate -- re-run is a no-op |
 | 5 | `{'type':'image', 'data': t.image}` in messages | Use `{'type':'image_url', 'image_url':{'url': t.image}}` |
 | 6 | `t.content.similarity(query)` (positional) | `t.content.similarity(string=query)` (keyword) |
-| 7 | Schema corruption (`IntegrityError`) | Try `pxt.drop_dir('my_project', force=True)` first; last resort (dev only, manual, with backup): upgrade pixeltable, then delete only the `~/.pixeltable` directory — never in production |
-| 8 | `.collect()` or `pxt.get_table()` inside `@pxt.query` | `@pxt.query` compiles the body at decoration time with expression placeholders — don't call `.collect()`, `insert()`, or reference tables that may not exist. Use a plain `def` for imperative logic |
-| 9 | `'id': pxt.String` as primary key | PK columns must be non-nullable. Use `pxt.Required[pxt.String]` or `uuid7()` as a computed default |
-| 10 | Module-level `Table` object used in FastAPI endpoint | `Table` objects are thread-bound. Call `pxt.get_table()` inside each endpoint function, not at module level |
-| 11 | `@pxt.query` with `.select(..., sim=sim)` | Use `score=sim` — aliasing the output column `sim` breaks `.collect()` and `pxt serve` query routes |
-| 12 | Returning raw `pxt.Image`/`pxt.Video` from `pxt serve` query routes | Return `b64_encode(thumbnail(...))` strings — raw media columns fail Pydantic serialization |
+| 7 | Schema corruption (`IntegrityError`) | Try `pxt.drop_dir('my_project', force=True)` first; last resort (dev only, with backup): upgrade pixeltable, then delete only `~/.pixeltable` -- never in production |
+| 8 | `.collect()` or `pxt.get_table()` inside `@pxt.query` | `@pxt.query` compiles at decoration time -- don't call `.collect()`, `insert()`, or reference missing tables |
+| 9 | `pxt.Required[pxt.String]` | Types are non-nullable by default. Optional is `T \| None`. Prefer `uuid7()` for auto PKs |
+| 10 | Module-level `Table` used in a custom FastAPI handler | `Table` objects are thread-bound. Call `pxt.get_table()` inside the endpoint |
+| 11 | `@pxt.query` with `.select(..., sim=sim)` | Use `score=sim` -- aliasing the output column `sim` breaks `.collect()` and query routes |
+| 12 | Returning raw `pxt.Image`/`pxt.Video` from query routes | Return `b64_encode(thumbnail(...))` strings |
+| 13 | `pxt serve`, `[tool.pixeltable.service]` TOML, or `pxt app` | `FastAPIRouter` in `app.py` + `pxt schema update` + `pxt service update` |
+| 14 | `add_embedding_index()` in an application file | `__indexes__ = [pxt.EmbeddingIndex(...)]` on the TableModel |
 
 Full examples in [core-api.md → Common Pitfalls](references/core-api.md#common-pitfalls).
 
-## pxt CLI (v0.6+)
+## pxt CLI
 
-Inspect, debug, and serve without Python boilerplate. Backed by a local daemon (`127.0.0.1:22089`; override `PXT_PORT`). Use `--json` for scripting; `pxt <cmd> --help` for flags — never guess.
+Inspect, apply schema, and serve without inventing flags. Backed by a local daemon (`127.0.0.1:22089`; override `PXT_PORT`). Use `--json` for scripting; `pxt <cmd> --help` is authoritative.
 
 ```bash
-pxt ls -l | pxt describe my_dir/my_table | pxt errors my_dir/my_table
-pxt rows my_dir/my_table -n 5 | pxt shell          # many commands
-pxt serve my-service --config service.toml         # HTTP API
-pxt dashboard | pxt deploy production
+pxt init
+pxt schema update app.py my_app
+pxt service update app.py my_app
+pxt ls -l | pxt describe my_app/docs | pxt errors my_app/docs
+pxt rows my_app/docs -n 5 | pxt shell
+pxt dashboard
 ```
 
-SDK for pipelines; CLI for inspection, debugging, serving, and CI validation (`--dry-run --json`). Full reference: [cli.md](references/cli.md).
+SDK for pipelines and notebooks; CLI for apply, serve, inspect, and CI (`schema diff` / `service diff`). Full reference: [cli.md](references/cli.md).
 
 ## Building Apps with Pixeltable
 
-- Pixeltable IS the data layer — no ORM, no SQLAlchemy
-- **Prefer `FastAPIRouter`** (v0.6+) over hand-written endpoints — `add_insert_route`, `add_query_route`, `add_delete_route` generate endpoints from tables and `@pxt.query` functions
-- Use `background=True` on `add_insert_route` for long-running inserts (returns a job handle, client polls for completion)
-- In `@pxt.query` functions served via `pxt serve`, alias similarity as `score=sim` (not `sim=sim`) and return thumbnails—not raw `Image` columns
-- FastAPI endpoints: use `def` not `async def` (Pixeltable is synchronous)
-- Business logic in `@pxt.udf` / `@pxt.query`, not in endpoint handlers
-- Schema in one file, queries co-located with routes in each router file
-- Insert a row → entire computed column chain runs automatically
+- Pixeltable IS the data layer -- no ORM, no SQLAlchemy
+- **Prefer `FastAPIRouter`** (`from pixeltable.serving import FastAPIRouter`) over hand-written endpoints
+- One file: `TableModel` classes + routers. `pxt schema update` creates tables; `pxt service update` starts HTTP
+- Indexes on the model (`__indexes__`), not `add_embedding_index()` in the application file
+- Use `background=True` on `add_insert_route` for long-running inserts (job handle; client polls)
+- In `@pxt.query` functions, alias similarity as `score=sim` (not `sim=sim`) and return thumbnails, not raw `Image` columns
+- Custom handlers: `def` not `async def`; call `pxt.get_table()` inside the endpoint (thread-bound Table)
+- Business logic in `@pxt.udf` / `@pxt.query`. Insert a row -> the computed-column chain runs
 
 ```python
-from pixeltable.serving import FastAPIRouter
+from __future__ import annotations
+
 import pixeltable as pxt
+import pixeltable.functions as pxtf
+from pixeltable.serving import FastAPIRouter
 
-router = FastAPIRouter(prefix="/api/data", tags=["data"])
-docs = pxt.get_table("app.documents")
+TableModel = pxt.model_base()
 
-router.add_insert_route(docs, path="/upload", uploadfile_inputs=["document"],
-                        inputs=["timestamp"], outputs=["uuid"], background=True)
-router.add_delete_route(docs, path="/delete")
 
-@pxt.query
-def list_docs():
-    return docs.select(uuid=docs.uuid, name=docs.document).order_by(docs.timestamp, asc=False)
+class Docs(TableModel, name='docs'):
+    title: pxt.String
+    body: pxt.String | None
+    title_upper = pxtf.string.upper(title)
+    __indexes__ = [pxt.EmbeddingIndex(body, embedding=embed_fn, name='body_idx')]  # if indexed
 
-router.add_query_route(path="/list", query=list_docs, method="get")
+
+ingest = FastAPIRouter(name='ingest')
+ingest.add_insert_route(
+    Docs, path='/docs', inputs=[Docs.title, Docs.body], outputs=[Docs.title, Docs.title_upper]
+)
 ```
 
-Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) | [workflows.md → FastAPIRouter](references/workflows.md#fastapirouter-declarative-serving-v06) | [core-api.md → Serving](references/core-api.md#serving-fastapirouter)
+Runtime after apply: `t = pxt.get_table('my_app.docs')`, then `t.insert()` / `.select()` / `.collect()`.
+
+Reference: [Pixeltable Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) | [workflows.md → FastAPIRouter](references/workflows.md#fastapirouter-declarative-serving) | [core-api.md → Serving](references/core-api.md#serving-fastapirouter)
 
 ## Resources
 
-- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) — 3 patterns (`serving`, `backend`, `batch`) + 7 templates (`knowledge-base`, `chat-agent`, `audio-transcription`, `video-search`, `media-indexing`, `image-dataset`, `full-stack-showcase`); scaffold with `uvx pixeltable-new --template <name> my-app`
-- [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) — Explore Pixeltable tables via MCP
+- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) -- templates write `app.py`; apply with `pxt schema update app.py my_app`, serve with `pxt service update app.py my_app`
+- [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) -- Explore Pixeltable tables via MCP
 - [LLM Docs](https://docs.pixeltable.com/llms-full.txt) | [llms.txt](https://www.pixeltable.com/llms.txt)
 
 ## Reference Files
 
 | File | Coverage |
 |------|----------|
-| [cli.md](references/cli.md) | **`pxt` CLI** — inspect, query, debug, serve, deploy, dashboard, `--json` scripting |
+| [cli.md](references/cli.md) | **`pxt` CLI** -- init, schema, service, db, secret, inspect, `--json` |
 | [core-api.md](references/core-api.md) | Tables, querying, views, embeddings, UDFs, **UDAs**, tools, **serving (FastAPIRouter)**, B-tree indexes, recompute, config, SQL export |
 | [providers.md](references/providers.md) | Quick-reference table + full examples for all 25+ AI providers |
 | [workflows.md](references/workflows.md) | RAG, video analysis, image classification, audio, multi-provider, agent, **batch processing**, FastAPI, **FastAPIRouter**, export |

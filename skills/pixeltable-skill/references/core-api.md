@@ -16,7 +16,7 @@ Complete reference for table operations, querying, computed columns, views, embe
 - [Table Operations](#table-operations)
 - [Snapshots](#snapshots)
 - [Tools and Agents](#tools-and-agents) (create tools, agent pipeline, MCP)
-- [Serving (FastAPIRouter)](#serving-fastapirouter) (add_insert_route, add_update_route, add_query_route, add_delete_route, background jobs, pxt serve)
+- [Serving (FastAPIRouter)](#serving-fastapirouter) (application file, add_insert_route, add_update_route, add_query_route, add_delete_route, background jobs, pxt service)
 - [Export](#export-csv-json-parquet-lancedb-iceberg) (CSV, JSON, Parquet, LanceDB, Iceberg, SQL)
 - [Configuration](#configuration) (API keys, config.toml, rate limiting, media destinations, pxtfs://)
 - [Performance Tips](#performance-tips)
@@ -24,6 +24,10 @@ Complete reference for table operations, querying, computed columns, views, embe
 ---
 
 ## Table Creation
+
+**Apps vs notebooks.** An application's contract is a `TableModel` in `app.py`, applied with `pxt schema update`. Notebooks and one-off REPL use `pxt.create_table()`, `add_computed_column()`, and `add_embedding_index()`. Examples in this file use the notebook form unless noted.
+
+Types are non-nullable by default. Use `T | None` for optional. Do not use `pxt.Required` (deprecated).
 
 ### Basic Table
 
@@ -52,7 +56,7 @@ t = pxt.create_table('dir.table_name', {
 
 ```python
 t = pxt.create_table('dir.table', {
-    'id': pxt.Required[pxt.String],
+    'id': pxt.String,
     'data': pxt.String,
 }, primary_key=['id'], if_exists='ignore')
 ```
@@ -286,12 +290,12 @@ t.add_computed_column(
     cropped=crop(t.video, x=100, y=100, w=400, h=300),
     if_exists='ignore')
 
-# Concatenate two videos (scalar UDF — fixed pair of inputs)
+# Concatenate two videos (scalar UDF -- fixed pair of inputs)
 t.add_computed_column(
     combined=concat_videos(t.intro_video, t.main_video),
     if_exists='ignore')
 
-# Concatenate many videos from rows (UDA — ordered by timestamp column)
+# Concatenate many videos from rows (UDA -- ordered by timestamp column)
 frames.select(concat_videos_agg(frames.timestamp, frames.video)).collect()
 
 # Combine a sequence of frame images into one video (UDA)
@@ -328,6 +332,8 @@ t.add_computed_column(text_len=pxt_str.len(t.content), if_exists='ignore')
 ```
 
 ## Embedding Indexes
+
+In an application file, declare indexes on the model (`__indexes__ = [pxt.EmbeddingIndex(...)]`). Do not call `add_embedding_index()` in `app.py`. The notebook/REPL form follows.
 
 ### Add Index
 
@@ -394,6 +400,8 @@ t.drop_index('index_name')
 
 ## UDFs
 
+A UDF is recorded as a module path relative to the project root (`app.excerpt`), not a raw file path. Hosted runtime needs the project packed via `pxt db update-runtime`.
+
 ### Basic
 
 ```python
@@ -441,7 +449,7 @@ class avg_int(pxt.Aggregator):
     def value(self) -> float:
         return self.sum / self.count if self.count > 0 else 0.0
 
-# Use in queries — not add_computed_column
+# Use in queries -- not add_computed_column
 t.select(avg_int(t.value)).collect()
 t.group_by(t.category).select(t.category, avg_val=avg_int(t.value)).collect()
 ```
@@ -711,61 +719,90 @@ udfs = pxt.mcp_udfs('http://localhost:8080/sse')
 
 ## Serving (FastAPIRouter)
 
-`pixeltable.serving.FastAPIRouter` (v0.6+) is a subclass of FastAPI's `APIRouter` that generates endpoints from tables and `@pxt.query` functions. No Pydantic models or hand-written handlers needed.
+`from pixeltable.serving import FastAPIRouter`. Prefer it over hand-written endpoints. In an app, declare models and routers in one file; apply tables with `pxt schema update`, then start HTTP with `pxt service update`. There is no `pxt serve` and no `[tool.pixeltable.service]` TOML.
+
+```python
+from __future__ import annotations
+
+import pixeltable as pxt
+import pixeltable.functions as pxtf
+from pixeltable.serving import FastAPIRouter
+
+TableModel = pxt.model_base()
+
+
+class Docs(TableModel, name='docs'):
+    title: pxt.String
+    body: pxt.String | None
+    title_upper = pxtf.string.upper(title)
+    __indexes__ = [pxt.EmbeddingIndex(body, embedding=embed_fn, name='body_idx')]  # if indexed
+
+
+ingest = FastAPIRouter(name='ingest')
+ingest.add_insert_route(
+    Docs, path='/docs', inputs=[Docs.title, Docs.body], outputs=[Docs.title, Docs.title_upper]
+)
+```
+
+```bash
+pxt schema update app.py my_app   # creates catalog dir + tables; does NOT start HTTP
+pxt service update app.py my_app  # starts local HTTP; does NOT create tables
+```
+
+`FastAPIRouter` is a subclass of FastAPI's `APIRouter`. You can also mount it on an existing FastAPI app and pass a live table handle (`pxt.get_table(...)`) instead of a model class. Call `pxt.get_table()` inside custom endpoint handlers (thread-bound Table).
 
 ### add_insert_route
 
 ```python
 from pixeltable.serving import FastAPIRouter
-import pixeltable as pxt
 
-router = FastAPIRouter(prefix="/api/data", tags=["data"])
-docs = pxt.get_table("app.documents")
+router = FastAPIRouter(name='ingest', prefix='/api/data', tags=['data'])
 
-# Synchronous insert — returns inserted row fields
-router.add_insert_route(docs, path="/upload/image",
-    uploadfile_inputs=["image"], inputs=["timestamp"], outputs=["uuid", "thumbnail"])
+# Synchronous insert -- returns inserted row fields
+router.add_insert_route(
+    Docs, path='/docs', inputs=[Docs.title, Docs.body], outputs=[Docs.title, Docs.title_upper]
+)
 
-# Background insert — returns job handle for polling
-router.add_insert_route(docs, path="/upload/document",
-    uploadfile_inputs=["document"], inputs=["timestamp"], outputs=["uuid"],
-    background=True)
+# Background insert -- returns job handle for polling
+router.add_insert_route(
+    Docs, path='/docs/bg', inputs=[Docs.title, Docs.body], outputs=[Docs.title_upper],
+    background=True,
+)
 # Client receives { "job_url": "http://host/jobs/{id}" }
-# Poll GET /jobs/{id} → { "status": "pending" | "done" | "error", "result": {...} }
+# Poll GET /jobs/{id} -> { "status": "pending" | "done" | "error", "result": {...} }
 ```
 
 Parameters:
-- `uploadfile_inputs` — column names sent as `UploadFile` (multipart form)
-- `inputs` — column names sent as form fields
-- `outputs` — column names to return after insert
-- `background=True` — return immediately with a job URL; client polls for result
+- `uploadfile_inputs` -- columns sent as `UploadFile` (multipart form)
+- `inputs` -- columns sent as form fields (model attrs or names)
+- `outputs` -- columns to return after insert
+- `background=True` -- return immediately with a job URL; client polls for result
 
 ### add_query_route
 
 ```python
 @pxt.query
 def search_docs(query_text: str):
-    sim = chunks.text.similarity(string=query_text)
-    return chunks.where(sim > 0.3).order_by(sim, asc=False).select(
-        text=chunks.text, score=sim).limit(20)
+    sim = Docs.body.similarity(string=query_text)
+    return Docs.where(sim > 0.3).order_by(sim, asc=False).select(
+        text=Docs.body, score=sim).limit(20)
 
-router.add_query_route(path="/search", query=search_docs, method="post")
-# POST /api/data/search {"query_text": "..."} → { "rows": [...] }
+router.add_query_route(path='/search', query=search_docs, method='post')
+# POST /api/data/search {"query_text": "..."} -> { "rows": [...] }
 
 @pxt.query
 def list_docs():
-    return docs.select(uuid=docs.uuid, name=docs.document).order_by(docs.timestamp, asc=False)
+    return Docs.select(Docs.title, Docs.title_upper)
 
-router.add_query_route(path="/list", query=list_docs, method="get")
-# GET /api/data/list → { "rows": [...] }
+router.add_query_route(path='/list', query=list_docs, method='get')
+# GET /api/data/list -> { "rows": [...] }
 ```
 
 ### add_update_route
 
 ```python
-# Update by primary key — recomputes dependent computed columns
-router.add_update_route(docs, path="/update", inputs=["title"], outputs=["uuid", "title", "summary"])
-# POST /api/data/update {"uuid": "...", "title": "..."} → updated row fields
+# Update by primary key -- recomputes dependent computed columns
+router.add_update_route(Docs, path='/update', inputs=[Docs.title], outputs=[Docs.title, Docs.title_upper])
 ```
 
 ### add_compute_route
@@ -773,55 +810,40 @@ router.add_update_route(docs, path="/update", inputs=["title"], outputs=["uuid",
 Materialize computed columns for a request **without persisting** the row (same shape as insert):
 
 ```python
-# Preview / dry-run: run the table's computed columns, return the row, do not insert
 router.add_compute_route(
-    docs, path="/preview", inputs=["document"], outputs=["document", "summary"]
+    Docs, path='/preview', inputs=[Docs.title], outputs=[Docs.title, Docs.title_upper]
 )
-# POST /api/data/preview {"document": "..."} → computed fields; table unchanged
+# POST /api/data/preview {"title": "..."} -> computed fields; table unchanged
 
 # Or call the table API directly in Python:
-rows = docs.compute([{'document': 'report.pdf'}])
+t = pxt.get_table('my_app.docs')
+rows = t.compute([{'title': 'hello'}])
 ```
-
-For declarative TOML / `pxt serve`, `type = "compute"` is currently an insert alias — use the Python `FastAPIRouter` API for true non-persisting compute.
 
 ### add_delete_route
 
 ```python
-# Delete by primary key
-router.add_delete_route(docs, path="/delete")
-# POST /api/data/delete {"uuid": "..."} → { "num_rows": 1 }
+router.add_delete_route(Docs, path='/delete')
+# POST /api/data/delete {"...pk..."} -> { "num_rows": 1 }
 
 # Delete by non-PK column
-router.add_delete_route(chat, path="/delete-conversation", match_columns=["conversation_id"])
+router.add_delete_route(Docs, path='/delete-by-title', match_columns=[Docs.title])
 ```
 
 ### Architecture pattern
 
 ```
-setup_pixeltable.py  — flat module: creates tables, views, indexes on import
-routers/data.py      — pxt.get_table() + @pxt.query + add_*_route
-routers/search.py    — pxt.get_table() + @pxt.query + add_*_route
-main.py              — import setup_pixeltable; from routers import data, search
+app.py   -- TableModel classes + FastAPIRouter routes
+pixeltable.toml  -- project root (pxt init; no-op if present)
 ```
-
-See [workflows.md → FastAPIRouter](workflows.md#fastapirouter-declarative-serving-v06) for a complete example.
-
-### pxt serve (CLI)
-
-Declarative HTTP serving without application code. Requires `pip install 'pixeltable[serve]'`.
-
-Define routes in `pyproject.toml` (`[[tool.pixeltable.service]]`) or a standalone `service.toml` (`[[service]]`), then:
 
 ```bash
-pxt serve my-service                    # from pyproject.toml
-pxt serve my-service --config service.toml --port 9000
-pxt serve my-service --dry-run --json   # CI validation
+pxt schema update app.py my_app
+pxt service update app.py my_app
+pxt service run app.py my_app --port 9000   # foreground
 ```
 
-Query routes use `module:attribute` colon paths (e.g. `schema:search_docs`), resolved at startup. Full command reference, single-endpoint modes, and flag tables: [cli.md](cli.md).
-
-See [HTTP Serving Guide](https://docs.pixeltable.com/howto/deployment/serving) for TOML field reference and [Starter Kit `serving/`](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/serving) for a working example.
+`my_app` is a catalog directory, not a folder on disk. See [workflows.md → FastAPIRouter](workflows.md#fastapirouter-declarative-serving) for a complete example and [cli.md](cli.md) for `pxt service` verbs.
 
 ---
 
@@ -962,7 +984,7 @@ def call_custom_api(prompt: str) -> str:
 Store media files in S3, GCS, Azure, or other cloud storage instead of locally:
 
 ```toml
-# config.toml — global default
+# config.toml -- global default
 [pixeltable]
 input_media_dest = "s3://my-bucket/input/"
 output_media_dest = "s3://my-bucket/output/"
@@ -1008,11 +1030,11 @@ See [Cloud Storage docs](https://docs.pixeltable.com/integrations/cloud-storage)
 ### Deprecated/Wrong Imports
 
 ```python
-# WRONG — openai.vision does not exist
+# WRONG -- openai.vision does not exist
 from pixeltable.functions.openai import vision
 description = vision(prompt='Describe', image=t.image)
 
-# CORRECT — use chat_completions with multimodal messages
+# CORRECT -- use chat_completions with multimodal messages
 from pixeltable.functions.openai import chat_completions
 description = chat_completions(
     messages=[{
@@ -1025,11 +1047,11 @@ description = chat_completions(
     model='gpt-4o-mini'
 ).choices[0].message.content
 
-# WRONG — FrameIterator class import
+# WRONG -- FrameIterator class import
 from pixeltable.iterators import FrameIterator
 pxt.create_view('v', t, iterator=FrameIterator.create(video=t.video, fps=1))
 
-# CORRECT — function import
+# CORRECT -- function import
 from pixeltable.functions.video import frame_iterator
 pxt.create_view('v', t, iterator=frame_iterator(t.video, fps=1), if_exists='ignore')
 ```
@@ -1039,18 +1061,18 @@ pxt.create_view('v', t, iterator=frame_iterator(t.video, fps=1), if_exists='igno
 AI functions often return `Json` or complex objects. Embedding indexes require `String` columns:
 
 ```python
-# WRONG — transcriptions returns a Json object, not a String
+# WRONG -- transcriptions returns a Json object, not a String
 t.add_computed_column(transcript=openai.transcriptions(audio=t.audio, model='whisper-1'), if_exists='ignore')
 t.add_embedding_index('transcript', embedding=embed_fn)  # silently fails
 
-# CORRECT — extract .text and cast
+# CORRECT -- extract .text and cast
 t.add_computed_column(
     transcript=openai.transcriptions(audio=t.audio, model='whisper-1').text.astype(pxt.String),
     if_exists='ignore')
 t.add_embedding_index('transcript', embedding=embed_fn, if_exists='ignore')
 ```
 
-This applies to any computed column used as an embedding source — always ensure it evaluates to `pxt.String`.
+This applies to any computed column used as an embedding source -- always ensure it evaluates to `pxt.String`.
 
 ### The `if_exists='ignore'` Trap
 
@@ -1060,7 +1082,7 @@ If you create a column with buggy logic, fixing the code and re-running does **N
 # Bug: wrong model name
 t.add_computed_column(summary=openai.chat_completions(..., model='nonexistent'), if_exists='ignore')
 
-# Fixing the code and re-running does NOTHING — old column persists
+# Fixing the code and re-running does NOTHING -- old column persists
 t.add_computed_column(summary=openai.chat_completions(..., model='gpt-4o-mini'), if_exists='ignore')
 
 # FIX: drop the column first, then recreate
@@ -1084,52 +1106,48 @@ messages=[{'role': 'user', 'content': [
 sim = t.content.similarity(string=query_text)  # NOT .similarity(query_text)
 ```
 
-Schema corruption (`IntegrityError`): try `pxt.drop_dir('my_project', force=True)` first. Last resort (development only — run manually with backup, never in production): upgrade pixeltable (`pip install -U pixeltable`), then delete only the `~/.pixeltable` directory.
+Schema corruption (`IntegrityError`): try `pxt.drop_dir('my_project', force=True)` first. Last resort (development only -- run manually with backup, never in production): upgrade pixeltable (`pip install -U pixeltable`), then delete only the `~/.pixeltable` directory.
 
 ### `@pxt.query` Eager Compilation
 
 `@pxt.query` compiles the function body at **decoration time** by calling it with expression placeholders. This means:
 
 ```python
-# WRONG — .collect() executes during decoration, not at call time
+# WRONG -- .collect() executes during decoration, not at call time
 @pxt.query
 def find_similar(ref_id: str):
     ref = t.where(t.uuid == ref_id).select(t.embedding).collect()  # FAILS at decoration
     return t.order_by(t.embedding.similarity(ref[0]['embedding'])).limit(5)
 
-# CORRECT — use a plain def for imperative logic that needs .collect()
+# CORRECT -- use a plain def for imperative logic that needs .collect()
 def find_similar(ref_id: str) -> list[dict]:
     ref = t.where(t.uuid == ref_id).select(t.embedding).collect()
     return list(t.order_by(t.embedding.similarity(ref[0]['embedding'])).limit(5).collect())
 
-# WRONG — references a table that may not exist yet
+# WRONG -- references a table that may not exist yet
 @pxt.query
 def search():
     t = pxt.get_table('maybe.missing')  # FAILS if table doesn't exist at decoration time
     return t.select(t.col)
 ```
 
-### Nullable Primary Keys
+### Primary Keys and Nullability
 
-Primary key columns must be non-nullable. Bare `pxt.String` is nullable by default:
+Types are non-nullable by default. Use `T | None` for optional. Do not use `pxt.Required` (deprecated; equivalent to `T`).
 
 ```python
-# WRONG — nullable PK rejected at table creation
+# CORRECT -- bare type is non-nullable
 t = pxt.create_table('dir.items', {
-    'id': pxt.String,  # nullable!
-}, primary_key=['id'])
+    'id': pxt.String,
+    'note': pxt.String | None,
+}, primary_key=['id'], if_exists='ignore')
 
-# CORRECT — explicit non-nullable
-t = pxt.create_table('dir.items', {
-    'id': pxt.Required[pxt.String],
-}, primary_key=['id'])
-
-# CORRECT — uuid7() computed default (recommended)
+# CORRECT -- uuid7() computed default (recommended)
 from pixeltable.functions.uuid import uuid7
 t = pxt.create_table('dir.items', {
     'content': pxt.String,
     'uuid': uuid7(),
-}, primary_key=['uuid'])
+}, primary_key=['uuid'], if_exists='ignore')
 ```
 
 ### Thread-Safety in FastAPI
@@ -1137,17 +1155,17 @@ t = pxt.create_table('dir.items', {
 `Table` objects are bound to the thread that created them. In FastAPI (which dispatches sync endpoints to a thread pool), call `pxt.get_table()` inside each endpoint:
 
 ```python
-# WRONG — module-level Table used across threads
-docs = pxt.get_table('app.documents')
+# WRONG -- module-level Table used across threads
+docs = pxt.get_table('my_app.docs')
 
 @app.get('/count')
 def count():
     return {'count': docs.count()}  # fails: wrong thread
 
-# CORRECT — get a fresh handle per request
+# CORRECT -- get a fresh handle per request
 @app.get('/count')
 def count():
-    docs = pxt.get_table('app.documents')
+    docs = pxt.get_table('my_app.docs')
     return {'count': docs.count()}
 ```
 

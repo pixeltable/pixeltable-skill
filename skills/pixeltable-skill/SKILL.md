@@ -125,7 +125,7 @@ Full route example: [workflows.md](references/workflows.md).
 | FastAPIRouter | [workflows.md](references/workflows.md) |
 | Wrong stack | [anti-patterns.md](references/anti-patterns.md) |
 
-Add video, audio, agents, or a UI by editing `app.py` (iterators: `frame_iterator`, `audio_splitter`, `document_splitter`). Do not paste a second apply path.
+Add video, audio, agents, or a UI by editing `app.py` (iterators: `frame_iterator`, `audio_splitter`, `document_splitter`). Starter-kit [`examples/`](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/examples) has video frames + CLIP and an agent-as-table. Copy into `app.py`. Do not paste a second apply path.
 
 ## Critical warnings
 

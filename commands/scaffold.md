@@ -28,6 +28,6 @@ pxt service update app.py pipeline
 
 `pipeline` is a catalog name, not a folder on disk. Batch: schema update, then run the printed `pipeline.py` command. No `pxt service`.
 
-3. Extra features (RAG, video, agents, a UI) are added in `app.py`. Do not guess `--template` names. Do not invent a second apply path.
+3. Extra features (RAG, video, agents, a UI) are added in `app.py`. Copy a DAG from starter-kit `examples/` if you need a starting file. Do not guess `--template` names. Do not invent a second apply path.
 
 4. State the directory you created and the commands you ran.

@@ -843,7 +843,7 @@ pxt service update app.py my_app
 pxt service run app.py my_app --port 9000   # foreground
 ```
 
-`my_app` is a catalog directory, not a folder on disk. See [workflows.md → FastAPIRouter](workflows.md#fastapirouter-declarative-serving) for a complete example and [cli.md](cli.md) for `pxt service` verbs.
+`my_app` is a catalog directory, not a folder on disk. The default scaffold uses `pipeline`. See [workflows.md](workflows.md) and [cli.md](cli.md).
 
 ---
 

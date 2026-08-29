@@ -232,5 +232,5 @@ pxt service diff app.py my_app --json
 ## Related references
 
 - [core-api.md → Serving](core-api.md#serving-fastapirouter) -- `FastAPIRouter` Python API
-- [workflows.md → FastAPIRouter](workflows.md#fastapirouter-declarative-serving) -- application-file example
+- [workflows.md](workflows.md) -- application-file example
 - [Configuration](https://docs.pixeltable.com/platform/configuration) -- API keys, paths, env vars

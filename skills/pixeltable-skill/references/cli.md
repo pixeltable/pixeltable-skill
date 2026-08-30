@@ -66,7 +66,7 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | Check runtime/config | `pxt status`, `pxt config` | `pxt config --section openai` |
 | Many commands in sequence | `pxt shell` | amortizes startup; errors don't kill session |
 | Visual inspection | `pxt dashboard` | read-only UI at daemon port |
-| Pack hosted runtime | `pxt db update-runtime` | needed so Cloud can import project UDFs |
+| Pack hosted project | `pxt db update` | secrets, image, and archive. Then schema, then `pxt service update` on `pxt://` |
 
 **SDK vs CLI:** Notebooks and one-off REPL use the Python SDK (`create_table`, `add_computed_column`). Apps use a `TableModel` file plus `pxt schema` / `pxt service`. Use CLI for inspect, debug, and CI drift checks.
 
@@ -159,7 +159,7 @@ Runs the `FastAPIRouter` instances an application file declares. Requires `pip i
 | `pxt service run APP TARGET [SERVICE]` | Serve one service from this process until interrupted |
 | `pxt service prune APP TARGET` | Stop and forget services at `TARGET` that the file does not declare |
 | `pxt service stop NAME...` | Stop named services (`ingest` or `my_app/ingest`) |
-| `pxt service list [TARGET]` | What is running locally, and where |
+| `pxt service list [TARGET]` | What is running, and where |
 | `pxt service example` | Write a working application file |
 
 ```bash
@@ -185,16 +185,17 @@ pxt db list pxt://myorg
 pxt db status pxt://myorg:mydb
 pxt db start pxt://myorg:mydb
 pxt db stop pxt://myorg:mydb
-pxt db update pxt://myorg:mydb --workers 2
-pxt db update-runtime pxt://myorg:mydb --project-dir .
+pxt db diff pxt://myorg:mydb
+pxt db update pxt://myorg:mydb
+pxt db build-image pxt://myorg:mydb
 pxt db delete pxt://myorg:mydb
 pxt org list
 pxt org status pxt://myorg
 ```
 
-`pxt schema update app.py pxt://org:db` applies the same file to a hosted catalog. `pxt service` binds to the **local** catalog only.
+Hosted apply order: `pxt db update pxt://org:db`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. `pxt service run` stays on this machine. If `pxt service diff` says the database project is behind the working copy, run `pxt db update` first.
 
-A UDF is recorded as a module path relative to the project root (`app.excerpt`), not a raw file path. Hosted runtime needs the project packed via `pxt db update-runtime`.
+A UDF is recorded as a module path relative to the project root (`app.excerpt`), not a raw file path. `pxt db update` packs the project so Cloud can import it.
 
 ### Secrets
 
@@ -205,9 +206,7 @@ pxt secret set  pxt://myorg OPENAI_API_KEY=sk-...
 pxt secret delete pxt://myorg:mydb OLD_KEY
 ```
 
-An org secret applies to every database in the org; a database secret wins on a key collision. Changes do not reach a running database until `pxt db stop` then `pxt db start`, or `pxt db update-runtime`.
-
-`pxt db update-runtime` reads `[pixeltable.database]` from `pixeltable.toml` (include/exclude globs for the project pack).
+An org secret applies to every database in the org; a database secret wins on a key collision. A project can declare secrets on `[[pixeltable.database]]` as `openai_api_key = 'env:OPENAI_API_KEY'`; `pxt db update` sets them. A running database keeps the values it started with. Run `pxt db stop` then `pxt db start` to pick up a change.
 
 ## Scripting with `--json`
 

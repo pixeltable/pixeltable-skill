@@ -400,7 +400,7 @@ t.drop_index('index_name')
 
 ## UDFs
 
-A UDF is recorded as a module path relative to the project root (`app.excerpt`), not a raw file path. Hosted runtime needs the project packed via `pxt db update-runtime`.
+A UDF is recorded as a module path relative to the project root (`app.excerpt`), not a raw file path. Hosted: `pxt db update` packs the project.
 
 ### Basic
 

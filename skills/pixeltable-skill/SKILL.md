@@ -52,6 +52,8 @@ No HTTP: `uvx pixeltable-new myapp --batch`, then `pxt schema update app.py pipe
 
 `pipeline` is a catalog directory, not a folder on disk. The scaffold writes `pixeltable.toml`. If you copied files by hand, `pxt init` first. Schema does not start HTTP. Service does not create tables.
 
+Same file on Cloud: `pxt db update`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. Image vs archive: [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
+
 Do not download vertical templates. Add tables in `app.py`. [cli.md](references/cli.md).
 
 ## The application file
@@ -180,7 +182,7 @@ Views: `document_splitter`, `frame_iterator` (from `pixeltable.functions.video`)
 
 Query: `t.where(...).select(...).collect()`. Similarity: `t.content.similarity(string=query)`. In `@pxt.query`, alias as `score=sim`.
 
-UDFs are recorded as a module path relative to the project root (`app.excerpt`). Hosted runtime: `pxt db update-runtime`.
+UDFs are recorded as a module path relative to the project root (`app.excerpt`). Hosted: `pxt db update`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`.
 
 Always `if_exists='ignore'` on notebook `create_*` / `add_*`. Failed cells: `t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)`.
 

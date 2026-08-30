@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Tests for the pure-Python plugin hooks. Run: python3 tests/test_hooks.py
 
 Pure stdlib (unittest); no third-party deps, mirroring the repo's no-Node policy.
@@ -21,6 +20,7 @@ def run(script, payload):
         input=json.dumps(payload),
         capture_output=True,
         text=True,
+        check=False,
     )
     assert p.returncode == 0, f"{script} exited {p.returncode}: {p.stderr}"
     return p.stdout.strip()

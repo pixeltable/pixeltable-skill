@@ -15,26 +15,34 @@ CHECKS = [
     (
         re.compile(r"from\s+pixeltable\.iterators\s+import\s+FrameIterator|\bFrameIterator\b"),
         "error",
-        "Deprecated `FrameIterator`. Use `from pixeltable.functions.video import frame_iterator` "
-        "and pass `frame_iterator(t.video, fps=...)` to `create_view`.",
+        (
+            "Deprecated `FrameIterator`. Use `from pixeltable.functions.video import frame_iterator` "
+            "and pass `frame_iterator(t.video, fps=...)` to `create_view`."
+        ),
     ),
     (
         re.compile(r"openai\.vision|functions\.openai\s+import\s+[^\n]*\bvision\b"),
         "error",
-        "`openai.vision` does not exist. Use `chat_completions` with `image_url` content blocks "
-        "for image understanding.",
+        (
+            "`openai.vision` does not exist. Use `chat_completions` with `image_url` content blocks "
+            "for image understanding."
+        ),
     ),
     (
         re.compile(r"\.similarity\(\s*(?!string\s*=)[^)\s]"),
         "error",
-        "Positional `.similarity(...)` call. Always use the keyword form: "
-        "`column.similarity(string=query)`.",
+        (
+            "Positional `.similarity(...)` call. Always use the keyword form: "
+            "`column.similarity(string=query)`."
+        ),
     ),
     (
         re.compile(r"@pxt\.query[\s\S]*?sim=sim"),
         "error",
-        "`sim=sim` in `@pxt.query` breaks `.collect()` and FastAPIRouter query routes. Alias similarity as "
-        "`score=sim` (any name other than `sim`).",
+        (
+            "`sim=sim` in `@pxt.query` breaks `.collect()` and FastAPIRouter query routes. Alias similarity as "
+            "`score=sim` (any name other than `sim`)."
+        ),
     ),
     (
         re.compile(
@@ -43,9 +51,11 @@ CHECKS = [
             re.MULTILINE,
         ),
         "recommended",
-        "Detected a framework/vector-DB that Pixeltable replaces (chunking, embedding indexes, "
-        "retrieval, and tool-calling are built in). See the `pixeltable` skill "
-        "`references/anti-patterns.md`.",
+        (
+            "Detected a framework/vector-DB that Pixeltable replaces (chunking, embedding indexes, "
+            "retrieval, and tool-calling are built in). See the `pixeltable` skill "
+            "`references/anti-patterns.md`."
+        ),
     ),
 ]
 

@@ -5,13 +5,13 @@
     "url": "https://github.com/pixeltable"
   },
   "metadata": {
-    "description": "Build multimodal AI applications with Pixeltable — tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
-    "version": "2.5.5"
+    "description": "Build multimodal AI applications with Pixeltable : tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
+    "version": "2.6.0"
   },
   "plugins": [
     {
       "name": "pixeltable",
-      "description": "Build multimodal AI applications with Pixeltable — tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
+      "description": "Build multimodal AI applications with Pixeltable : tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
       "source": "./",
       "strict": true
     }

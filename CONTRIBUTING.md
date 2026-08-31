@@ -17,7 +17,7 @@ This repo is an agent **plugin**: one skill (the content core) wrapped with comm
 
 ```
 pixeltable-skill/
-├── skills/pixeltable-skill/   # THE skill — do not split
+├── skills/pixeltable-skill/   # THE skill : do not split
 │   ├── SKILL.md               # Core instructions (<500 lines)
 │   └── references/            # Detailed reference (loaded on demand)
 ├── commands/                  # Slash commands (Markdown): /pixeltable:scaffold, add-provider
@@ -35,7 +35,7 @@ Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claud
 
 ### Conventions
 - Plugin identity is `pixeltable` (commands render as `/pixeltable:<name>`); keep all manifest `name`/`version` fields in sync.
-- Hooks are **pure Python** (`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/*.py"`) — no Node/Bun/TypeScript.
+- Hooks are **pure Python** (`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/*.py"`) : no Node/Bun/TypeScript.
 - Run `python3 scripts/validate_plugin.py` before submitting structural changes.
 
 ## What to Contribute
@@ -43,7 +43,7 @@ Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claud
 - Fix incorrect API examples
 - Add missing patterns for common use cases
 - Update provider examples for new Pixeltable releases
-- Keep `SKILL.md` concise — detailed content goes in `references/`
+- Keep `SKILL.md` concise : detailed content goes in `references/`
 - `SKILL.md` should stay under 500 lines
 
 ## Guidelines
@@ -71,11 +71,11 @@ Before submitting, verify:
 1. YAML frontmatter in `SKILL.md` is valid (name in kebab-case, no XML tags)
 2. All code examples are syntactically correct Python
 3. Provider examples match the current Pixeltable API
-4. Scaffold/template names match the starter-kit repos (`pixeltable-new` `TEMPLATES` and `pixeltable-app-template/templates/`), not a possibly-stale published `uvx pixeltable-new --list`
+4. Scaffold is `uvx pixeltable-new myapp` (serving) or `--batch`. No `--template` zoo.
 5. The install script works: `./install.sh --platform claude-code --target /tmp/test` and `./install.sh --platform cursor-skill`
 6. Plugin layout validates: `python3 scripts/validate_plugin.py`
 7. Discovery resolves: `npx plugins discover .` and `npx skills add . --list`
-8. Cursor install (from repo): `npx plugins add . -y --target cursor` then restart Agent; verify `/pixeltable:scaffold` and 9 files under `~/.cursor/skills/pixeltable-skill/references/` (or plugin cache)
+8. Cursor install (from repo): `npx plugins add . -y --target cursor` then restart Agent; verify `/pixeltable:scaffold` and 5 files under `~/.cursor/skills/pixeltable-skill/references/` (or plugin cache)
 
 ### No XML Tags
 

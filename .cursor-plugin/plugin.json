@@ -1,7 +1,7 @@
 {
   "name": "pixeltable",
-  "version": "2.5.5",
-  "description": "Build multimodal AI applications with Pixeltable — RAG, agents, and multimodal workflows.",
+  "version": "2.6.0",
+  "description": "Build multimodal AI applications with Pixeltable : RAG, agents, and multimodal workflows.",
   "author": {
     "name": "Pixeltable",
     "url": "https://github.com/pixeltable"

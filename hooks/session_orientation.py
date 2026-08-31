@@ -12,11 +12,12 @@ ORIENTATION = (
     "Pixeltable detected in this project. Build declaratively and do NOT reach for: "
     "LangChain/LlamaIndex/Haystack (chunking, retrieval, tool-calling are built in); "
     "pandas as a working store (tables ARE the store); per-row `for` loops calling models "
-    "(use computed columns); a separate vector DB (use `add_embedding_index` + "
-    "`column.similarity(string=query)`); manual agent `while` loops (model the agent as a table). "
-    "Import `frame_iterator` from `pixeltable.functions.video`; for images use `chat_completions` "
-    "with `image_url` blocks. Use `pxt` CLI for inspect/debug/serve; prefer `FastAPIRouter` over "
-    "hand-written endpoints. Use the `pixeltable` skill for full guidance."
+    "(use computed columns); a separate vector DB (apps: `__indexes__` on the TableModel; "
+    "notebooks: `add_embedding_index` + `column.similarity(string=query)`); manual agent "
+    "`while` loops (model the agent as a table). Import `frame_iterator` from "
+    "`pixeltable.functions.video`; for images use `chat_completions` with `image_url` blocks. "
+    "Apps: TableModel in app.py, then `pxt schema update` and `pxt service update`. Prefer "
+    "`FastAPIRouter` over hand-written endpoints. Use the `pixeltable` skill for full guidance."
 )
 
 DEP_FILES = ["pyproject.toml", "requirements.txt", "Pipfile", "setup.cfg", "setup.py", "uv.lock"]

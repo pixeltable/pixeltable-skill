@@ -193,7 +193,7 @@ pxt org list
 pxt org status pxt://myorg
 ```
 
-Hosted apply order: `pxt db update pxt://org:db`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. `pxt service run` stays on this machine. If `pxt service diff` says the database project is behind the working copy, run `pxt db update` first.
+Hosted apply order: `pxt db update pxt://org:db` packs image and workers (not Experiment), then `pxt schema update app.py pxt://org:db`. `pxt service` stays local. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
 
 A UDF is recorded as a module path relative to the project root (`app.excerpt`), not a raw file path. `pxt db update` packs the project so Cloud can import it.
 

@@ -27,7 +27,7 @@ Manifests: `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/
 - Single skill. Do not split it.
 - Hooks are pure Python (`python3`). No Node/Bun/TypeScript.
 - SKILL.md teaches the application file first. Notebook SDK is an appendix.
-- Scaffold is `uvx pixeltable-new myapp` then `pxt schema update app.py pipeline`. No template zoo.
+- Scaffold is `uvx pixeltable-new myapp` then `pxt schema update app.py agent`. No template zoo.
 - `if_exists='ignore'` on notebook `create_*` / `add_*`.
 - No LangChain, pandas-as-store, or standalone vector DB patterns.
 - Keep SKILL.md under 500 lines.

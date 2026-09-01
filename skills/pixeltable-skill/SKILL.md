@@ -2,9 +2,10 @@
 name: pixeltable
 description: >
   Build multimodal AI apps with Pixeltable. One application file (app.py)
-  declares TableModel tables and FastAPIRouter routes. Apply with pxt schema
-  update. Serve with pxt service update. Use computed columns instead of
-  LangChain, pandas-as-store, or a separate vector DB. Use when building RAG,
+  declares TableModel tables and FastAPIRouter routes. Loop: Declare
+  (pxt schema update), Experiment (insert, dashboard, schema diff), Serve
+  (pxt service update). Use computed columns instead of LangChain,
+  pandas-as-store, or a separate vector DB. Use when building RAG,
   processing images/video/audio/documents, or serving an API. Do NOT use for
   general Python or direct PostgreSQL administration.
 license: Apache-2.0
@@ -39,30 +40,40 @@ If you find yourself importing any of these, you are off-path:
 
 See [anti-patterns.md](references/anti-patterns.md).
 
+## What is Pixeltable?
+
+One application file (`app.py`) is the backend. The loop is Declare, Experiment, Serve.
+
+- **Declare:** `TableModel` in `app.py`, then `pxt schema update`. Creates tables. Does not start HTTP.
+- **Experiment:** insert a sample, `.select()`, `pxt dashboard`, `pxt schema diff`. Compute runs on insert. After Serve: curl POST.
+- **Serve:** `pxt service update`. `pxt service list` prints the local URL. A `pxt://` target is refused.
+
+Hosted packaging is `pxt db update` (image, workers). It is not Experiment.
+
+First run: [Quickstart](https://docs.pixeltable.com/overview/quick-start). Why: [Why Pixeltable](https://docs.pixeltable.com/overview/pixeltable).
+
 ## Starting a new project
 
 ```bash
 uvx pixeltable-new myapp
 cd myapp && uv sync
-pxt schema update app.py pipeline
-pxt service update app.py pipeline
+pxt schema update app.py agent
+pxt service update app.py agent
 ```
 
-No HTTP: `uvx pixeltable-new myapp --batch`, then `pxt schema update app.py pipeline` and `python pipeline.py`.
+Video: `uvx pixeltable-new myapp --video`, then TARGET `videointel`.
 
-`pipeline` is a catalog directory, not a folder on disk. The scaffold writes `pixeltable.toml`. If you copied files by hand, `pxt init` first. Schema does not start HTTP. Service does not create tables.
+`agent` is a catalog directory, not a folder on disk. The scaffold writes `pixeltable.toml`. If you copied files by hand, `pxt init` first. Schema does not start HTTP. Service does not create tables.
 
-Same file on Cloud: `pxt db update`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. Image vs archive: [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
+Same file on Cloud: `pxt schema update app.py pxt://org:db`. `pxt db update` packs the hosted image and workers; it is not Experiment. `pxt service` stays local. Experiment on Cloud is dashboard insert. [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
 
 Do not download vertical templates. Add tables in `app.py`. [cli.md](references/cli.md).
 
 ## The application file
 
-Write this. Then `pxt schema update app.py pipeline`. Then insert.
+Write this. Then `pxt schema update app.py my_app`. Then insert, or open `pxt dashboard`.
 
 ```python
-from __future__ import annotations
-
 import pixeltable as pxt
 import pixeltable.functions as pxtf
 from pixeltable.functions.huggingface import sentence_transformer
@@ -98,7 +109,7 @@ def search_documents(query_text: str, limit: int = 10):
     )
 
 
-api = FastAPIRouter(name='pipeline', prefix='/api')
+api = FastAPIRouter(name='ingest', prefix='/api')
 api.add_insert_route(
     Documents, path='/ingest/document', inputs=[Documents.title, Documents.body],
     outputs=[Documents.title],
@@ -182,7 +193,7 @@ Views: `document_splitter`, `frame_iterator` (from `pixeltable.functions.video`)
 
 Query: `t.where(...).select(...).collect()`. Similarity: `t.content.similarity(string=query)`. In `@pxt.query`, alias as `score=sim`.
 
-UDFs are recorded as a module path relative to the project root (`app.excerpt`). Hosted: `pxt db update`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`.
+UDFs are recorded as a module path relative to the project root (`app.excerpt`). Hosted: `pxt db update` packs the image, then `pxt schema update app.py pxt://org:db`. `pxt service` stays local.
 
 Always `if_exists='ignore'` on notebook `create_*` / `add_*`. Failed cells: `t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)`.
 
@@ -204,10 +215,10 @@ Always `if_exists='ignore'` on notebook `create_*` / `add_*`. Failed cells: `t.r
 
 ```bash
 pxt init
-pxt schema update app.py pipeline
-pxt service update app.py pipeline
+pxt schema update app.py my_app
+pxt service update app.py my_app
 pxt ls -l
-pxt errors pipeline/documents
+pxt errors my_app/documents
 pxt dashboard
 ```
 

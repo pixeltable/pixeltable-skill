@@ -4,6 +4,7 @@ argument-hint: "[project-name]"
 ---
 
 Scaffold a Pixeltable project with `pixeltable-new`. Then write tables in `app.py`.
+The loop is Declare, Experiment, Serve.
 
 Arguments: `$ARGUMENTS`
 
@@ -15,18 +16,18 @@ Steps:
 uvx pixeltable-new myapp
 ```
 
-No HTTP: `uvx pixeltable-new myapp --batch`.
+Video: `uvx pixeltable-new myapp --video`.
 
-2. Apply and serve:
+2. Apply and serve (Declare, then Serve):
 
 ```bash
 cd myapp
 uv sync
-pxt schema update app.py pipeline
-pxt service update app.py pipeline
+pxt schema update app.py agent
+pxt service update app.py agent
 ```
 
-`pipeline` is a catalog name, not a folder on disk. Batch: schema update, then run the printed `pipeline.py` command. No `pxt service`.
+`agent` is a catalog name, not a folder on disk. Video TARGET is `videointel`. Experiment: insert, `/ask`, or `pxt dashboard`.
 
 3. Extra features (RAG, video, agents, a UI) are added in `app.py`. Copy a DAG from starter-kit `examples/` if you need a starting file. Do not guess `--template` names. Do not invent a second apply path.
 

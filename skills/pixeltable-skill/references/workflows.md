@@ -2,12 +2,10 @@
 
 `from pixeltable.serving import FastAPIRouter`. One application file declares `TableModel` classes and routers. Apply tables with `pxt schema update`. Start HTTP with `pxt service update`.
 
-The default scaffold catalog TARGET is `pipeline` (matches `FastAPIRouter(name='pipeline')`).
+The default scaffold catalog TARGET is `agent` (chat agent) or `videointel` (`--video`).
 
 ```python
 # app.py
-from __future__ import annotations
-
 import pixeltable as pxt
 import pixeltable.functions as pxtf
 from pixeltable.functions.huggingface import sentence_transformer
@@ -33,7 +31,7 @@ class Chunks(
     __indexes__ = [pxt.EmbeddingIndex(text, embedding=embed_fn, name='chunks_embed')]  # type: ignore[name-defined]
 
 
-ingest = FastAPIRouter(name='pipeline', prefix='/api', tags=['data'])
+ingest = FastAPIRouter(name='ingest', prefix='/api', tags=['data'])
 ingest.add_insert_route(
     Docs, path='/upload', uploadfile_inputs=[Docs.document], inputs=[Docs.timestamp],
     outputs=[Docs.document], background=True,
@@ -56,11 +54,11 @@ ingest.add_query_route(path='/search', query=search_docs, method='post')
 
 ```bash
 pxt init
-pxt schema update app.py pipeline
-pxt service update app.py pipeline
+pxt schema update app.py my_app
+pxt service update app.py my_app
 ```
 
-After apply: `t = pxt.get_table('pipeline.docs')`.
+After apply: `t = pxt.get_table('my_app.docs')`.
 
 Already have FastAPI: `app.include_router(ingest)` after schema update. Call `pxt.get_table()` inside custom handlers.
 
@@ -69,6 +67,6 @@ Already have FastAPI: `app.include_router(ingest)` after schema update. Call `px
 - `add_delete_route`: POST delete by primary key
 - Indexes on the model (`__indexes__`)
 
-Batch (no HTTP): `uvx pixeltable-new myapp --batch`, then `pxt schema update app.py pipeline` and `python pipeline.py`. [Starter kit batch/](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/batch).
+No HTTP: apply, then insert from Python. [Self-hosting](https://docs.pixeltable.com/howto/deployment/overview).
 
 [cli.md](cli.md) | [core-api.md](core-api.md#serving-fastapirouter)

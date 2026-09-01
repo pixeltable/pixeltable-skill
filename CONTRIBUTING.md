@@ -71,7 +71,7 @@ Before submitting, verify:
 1. YAML frontmatter in `SKILL.md` is valid (name in kebab-case, no XML tags)
 2. All code examples are syntactically correct Python
 3. Provider examples match the current Pixeltable API
-4. Scaffold is `uvx pixeltable-new myapp` (serving) or `--batch`. No `--template` zoo.
+4. Scaffold is `uvx pixeltable-new myapp` (chat agent) or `--video`. No `--template` zoo.
 5. The install script works: `./install.sh --platform claude-code --target /tmp/test` and `./install.sh --platform cursor-skill`
 6. Plugin layout validates: `python3 scripts/validate_plugin.py`
 7. Discovery resolves: `npx plugins discover .` and `npx skills add . --list`

@@ -722,8 +722,6 @@ udfs = pxt.mcp_udfs('http://localhost:8080/sse')
 `from pixeltable.serving import FastAPIRouter`. Prefer it over hand-written endpoints. In an app, declare models and routers in one file; apply tables with `pxt schema update`, then start HTTP with `pxt service update`. There is no `pxt serve` and no `[tool.pixeltable.service]` TOML.
 
 ```python
-from __future__ import annotations
-
 import pixeltable as pxt
 import pixeltable.functions as pxtf
 from pixeltable.serving import FastAPIRouter
@@ -843,7 +841,7 @@ pxt service update app.py my_app
 pxt service run app.py my_app --port 9000   # foreground
 ```
 
-`my_app` is a catalog directory, not a folder on disk. The default scaffold uses `pipeline`. See [workflows.md](workflows.md) and [cli.md](cli.md).
+`my_app` is a catalog directory, not a folder on disk. The default scaffold uses `agent` (or `videointel` with `--video`). See [workflows.md](workflows.md) and [cli.md](cli.md).
 
 ---
 

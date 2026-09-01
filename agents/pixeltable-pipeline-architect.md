@@ -17,6 +17,6 @@ Method:
 2. Sketch table -> view -> computed column -> index before writing code.
 3. Auto-generated keys: `pxt.Column(value=pxtf.uuid.uuid7(), primary_key=True)`.
 4. Keep transformations declarative. No `for` loops calling models. No pandas intermediate store.
-5. After writing `app.py`: `pxt schema update app.py pipeline`.
+5. After writing `app.py`: `pxt schema update app.py agent` (or `my_app`). Then experiment (`t.insert`, `pxt dashboard`) and serve (`pxt service update`).
 
 Hard rules: to change a computed column's logic you must drop it then recreate. Verify provider imports against `providers.md`. Deliver the model classes and how to extend them in the same file.

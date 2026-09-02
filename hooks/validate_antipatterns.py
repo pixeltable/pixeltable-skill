@@ -24,7 +24,7 @@ CHECKS = [
         re.compile(r"openai\.vision|functions\.openai\s+import\s+[^\n]*\bvision\b"),
         "error",
         (
-            "`openai.vision` does not exist. Use `chat_completions` with `image_url` content blocks "
+            "`openai.vision` is deprecated. Use `chat_completions` with `image_url` content blocks "
             "for image understanding."
         ),
     ),
@@ -38,9 +38,9 @@ CHECKS = [
     ),
     (
         re.compile(r"@pxt\.query[\s\S]*?sim=sim"),
-        "error",
+        "recommended",
         (
-            "`sim=sim` in `@pxt.query` breaks `.collect()` and FastAPIRouter query routes. Alias similarity as "
+            "`sim=sim` in `@pxt.query` can break `.collect()` and FastAPIRouter query routes. Alias similarity as "
             "`score=sim` (any name other than `sim`)."
         ),
     ),

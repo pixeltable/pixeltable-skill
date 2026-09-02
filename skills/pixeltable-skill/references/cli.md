@@ -15,15 +15,16 @@ Verify: `pxt --help` and `pxt health`.
 
 ## Project root
 
-`pxt init` writes `pixeltable.toml` in the current directory (no-op if present). That file is the project root. Schema and service refuse an application file with no project root. Start from `pxt service example --out app.py` (models plus routes) or `pxt schema example --brief --out app.py` (models only).
+`pxt init` marks this directory as a project root. Schema and service refuse an application file with no project root. Fresh dir: writes `pixeltable.toml`. Already configured: no-op. Existing `pyproject.toml`: appends `[[tool.pixeltable.database]]` (does not write `pixeltable.toml`). Nested under another root: refused (exit 3). Start from `pxt service example --out app.py` (models plus routes) or `pxt schema example --brief --out app.py` (models only).
 
 ```bash
-pxt init                          # pixeltable.toml project root; no-op if present
+pxt init                          # project root; see cases above
 pxt schema update app.py my_app   # creates catalog dir + tables; does NOT start HTTP
 pxt service update app.py my_app  # starts local HTTP; does NOT create tables
+pxt service update app.py my_app -f   # CI / no TTY: service update always prompts
 ```
 
-`my_app` is a catalog directory, not a folder on disk. After apply: `t = pxt.get_table('my_app.docs')`.
+`my_app` is a catalog directory, not a folder on disk. After apply: `t = pxt.get_table('my_app.docs')`. Cloud: `t = pxt.get_table('pxt://org:db/docs')`. Tables live under `~/.pixeltable`, not in the repo. Directory names from the project root to `app.py` must be Python identifiers. Do not `python app.py` if the file only declares models and routers. After a schema change, run `pxt service update` again if routes exist.
 
 ## Daemon
 
@@ -37,8 +38,8 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | **Inspection** | `ls`, `describe`, `columns`, `computed`, `idxs`, `history`, `status`, `config` |
 | **Query** | `rows`, `get`, `count`, `errors` |
 | **Mutation** | `drop`, `drop-dir`, `rename`, `mv`, `revert` |
-| **Schema** | `schema diff`, `schema update`, `schema prune`, `schema example` |
-| **Serving** | `service diff`, `service update`, `service run`, `service prune`, `service stop`, `service list`, `service example` |
+| **Schema** | `schema diff`, `schema update`, `schema prune`, `schema check`, `schema example` |
+| **Serving** | `service diff`, `service update`, `service run`, `service prune`, `service stop`, `service list`, `service check`, `service example` |
 | **Cloud** | `db`, `org`, `secret` |
 | **Interactive** | `shell` |
 | **Lifecycle** | `daemon`, `dashboard`, `health` |
@@ -56,11 +57,12 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 
 | Task | Prefer CLI | Example |
 |------|-----------|---------|
-| Mark a project root | `pxt init` | no-op if `pixeltable.toml` exists |
+| Mark a project root | `pxt init` | no-op if already configured; exit 3 if nested |
 | Write a starting file | `pxt service example` | `pxt service example --out app.py`. Models only: `pxt schema example --brief --out app.py` |
+| Validate a file | `pxt schema check`, `pxt service check` | no `TARGET`; reads no catalog |
 | Apply tables | `pxt schema update` | `pxt schema update app.py my_app` |
 | Review schema drift | `pxt schema diff` | exit `0` in sync, `2` pending |
-| Start HTTP | `pxt service update` | `pxt service update app.py my_app` |
+| Start HTTP | `pxt service update` | `pxt service update app.py my_app -f` (always prompts) |
 | Foreground HTTP | `pxt service run` | container entrypoint / dev loop |
 | Inspect catalog | `pxt ls -l`, `pxt describe`, `pxt columns --computed` | `pxt ls --json \| jq '.entries[] \| select(.kind == "table")'` |
 | Debug failed columns | `pxt errors`, `pxt rows --cols` | `pxt errors my_app/docs --col embedding` |
@@ -131,10 +133,12 @@ Reconcile a catalog directory with the `TableModel` classes in a Python file. Pr
 | `pxt schema diff APP TARGET` | What `update` would change. Read-only. Exit `2` if pending |
 | `pxt schema update APP TARGET` | Create the catalog dir + tables; migrate existing ones. Does **not** start HTTP |
 | `pxt schema prune APP TARGET` | Drop tables under `TARGET` that the file does not declare |
+| `pxt schema check APP` | Validate the file only. No `TARGET`. Reads no catalog |
 | `pxt schema example` | Write a working file (`--brief` for the minimal one) |
 
 ```bash
 pxt schema example --out app.py
+pxt schema check  app.py
 pxt schema diff   app.py my_app
 pxt schema update app.py my_app
 pxt schema update app.py my_app -n                       # plan only; exit 2 if pending
@@ -162,18 +166,20 @@ Runs the `FastAPIRouter` instances an application file declares. Requires `pip i
 | `pxt service prune APP TARGET` | Stop and forget services at `TARGET` that the file does not declare |
 | `pxt service stop NAME...` | Stop named services (`ingest` or `my_app/ingest`) |
 | `pxt service list [TARGET]` | What is running, and where |
+| `pxt service check APP` | Validate the file only. No `TARGET`. Reads no catalog |
 | `pxt service example` | Write a working application file |
 
 ```bash
 pxt service example --out app.py
+pxt service check app.py
 pxt schema update app.py my_app
-pxt service update app.py my_app
+pxt service update app.py my_app -f
 pxt service list
 pxt service run app.py my_app --port 9000    # foreground; name the service if the file declares several
 pxt service stop ingest
 ```
 
-`update` starts one background process per service, each on its own port. Adding a route is additive; changing or removing one needs `--allow-destructive`. OpenAPI docs are at `/docs`.
+`update` starts one background process per service, each on its own port. It always prompts unless `-f`. Adding a route is additive; changing or removing one needs `--allow-destructive`. OpenAPI docs are at `/docs`. `pxt service run` refuses a `pxt://` TARGET.
 
 Do **not** write `[tool.pixeltable.service]` TOML or call `pxt serve`.
 
@@ -194,7 +200,9 @@ pxt org list
 pxt org status pxt://myorg
 ```
 
-Hosted order: `pxt db update pxt://org:db` sets image and workers, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. `pxt service run` is local only. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
+`pxt db update pxt://org:db` selects `[[pixeltable.database]]` by `name = 'pxt://org:db'`. A URI with no matching entry is an error. First `update` creates the hosted database.
+
+Hosted order: `pxt db update pxt://org:db` sets secrets, image, and workers, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. `pxt service run` is local only. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
 
 A UDF is recorded as a module path relative to the project root (`app.excerpt`), not a raw file path. `pxt db update` packs the project so Cloud can import it.
 
@@ -228,6 +236,8 @@ pxt service diff app.py my_app --json
 5. **Serve extra** -- `pip install 'pixeltable[serve]'` before `pxt service`
 6. **Schema first** -- `pxt schema update` does not start HTTP; `pxt service update` does not create tables
 7. **No `pxt serve` / TOML service / `pxt app`** -- routes live on `FastAPIRouter` in the application file
+8. **`pxt service update` always prompts** -- pass `-f` without a TTY
+9. **Hosted `db update` needs a named entry** -- `[[pixeltable.database]]` `name = 'pxt://org:db'`
 
 ## Related references
 

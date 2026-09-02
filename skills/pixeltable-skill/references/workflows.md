@@ -16,6 +16,7 @@ embed_fn = sentence_transformer.using(model_id='intfloat/multilingual-e5-large-i
 class Docs(TableModel, name='docs'):
     document: pxt.Document
     timestamp: pxt.Timestamp
+    uuid = pxt.Column(value=pxtf.uuid.uuid7(), primary_key=True)
 
 
 class Chunks(
@@ -27,6 +28,7 @@ class Chunks(
     ),
 ):
     __indexes__ = [pxt.EmbeddingIndex(text, embedding=embed_fn, name='chunks_embed')]  # type: ignore[name-defined]
+    # Needs sentence-transformers + torch, and spaCy if separators include 'sentence'.
 
 
 ingest = FastAPIRouter(name='ingest', prefix='/api', tags=['data'])
@@ -67,4 +69,4 @@ Already have FastAPI: `app.include_router(ingest)` after schema update. Call `px
 
 No HTTP: apply, then insert from Python. [Self-hosting](https://docs.pixeltable.com/howto/deployment/overview).
 
-[cli.md](cli.md) | [core-api.md](core-api.md#serving-fastapirouter)
+[cli.md](cli.md) | [core-api.md](core-api.md#serving)

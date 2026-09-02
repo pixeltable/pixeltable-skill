@@ -11,7 +11,20 @@ Steps:
 
 1. Identify the provider module under `pixeltable.functions.<provider>` (e.g. `openai`, `anthropic`, `gemini`, `groq`, `bedrock`, `together`, `fireworks`, `ollama`, `whisper`). Confirm the exact import and output shape in the `pixeltable` skill (`references/providers.md` → Quick Reference) before writing code.
 
-2. Add the call as a computed column, extracting the right field from the response. For chat completions:
+2. Add the call as a computed column, extracting the right field from the response. App file (assignment on the model):
+
+```python
+from pixeltable.functions.openai import chat_completions
+
+class Docs(TableModel, name='docs'):
+    content: pxt.String
+    summary = chat_completions(
+        messages=[{'role': 'user', 'content': content}],
+        model='gpt-4o-mini',
+    ).choices[0].message.content
+```
+
+Then `pxt schema update app.py my_app`. Notebook / REPL:
 
 ```python
 from pixeltable.functions.openai import chat_completions

@@ -69,6 +69,8 @@ t.sample(n=100, seed=42).collect()
 df = t.select(t.title).collect().to_pandas()  # export only
 ```
 
+One `.where()` per query. Compose extra predicates with `&` / `|` (`t.where((t.n > 10) & t.active)`); do not chain `.where()`.
+
 Aggregates run in queries, not computed columns:
 
 ```python
@@ -119,8 +121,10 @@ pages = pxt.create_view(
     if_exists='ignore',
 )
 
-# frame, frame_attrs (index, pts, dts, time, ...)
+# Output columns: pos, frame, frame_attrs  (timestamp is frame_attrs.time)
+# Not frame_idx / pos_msec / pos_frame (legacy_frame_iterator only)
 frames = pxt.create_view('dir.frames', t, iterator=frame_iterator(t.video, fps=1.0), if_exists='ignore')
+frames.select(frames.pos, frames.frame, time=frames.frame_attrs.time).collect()
 
 # text
 sentences = pxt.create_view(
@@ -231,7 +235,7 @@ def search_docs(query_text: str):
 ingest.add_query_route(path='/search', query=search_docs, method='post')
 ```
 
-`background=True` on insert returns `{ "id", "job_url" }`. Call `pxt.get_table()` inside custom FastAPI handlers. Do not `python app.py` if the file only declares models and routers. After a schema change, run `pxt service update` again.
+`background=True` returns `{ "id", "job_url" }`. Poll `job_url`; status is `pending` | `done` | `error` (not `succeeded`). JSON media fields are `{prefix}/_pxt/media/...` URLs. `add_compute_route` computes without inserting. `add_query_route(..., one_row=True, return_fileresponse=True)` returns one media file. Details: [workflows.md](workflows.md). Call `pxt.get_table()` inside custom FastAPI handlers. Do not `python app.py` if the file only declares models and routers. After a schema change, run `pxt service update` again.
 
 ## Tools
 
@@ -247,7 +251,7 @@ MCP: `pxt.mcp_udfs(...)`. Keys: env or [Configuration](https://docs.pixeltable.c
 ## Pitfalls
 
 - `openai.vision` is deprecated. Use `chat_completions` with `image_url`.
-- `from pixeltable.iterators import FrameIterator` is wrong. Use `frame_iterator` from `pixeltable.functions.video`.
+- `from pixeltable.iterators import FrameIterator` is wrong. Use `frame_iterator` from `pixeltable.functions.video`. Outputs: `pos`, `frame`, `frame_attrs` (`frame_attrs.time` is the timestamp). Not `frame_idx` / `pos_msec` / `pos_frame`.
 - `similarity(query)` is wrong. Use `similarity(string=query)`.
 - `@pxt.query` compiles at decoration time. Do not `.collect()` or `get_table()` a table that does not exist yet inside it.
 - Image in messages: `{'type': 'image_url', 'image_url': {'url': t.image}}`.

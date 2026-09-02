@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.7.2
+  version: 2.7.3
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -102,7 +102,12 @@ ingest.add_compute_route(Docs, path='/titles', inputs=[Docs.title], outputs=[Doc
 
 Annotation is a stored column. Assignment is a computed column. Optional is `T | None`. Primary key is `pxt.Column(..., primary_key=True)`. Indexes on the model: `__indexes__ = [pxt.EmbeddingIndex(...)]`. `from pixeltable.serving import FastAPIRouter`.
 
-Already have FastAPI: `app.include_router(ingest)` after schema update. Call `pxt.get_table()` inside custom handlers.
+Already have FastAPI: after schema update, bind the catalog, then include the router. Call `pxt.get_table()` inside custom handlers.
+
+```python
+ingest.bind('my_app')
+app.include_router(ingest)
+```
 
 RAG, views, and search: [workflows.md](references/workflows.md). Do not add Hugging Face or spaCy unless the user asked.
 

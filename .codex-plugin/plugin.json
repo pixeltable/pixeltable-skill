@@ -1,6 +1,6 @@
 {
   "name": "pixeltable",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "description": "Build multimodal AI applications with Pixeltable.",
   "author": {
     "name": "Pixeltable",
@@ -31,7 +31,7 @@
     "websiteURL": "https://docs.pixeltable.com/",
     "brandColor": "#2563EB",
     "defaultPrompt": [
-      "Scaffold a Pixeltable project with uvx pixeltable-new",
+      "Start a Pixeltable project with pxt service example",
       "Build a RAG pipeline with the pixeltable skill",
       "Debug this Pixeltable workflow with pxt errors"
     ]

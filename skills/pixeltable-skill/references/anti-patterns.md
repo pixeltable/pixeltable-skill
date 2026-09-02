@@ -1,5 +1,7 @@
 # Anti-Patterns: Training-Distribution Biases LLMs Bring to Pixeltable
 
+Apps use `app.py` plus `pxt schema update`. This file is notebook form (`pxt.create_table()`) unless noted.
+
 LLMs are trained on millions of imperative Python examples using pandas, LangChain, standalone vector DBs, and raw loops. These priors are **wrong for Pixeltable**. This page lists every common bias and the correct idiomatic shape.
 
 ## The 5 Macro Biases (High Priority)

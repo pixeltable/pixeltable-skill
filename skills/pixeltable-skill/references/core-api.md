@@ -1,5 +1,7 @@
 # Pixeltable Core API Reference
 
+Apps use `app.py` plus `pxt schema update`. This file is notebook form (`pxt.create_table()`) unless noted.
+
 Complete reference for table operations, querying, computed columns, views, embedding indexes, UDFs, tools, and configuration.
 
 ## Contents
@@ -25,7 +27,7 @@ Complete reference for table operations, querying, computed columns, views, embe
 
 ## Table Creation
 
-**Apps vs notebooks.** An application's contract is a `TableModel` in `app.py`, applied with `pxt schema update`. Notebooks and one-off REPL use `pxt.create_table()`, `add_computed_column()`, and `add_embedding_index()`. Examples in this file use the notebook form unless noted.
+**Apps vs notebooks.** An app puts columns on a `TableModel` in `app.py` and creates the tables with `pxt schema update`. Notebooks and one-off REPL use `pxt.create_table()`, `add_computed_column()`, and `add_embedding_index()`. Examples in this file use the notebook form unless noted.
 
 Types are non-nullable by default. Use `T | None` for optional. Do not use `pxt.Required` (deprecated).
 
@@ -841,7 +843,7 @@ pxt service update app.py my_app
 pxt service run app.py my_app --port 9000   # foreground
 ```
 
-`my_app` is a catalog directory, not a folder on disk. The default scaffold uses `agent` (or `videointel` with `--video`). See [workflows.md](workflows.md) and [cli.md](cli.md).
+`my_app` is a catalog directory, not a folder on disk. Start from `pxt service example --out app.py`. See [workflows.md](workflows.md) and [cli.md](cli.md).
 
 ---
 

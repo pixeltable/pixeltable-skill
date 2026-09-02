@@ -1,34 +1,35 @@
 ---
-description: Scaffold a new Pixeltable project, then edit app.py.
+description: Start a Pixeltable project with pxt init and a CLI example file.
 argument-hint: "[project-name]"
 ---
 
-Scaffold a Pixeltable project with `pixeltable-new`. Then write tables in `app.py`.
-The loop is Declare, Experiment, Serve.
+Start a Pixeltable project with the CLI. Then edit `app.py`.
 
 Arguments: `$ARGUMENTS`
 
 Steps:
 
-1. Pick a fresh directory name (the generator refuses to overwrite).
+1. Pick a fresh directory. Install, mark the project root, and write a working file:
 
 ```bash
-uvx pixeltable-new myapp
+mkdir myapp && cd myapp
+pip install 'pixeltable[serve]'
+pxt init
+pxt service example --out app.py
 ```
 
-Video: `uvx pixeltable-new myapp --video`.
+Schema only (no HTTP): `pxt schema example --brief --out app.py`.
 
-2. Apply and serve (Declare, then Serve):
+2. Create tables, then start HTTP:
 
 ```bash
-cd myapp
-uv sync
-pxt schema update app.py agent
-pxt service update app.py agent
+pxt schema update app.py my_app
+pxt service update app.py my_app -f
+pxt service list
 ```
 
-`agent` is a catalog name, not a folder on disk. Video TARGET is `videointel`. Experiment: insert, `/ask`, or `pxt dashboard`.
+The last argument (`my_app`) is a catalog name, not a folder on disk. Try the app: insert, curl a route, or `pxt dashboard`. Pass `-f` when there is no TTY.
 
-3. Extra features (RAG, video, agents, a UI) are added in `app.py`. Copy from starter-kit `chat-agent/` or `video-search/` if you need a starting file. Do not guess `--template` names. Do not invent a second apply path.
+3. Extra features (RAG, video, agents, a UI) are added in `app.py`. Start from the example file. Do not invent a second `pxt schema update` path.
 
 4. State the directory you created and the commands you ran.

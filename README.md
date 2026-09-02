@@ -58,8 +58,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Run `python3 scripts/validate_plugin.py`
 
 ## Links
 
-- [Pixeltable Docs](https://docs.pixeltable.com/) · [GitHub](https://github.com/pixeltable/pixeltable) · [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit) · [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) · [Discord](https://discord.gg/QPyqFYx2UN)
-- Scaffold: `uvx pixeltable-new myapp` then `pxt schema update app.py agent` then `pxt service update app.py agent`. Loop: Declare, Experiment, Serve.
+- [Pixeltable Docs](https://docs.pixeltable.com/) · [GitHub](https://github.com/pixeltable/pixeltable) · [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) · [Discord](https://discord.gg/QPyqFYx2UN)
+- Start: `pxt init` then `pxt service example --out app.py` then `pxt schema update app.py my_app` then `pxt service update app.py my_app`.
 
 ## License
 

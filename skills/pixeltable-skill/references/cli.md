@@ -15,7 +15,7 @@ Verify: `pxt --help` and `pxt health`.
 
 ## Project root
 
-`pxt init` writes `pixeltable.toml` in the current directory (no-op if present). That file is the project root. Schema and service refuse an application file with no project root. `uvx pixeltable-new` already writes it.
+`pxt init` writes `pixeltable.toml` in the current directory (no-op if present). That file is the project root. Schema and service refuse an application file with no project root. Start from `pxt service example --out app.py` (models plus routes) or `pxt schema example --brief --out app.py` (models only).
 
 ```bash
 pxt init                          # pixeltable.toml project root; no-op if present
@@ -57,6 +57,7 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | Task | Prefer CLI | Example |
 |------|-----------|---------|
 | Mark a project root | `pxt init` | no-op if `pixeltable.toml` exists |
+| Write a starting file | `pxt service example` | `pxt service example --out app.py`. Models only: `pxt schema example --brief --out app.py` |
 | Apply tables | `pxt schema update` | `pxt schema update app.py my_app` |
 | Review schema drift | `pxt schema diff` | exit `0` in sync, `2` pending |
 | Start HTTP | `pxt service update` | `pxt service update app.py my_app` |
@@ -66,15 +67,16 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | Check runtime/config | `pxt status`, `pxt config` | `pxt config --section openai` |
 | Many commands in sequence | `pxt shell` | amortizes startup; errors don't kill session |
 | Visual inspection | `pxt dashboard` | read-only UI at daemon port |
-| Pack hosted project | `pxt db update` | secrets, image, and archive. Then schema, then `pxt service update` on `pxt://` |
+| Hosted database | `pxt db update` | secrets, image, and archive. Then schema, then `pxt service update` on `pxt://` |
 
 **SDK vs CLI:** Notebooks and one-off REPL use the Python SDK (`create_table`, `add_computed_column`). Apps use a `TableModel` file plus `pxt schema` / `pxt service`. Use CLI for inspect, debug, and CI drift checks.
 
 ## Quick reference
 
 ```bash
-# project + apply + serve
+# project, then schema, then service
 pxt init
+pxt service example --out app.py
 pxt schema update app.py my_app
 pxt service update app.py my_app
 
@@ -192,7 +194,7 @@ pxt org list
 pxt org status pxt://myorg
 ```
 
-Hosted apply order: `pxt db update pxt://org:db` packs image and workers (not Experiment), then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. `pxt service run` is local only. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
+Hosted order: `pxt db update pxt://org:db` sets image and workers, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. `pxt service run` is local only. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
 
 A UDF is recorded as a module path relative to the project root (`app.excerpt`), not a raw file path. `pxt db update` packs the project so Cloud can import it.
 
@@ -229,6 +231,6 @@ pxt service diff app.py my_app --json
 
 ## Related references
 
-- [core-api.md → Serving](core-api.md#serving-fastapirouter) -- `FastAPIRouter` Python API
+- [core-api.md → Serving](core-api.md#serving) -- `FastAPIRouter` Python API
 - [workflows.md](workflows.md) -- application-file example
 - [Configuration](https://docs.pixeltable.com/platform/configuration) -- API keys, paths, env vars

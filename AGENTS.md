@@ -20,14 +20,14 @@ hooks/
 scripts/validate_plugin.py
 ```
 
-Manifests: `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/`, `package.json`. Keep name `pixeltable` and versions in sync (`2.7.0`).
+Manifests: `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/`, `package.json`. Keep name `pixeltable` and versions in sync (`2.7.1`).
 
 ## Rules
 
 - Single skill. Do not split it.
 - Hooks are pure Python (`python3`). No Node/Bun/TypeScript.
 - SKILL.md teaches the application file first. Notebook SDK is an appendix.
-- Scaffold is `uvx pixeltable-new myapp` then `pxt schema update app.py agent`. No template zoo.
+- Start from `pxt init` then `pxt service example --out app.py` (or `pxt schema example --brief`). Then `pxt schema update app.py my_app`. No template zoo. No starter kit.
 - `if_exists='ignore'` on notebook `create_*` / `add_*`.
 - No LangChain, pandas-as-store, or standalone vector DB patterns.
 - Keep SKILL.md under 500 lines.
@@ -36,5 +36,5 @@ Manifests: `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/
 ## Do not
 
 - Add deprecated APIs (`FrameIterator`, `openai.vision`, positional `.similarity()`)
-- Point agents at `--template` names or a second apply path
+- Point agents at `--template` names, `pixeltable-new`, the starter kit, or a second apply path
 - Let manifest versions drift

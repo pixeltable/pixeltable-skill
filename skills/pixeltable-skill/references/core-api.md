@@ -1054,23 +1054,31 @@ from pixeltable.functions.video import frame_iterator
 pxt.create_view('v', t, iterator=frame_iterator(t.video, fps=1), if_exists='ignore')
 ```
 
-### Cast to String Before Embedding
+### Extract then embed
 
-AI functions often return `Json` or complex objects. Embedding indexes require `String` columns:
+Extract the field (`.text`, `.choices[0].message.content`). Index a String, Image, Audio, Video, or Document column.
+
+TypedDict fields that are `str` are already `String` (OpenAI `transcriptions().text`). Untyped `dict` returns (`chat_completions`, local `whisper.transcribe`) stay Json: display works; `.astype(pxt.String)` only before embedding or concatenating with String.
 
 ```python
-# WRONG -- transcriptions returns a Json object, not a String
-t.add_computed_column(transcript=openai.transcriptions(audio=t.audio, model='whisper-1'), if_exists='ignore')
-t.add_embedding_index('transcript', embedding=embed_fn)  # silently fails
-
-# CORRECT -- extract .text and cast
 t.add_computed_column(
-    transcript=openai.transcriptions(audio=t.audio, model='whisper-1').text.astype(pxt.String),
+    transcript=openai.transcriptions(audio=t.audio, model='whisper-1').text,
     if_exists='ignore')
 t.add_embedding_index('transcript', embedding=embed_fn, if_exists='ignore')
-```
 
-This applies to any computed column used as an embedding source -- always ensure it evaluates to `pxt.String`.
+# WRONG -- index the whole response object
+t.add_computed_column(transcript=openai.transcriptions(audio=t.audio, model='whisper-1'), if_exists='ignore')
+t.add_embedding_index('transcript', embedding=embed_fn)
+
+# Untyped dict path is Json. Cast before indexing.
+t.add_computed_column(
+    summary=openai.chat_completions(
+        messages=[{'role': 'user', 'content': t.content}],
+        model='gpt-4o-mini',
+    ).choices[0].message.content.astype(pxt.String),
+    if_exists='ignore')
+t.add_embedding_index('summary', embedding=embed_fn, if_exists='ignore')
+```
 
 ### The `if_exists='ignore'` Trap
 
@@ -1189,5 +1197,5 @@ Without it, `document_splitter(t.doc, separators='token_limit', ...)` raises `Re
 - Configure rate limits in `config.toml` to avoid 429 errors on provider APIs
 - Use `recompute_columns(where=t.col.errortype != None)` to retry only failed rows
 - Use `add_btree_index()` on columns used frequently in `where()` filters
-- Cast AI function outputs to `pxt.String` with `.astype(pxt.String)` before embedding indexing
+- Cast untyped Json paths with `.astype(pxt.String)` before embedding or concatenating; TypedDict `str` fields are already String
 - During development, use `pxt.drop_dir('dir', force=True)` to reset schema cleanly

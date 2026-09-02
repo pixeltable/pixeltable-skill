@@ -62,7 +62,7 @@ pxt.create_table('dir.table', schema)
 
 ### Keep Consistent Terminology
 
-Always "computed column" (not "derived column"), always `string=` keyword in `similarity()`.
+Always "computed column" (not "derived column"), always `string=` keyword in `similarity()`. No em dashes (U+2014): use a period, a colon, or a comma.
 
 ### Test Your Changes
 

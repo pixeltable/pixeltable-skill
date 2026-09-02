@@ -31,7 +31,7 @@
     "websiteURL": "https://docs.pixeltable.com/",
     "brandColor": "#2563EB",
     "defaultPrompt": [
-      "Scaffold a Pixeltable project with uvx pixeltable-new",
+      "Start a Pixeltable project with pxt service example",
       "Build a RAG pipeline with the pixeltable skill",
       "Debug this Pixeltable workflow with pxt errors"
     ]

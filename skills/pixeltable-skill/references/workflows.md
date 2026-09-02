@@ -1,8 +1,6 @@
 # FastAPIRouter
 
-`from pixeltable.serving import FastAPIRouter`. One application file declares `TableModel` classes and routers. Apply tables with `pxt schema update`. Start HTTP with `pxt service update`.
-
-The default scaffold catalog TARGET is `agent` (chat agent) or `videointel` (`--video`).
+`from pixeltable.serving import FastAPIRouter`. One application file declares `TableModel` classes and routers. Start from `pxt service example --out app.py`. Apply tables with `pxt schema update`. Start HTTP with `pxt service update`.
 
 ```python
 # app.py

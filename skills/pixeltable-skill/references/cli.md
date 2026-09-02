@@ -15,7 +15,7 @@ Verify: `pxt --help` and `pxt health`.
 
 ## Project root
 
-`pxt init` writes `pixeltable.toml` in the current directory (no-op if present). That file is the project root. Schema and service refuse an application file with no project root. `uvx pixeltable-new` already writes it.
+`pxt init` writes `pixeltable.toml` in the current directory (no-op if present). That file is the project root. Schema and service refuse an application file with no project root. Start from `pxt service example --out app.py` (models plus routes) or `pxt schema example --brief --out app.py` (models only).
 
 ```bash
 pxt init                          # pixeltable.toml project root; no-op if present
@@ -57,6 +57,7 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | Task | Prefer CLI | Example |
 |------|-----------|---------|
 | Mark a project root | `pxt init` | no-op if `pixeltable.toml` exists |
+| Write a starting file | `pxt service example` | `pxt service example --out app.py`. Models only: `pxt schema example --brief --out app.py` |
 | Apply tables | `pxt schema update` | `pxt schema update app.py my_app` |
 | Review schema drift | `pxt schema diff` | exit `0` in sync, `2` pending |
 | Start HTTP | `pxt service update` | `pxt service update app.py my_app` |
@@ -75,6 +76,7 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 ```bash
 # project + apply + serve
 pxt init
+pxt service example --out app.py
 pxt schema update app.py my_app
 pxt service update app.py my_app
 

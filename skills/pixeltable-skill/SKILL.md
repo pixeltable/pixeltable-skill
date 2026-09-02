@@ -55,26 +55,18 @@ First run: [Quickstart](https://docs.pixeltable.com/overview/quick-start). Why: 
 ## Starting a new project
 
 ```bash
-uvx pixeltable-new myapp
-cd myapp && uv sync
-pxt schema update app.py agent
-pxt service update app.py agent
-```
-
-If you are not using the scaffold:
-
-```bash
-pip install 'pixeltable[serve]>=0.7.4'
+pip install 'pixeltable[serve]'
 pxt init
+pxt service example --out app.py
+pxt schema update app.py my_app
+pxt service update app.py my_app
 ```
 
-Video: `uvx pixeltable-new myapp --video`, then TARGET `videointel`.
+`pxt service example` writes models plus a `FastAPIRouter`. Schema only (no HTTP): `pxt schema example --brief --out app.py`. Then edit `app.py` and re-apply. Full flags: [cli.md](references/cli.md).
 
-`agent` is a catalog directory, not a folder on disk. The scaffold writes `pixeltable.toml`. If you copied files by hand, `pxt init` first. Schema does not start HTTP. Service does not create tables.
+`my_app` is a catalog directory, not a folder on disk. `pxt init` writes `pixeltable.toml`. Schema does not start HTTP. Service does not create tables.
 
 Same file on Cloud: `pxt db update pxt://org:db`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. `pxt db update` packs the hosted image and workers; it is not Experiment. `pxt service run` is local only. Experiment on Cloud is dashboard insert plus `pxt schema diff`. [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
-
-Do not download vertical templates. Add tables in `app.py`. [cli.md](references/cli.md).
 
 ## The application file
 
@@ -145,7 +137,7 @@ Full route example: [workflows.md](references/workflows.md).
 | FastAPIRouter | [workflows.md](references/workflows.md) |
 | Wrong stack | [anti-patterns.md](references/anti-patterns.md) |
 
-Add video, audio, agents, or a UI by editing `app.py` (iterators: `frame_iterator`, `audio_splitter`, `document_splitter`). Starter kit [`chat-agent/`](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/chat-agent) and [`video-search/`](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/video-search). Copy into `app.py`. Do not paste a second apply path.
+Add video, audio, agents, or a UI by editing `app.py` (iterators: `frame_iterator`, `audio_splitter`, `document_splitter`). Start from `pxt service example` or `pxt schema example`. Do not invent a second apply path.
 
 ## API traps
 
@@ -215,6 +207,7 @@ Always `if_exists='ignore'` on notebook `create_*` / `add_*`. Failed cells: `t.r
 
 ```bash
 pxt init
+pxt service example --out app.py
 pxt schema update app.py my_app
 pxt service update app.py my_app
 pxt ls -l
@@ -226,6 +219,7 @@ pxt dashboard
 
 ## Resources
 
-- [Starter Kit](https://github.com/pixeltable/pixeltable-starter-kit)
+- [Quickstart](https://docs.pixeltable.com/overview/quick-start)
+- [CLI](https://docs.pixeltable.com/platform/cli)
 - [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer)
 - [Docs](https://docs.pixeltable.com/llms-full.txt)

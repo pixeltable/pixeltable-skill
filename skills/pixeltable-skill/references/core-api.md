@@ -841,7 +841,7 @@ pxt service update app.py my_app
 pxt service run app.py my_app --port 9000   # foreground
 ```
 
-`my_app` is a catalog directory, not a folder on disk. The default scaffold uses `agent` (or `videointel` with `--video`). See [workflows.md](workflows.md) and [cli.md](cli.md).
+`my_app` is a catalog directory, not a folder on disk. Start from `pxt service example --out app.py`. See [workflows.md](workflows.md) and [cli.md](cli.md).
 
 ---
 

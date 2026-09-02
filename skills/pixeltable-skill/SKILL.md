@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.6.0
+  version: 2.7.0
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -46,7 +46,7 @@ One application file (`app.py`) is the backend. The loop is Declare, Experiment,
 
 - **Declare:** `TableModel` in `app.py`, then `pxt schema update`. Creates tables. Does not start HTTP.
 - **Experiment:** insert a sample, `.select()`, `pxt dashboard`, `pxt schema diff`. Compute runs on insert. After Serve: curl POST.
-- **Serve:** `pxt service update`. `pxt service list` prints the local URL. A `pxt://` target is refused.
+- **Serve:** `pxt service update` (local or `pxt://`). `pxt service list` prints the URL. `pxt service run` is local only.
 
 Hosted packaging is `pxt db update` (image, workers). It is not Experiment.
 
@@ -61,11 +61,18 @@ pxt schema update app.py agent
 pxt service update app.py agent
 ```
 
+If you are not using the scaffold:
+
+```bash
+pip install 'pixeltable[serve]>=0.7.4'
+pxt init
+```
+
 Video: `uvx pixeltable-new myapp --video`, then TARGET `videointel`.
 
 `agent` is a catalog directory, not a folder on disk. The scaffold writes `pixeltable.toml`. If you copied files by hand, `pxt init` first. Schema does not start HTTP. Service does not create tables.
 
-Same file on Cloud: `pxt schema update app.py pxt://org:db`. `pxt db update` packs the hosted image and workers; it is not Experiment. `pxt service` stays local. Experiment on Cloud is dashboard insert. [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
+Same file on Cloud: `pxt db update pxt://org:db`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. `pxt db update` packs the hosted image and workers; it is not Experiment. `pxt service run` is local only. Experiment on Cloud is dashboard insert plus `pxt schema diff`. [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
 
 Do not download vertical templates. Add tables in `app.py`. [cli.md](references/cli.md).
 
@@ -138,15 +145,22 @@ Full route example: [workflows.md](references/workflows.md).
 | FastAPIRouter | [workflows.md](references/workflows.md) |
 | Wrong stack | [anti-patterns.md](references/anti-patterns.md) |
 
-Add video, audio, agents, or a UI by editing `app.py` (iterators: `frame_iterator`, `audio_splitter`, `document_splitter`). Starter-kit [`examples/`](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/examples) has video frames + CLIP and an agent-as-table. Copy into `app.py`. Do not paste a second apply path.
+Add video, audio, agents, or a UI by editing `app.py` (iterators: `frame_iterator`, `audio_splitter`, `document_splitter`). Starter kit [`chat-agent/`](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/chat-agent) and [`video-search/`](https://github.com/pixeltable/pixeltable-starter-kit/tree/main/video-search). Copy into `app.py`. Do not paste a second apply path.
 
-## Critical warnings
+## API traps
 
-1. `openai.vision` does not exist. Use `chat_completions` with `image_url` blocks.
-2. Cast to `pxt.String` before embedding AI outputs: `.text.astype(pxt.String)`.
-3. `if_exists='ignore'` will not fix a wrong column. `drop_column()` then recreate.
-4. `from pixeltable.functions.video import frame_iterator`, not `FrameIterator`.
-5. `t.col.similarity(string=query)`, not positional.
+| Wrong | Correct |
+|-------|---------|
+| `openai.vision(...)` | `chat_completions` with `image_url` |
+| `from pixeltable.iterators import FrameIterator` | `from pixeltable.functions.video import frame_iterator` |
+| `similarity(query)` | `similarity(string=query)` |
+| Re-run with `if_exists='ignore'` to fix logic | `drop_column` then recreate |
+| `pxt.Required[pxt.String]` | Non-nullable by default. Optional: `T \| None` |
+| `.select(..., sim=sim)` in `@pxt.query` | `score=sim` |
+| TOML routes or a retired serve CLI | `FastAPIRouter` + `pxt schema update` + `pxt service update` |
+| `add_embedding_index()` in `app.py` | `__indexes__` on the TableModel |
+
+Extract the field (`.text`, `.choices[0].message.content`). Cast Json with `.astype(pxt.String)` only before embedding or concatenating.
 
 ## Notebook / REPL appendix
 
@@ -193,23 +207,9 @@ Views: `document_splitter`, `frame_iterator` (from `pixeltable.functions.video`)
 
 Query: `t.where(...).select(...).collect()`. Similarity: `t.content.similarity(string=query)`. In `@pxt.query`, alias as `score=sim`.
 
-UDFs are recorded as a module path relative to the project root (`app.excerpt`). Hosted: `pxt db update` packs the image, then `pxt schema update app.py pxt://org:db`. `pxt service` stays local.
+UDFs are recorded as a module path relative to the project root (`app.excerpt`).
 
 Always `if_exists='ignore'` on notebook `create_*` / `add_*`. Failed cells: `t.recompute_columns(columns=['summary'], where=t.summary.errortype != None)`.
-
-## Common pitfalls
-
-| Wrong | Correct |
-|-------|---------|
-| `openai.vision(...)` | `chat_completions` with `image_url` |
-| `from pixeltable.iterators import FrameIterator` | `from pixeltable.functions.video import frame_iterator` |
-| Index a Json transcript column | `.text.astype(pxt.String)` first |
-| Re-run with `if_exists='ignore'` to fix logic | `drop_column` then recreate |
-| `similarity(query)` | `similarity(string=query)` |
-| `pxt.Required[pxt.String]` | Non-nullable by default. Optional: `T \| None` |
-| `.select(..., sim=sim)` in `@pxt.query` | `score=sim` |
-| TOML routes or a retired serve CLI | `FastAPIRouter` + `pxt schema update` + `pxt service update` |
-| `add_embedding_index()` in `app.py` | `__indexes__` on the TableModel |
 
 ## pxt CLI
 

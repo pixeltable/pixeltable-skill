@@ -25,9 +25,6 @@ t.add_computed_column(
 )
 ```
 
-3. Critical correctness rules:
-   - `openai.vision` does NOT exist : for image input use `chat_completions` with `image_url` content blocks.
-   - Set API keys via config/env, not hard-coded.
-   - To change a column's logic, `drop_column()` then recreate : re-running with `if_exists='ignore'` is a silent no-op.
+3. Set API keys via config/env, not hard-coded. API traps: [SKILL.md](../skills/pixeltable-skill/SKILL.md#api-traps). Stack: [anti-patterns.md](../skills/pixeltable-skill/references/anti-patterns.md).
 
 4. After adding, show how to insert a row and `collect()` the result so the user can verify output shape.

@@ -164,6 +164,7 @@ agent.add_computed_column(response=chat_completions(
 ), if_exists='ignore')
 agent.add_computed_column(tool_output=invoke_tools(tools, agent.response), if_exists='ignore')
 agent.add_computed_column(final=chat_completions(
+    # tool_output is untyped Json; concat with String needs a cast
     messages=[{'role': 'user', 'content': agent.prompt + '\n\nContext: ' + agent.tool_output.astype(pxt.String)}],
     model='gpt-4o'
 ).choices[0].message.content, if_exists='ignore')
@@ -397,6 +398,5 @@ context = memory.where(memory.session_id == sid).order_by(sim, asc=False).limit(
 
 ## Cross-References
 
-- [SKILL.md → Critical warnings](../SKILL.md#critical-warnings)
-- [SKILL.md → Common pitfalls](../SKILL.md#common-pitfalls)
+- [SKILL.md → API traps](../SKILL.md#api-traps)
 - [core-api.md → Common Pitfalls](core-api.md#common-pitfalls)

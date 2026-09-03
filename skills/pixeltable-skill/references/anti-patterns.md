@@ -59,6 +59,7 @@ Chunking is `document_splitter`. Search is `.similarity()`. Tools are `pxt.tools
 |-------|---------|
 | `python app.py` for models + router | `pxt schema update` then `pxt service update` |
 | `add_embedding_index()` in `app.py` | `__indexes__` on the model |
+| `pxt.create_table()` / `get_table()` at import in `app.py` | `TableModel` + `pxt schema update` |
 | Drop + recreate tables as "init" | Edit `app.py`, then `pxt schema update` |
 | `if_exists='ignore'` to fix logic | Notebook: `drop_column`. App: `--allow-destructive` |
 | Hard-coded `api_key=` | Env or config.toml |

@@ -67,7 +67,7 @@ ingest.bind('my_app')
 app.include_router(ingest)
 ```
 
-- `add_insert_route`: POST from model columns. `uploadfile_inputs` for files. Persists the row.
+- `add_insert_route`: POST from model columns. `uploadfile_inputs` for files. Persists the row. A file column is `uploadfile_inputs` or `inputs`, not both.
 - `add_compute_route`: same request shape as insert, but `Table.compute()` — no row stored
 - `add_query_route`: wraps `@pxt.query`. Default `{ "rows": [...] }`. `one_row=True` returns the object (0 rows → 404, >1 → 409). `return_fileresponse=True` returns the one media column as a file (implies one-row)
 - `add_delete_route`: POST delete by primary key

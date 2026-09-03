@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.7.3
+  version: 2.7.4
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -140,6 +140,7 @@ Add video, audio, agents, or a UI by editing `app.py` (iterators: `frame_iterato
 | `recompute_columns(columns=['summary'])` | `t.recompute_columns('summary', errors_only=True)` |
 | TOML routes or a retired serve CLI | `FastAPIRouter` + `pxt schema update` + `pxt service update` |
 | `add_embedding_index()` in `app.py` | `__indexes__` on the TableModel |
+| `pxt.create_table()` / `get_table()` at import in `app.py` | `TableModel` + `pxt schema update`. Import must not mutate the catalog |
 
 Extract the field (`.text`, `.choices[0].message.content`). Cast Json with `.astype(pxt.String)` only before embedding or concatenating.
 

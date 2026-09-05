@@ -130,7 +130,7 @@ def main():
     #    "Wrong" column of the API-traps tables quote bad forms deliberately.
     sys.path.insert(0, str(ROOT / "hooks"))
     try:
-        from validate_antipatterns import CHECKS  # noqa: PLC0415
+        from validate_antipatterns import CHECKS
     except ImportError as e:  # pragma: no cover - the hook is part of the repo
         errors.append(f"cannot import hook checks: {e}")
         CHECKS = []

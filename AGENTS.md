@@ -30,11 +30,13 @@ Manifests: `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/
 - Start from `pxt init` then `pxt service example --out app.py` (or `pxt schema example --brief`). Then `pxt schema update app.py my_app`. No template zoo. No starter kit.
 - `if_exists='ignore'` on notebook `create_*` / `add_*`.
 - No LangChain, pandas-as-store, or standalone vector DB patterns.
-- Keep SKILL.md under 500 lines.
-- Run `python3 scripts/validate_plugin.py` after structural changes.
+- Keep SKILL.md under 500 lines (enforced by `validate_plugin.py`).
+- Fenced ```python blocks in `skills/`, `agents/` and `commands/` must pass the hook's own `error` checks -- the validator imports `CHECKS` and runs them. Quote a wrong form in prose or a traps table, never in a code block.
+- Changing a computed column's expression in place is `UNSUPPORTED`. Rename the column, or drop and re-add it. `--allow-destructive` does not help.
+- Run `python3 scripts/validate_plugin.py` and `python3 tests/test_hooks.py` after any change.
 
 ## Do not
 
-- Add deprecated APIs (`FrameIterator`, `openai.vision`, positional `.similarity()`)
+- Add deprecated APIs (anything under `pixeltable.iterators`, `openai.vision`, `pxt.Required`, positional `.similarity()`)
 - Point agents at `--template` names, `pixeltable-new`, the starter kit, or a second apply path
 - Let manifest versions drift

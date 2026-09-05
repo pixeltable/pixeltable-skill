@@ -278,7 +278,7 @@ Built-ins: `make_video`, `concat_videos_agg` (`pixeltable.functions.video`), `ma
 `requires_order_by` UDAs take the ordering expression as their **first positional argument**; passing `order_by=` raises. Two ship built in:
 
 ```python
-t.select(pxtf.video.make_video(t.pos, t.frame, fps=30))          # not make_video(t.frame, order_by=t.pos)
+t.select(pxtf.video.make_video(t.pos, t.frame, fps=30))          # t.pos orders; order_by= raises
 t.group_by(base).select(pxtf.image.stitch_tiles(t.pos, t.tile, t.tile_box, width, height))
 ```
 

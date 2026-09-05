@@ -125,6 +125,60 @@ def main():
         + "; ".join(f"{k}={v}" for k, v in sorted(versions.items())),
     )
 
+    # 6. The docs must not teach what the hook flags.
+    #    Only fenced python blocks are linted: an agent copies those. Prose and the
+    #    "Wrong" column of the API-traps tables quote bad forms deliberately.
+    sys.path.insert(0, str(ROOT / "hooks"))
+    try:
+        from validate_antipatterns import CHECKS  # noqa: PLC0415
+    except ImportError as e:  # pragma: no cover - the hook is part of the repo
+        errors.append(f"cannot import hook checks: {e}")
+        CHECKS = []
+    doc_roots = ["skills", "agents", "commands"]
+    fence = re.compile(r"^```(?:python|py)\n(.*?)^```", re.DOTALL | re.MULTILINE)
+    for root_name in doc_roots:
+        for md in sorted((ROOT / root_name).rglob("*.md")):
+            body = md.read_text(encoding="utf-8", errors="ignore")
+            for block in fence.findall(body):
+                for entry in CHECKS:
+                    pattern, severity, message, gate = entry
+                    if severity != "error":
+                        continue
+                    if gate is not None and not gate.search(block):
+                        continue
+                    hit = pattern.search(block)
+                    check(
+                        hit is None,
+                        f"{md.relative_to(ROOT)}: a python block matches a hook 'error' check "
+                        f"({hit.group(0).strip()!r} -- {message.split('.')[0]})"
+                        if hit
+                        else "",
+                    )
+
+    # 7. Documented pixeltable modules must be real, and not the deprecated shim.
+    KNOWN_MODULES = {
+        "anthropic", "array", "audio", "bedrock", "bfl", "date", "deepseek", "document",
+        "fabric", "fal", "fireworks", "gemini", "globals", "groq", "huggingface", "image",
+        "jina", "json", "llama_cpp", "math", "mistralai", "nebius", "net", "ollama",
+        "openai", "openrouter", "replicate", "runwayml", "string", "timestamp", "together",
+        "twelvelabs", "util", "uuid", "video", "vision", "vllm", "voyageai", "whisper",
+        "whisperx", "yolox",
+    }
+    mod_ref = re.compile(r"pixeltable\.functions\.(\w+)")
+    for root_name in doc_roots:
+        for md in sorted((ROOT / root_name).rglob("*.md")):
+            body = md.read_text(encoding="utf-8", errors="ignore")
+            for mod in sorted(set(mod_ref.findall(body))):
+                check(
+                    mod in KNOWN_MODULES,
+                    f"{md.relative_to(ROOT)}: unknown module pixeltable.functions.{mod}",
+                )
+
+    # 8. AGENTS.md caps SKILL.md length; nothing enforced it until now.
+    for sf in skill_files:
+        n = len(sf.read_text(encoding="utf-8", errors="ignore").splitlines())
+        check(n < 500, f"{sf.relative_to(ROOT)}: {n} lines, must stay under 500")
+
     if errors:
         print(f"FAIL ({len(errors)} of {checks} checks):", file=sys.stderr)
         for e in errors:

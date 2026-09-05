@@ -134,8 +134,9 @@ Add video, audio, agents, or a UI by editing `app.py` (iterators: `frame_iterato
 |-------|---------|
 | `openai.vision(...)` | Deprecated. Use `chat_completions` with `image_url` |
 | `from pixeltable.iterators import FrameIterator` | `from pixeltable.functions.video import frame_iterator` |
-| `similarity(query)` | `similarity(string=query)` |
-| Re-run with `if_exists='ignore'` to fix logic | Notebook: `drop_column` then recreate. App: edit `app.py`, then `pxt schema update --allow-destructive` |
+| `similarity(query)` | `similarity(string=query)`. Also `image=` / `audio=` / `video=` / `document=` / `vector=`; `idx=` picks among several indexes on one column |
+| Re-run with `if_exists='ignore'` to fix logic | Notebook: `add_computed_column(..., if_exists='replace')`. App: **rename** the column, then `pxt schema update --allow-destructive` |
+| Edit a computed column's expression in place, then `--allow-destructive` | Editing an existing column's expression is `UNSUPPORTED`; the flag does not help and the whole update applies nothing. Rename the column |
 | `pxt.Required[pxt.String]` | Non-nullable by default. Optional: `T \| None` |
 | `recompute_columns(columns=['summary'])` | `t.recompute_columns('summary', errors_only=True)` |
 | TOML routes or a retired serve CLI | `FastAPIRouter` + `pxt schema update` + `pxt service update` |

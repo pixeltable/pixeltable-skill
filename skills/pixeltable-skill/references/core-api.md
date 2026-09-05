@@ -58,7 +58,11 @@ t.delete(where=t.is_active == False)
 t.recompute_columns('summary', errors_only=True)
 ```
 
-App: change a computed column in `app.py`, then `pxt schema update --allow-destructive`. Notebook: `drop_column` then recreate. `if_exists='ignore'` does not fix logic.
+Changing a computed column's logic:
+
+- **App.** Editing an existing column's expression in place is reported `UNSUPPORTED`. `--allow-destructive` does **not** help, and one unsupported table makes the whole `pxt schema update` apply nothing. **Rename** the column instead: the old name is a destructive drop, the new one an additive add, so it lands in one pass with `--allow-destructive`. Or drop it in one pass and re-add it in a second. Either way the data is destroyed and recomputed. (`pxt.move()` is for a genuine rename, where you keep the values.)
+- **Notebook.** `t.add_computed_column(summary=..., if_exists='replace')` replaces it in one call. It raises `AlreadyExistsError` if the column has dependents or is a base-table column; then drop the dependents, or `drop_column` and recreate.
+- `if_exists='ignore'` never fixes logic -- it skips the call.
 
 ## Querying
 
@@ -161,6 +165,8 @@ t.add_embedding_index('body', embedding=embed_fn, if_exists='ignore')
 sim = t.body.similarity(string=query)
 t.where(sim > 0.3).order_by(sim, asc=False).limit(10).select(t.body, score=sim).collect()
 ```
+
+`similarity()` takes exactly one of `string=`, `image=`, `audio=`, `video=`, `document=`, `vector=` (a raw array of the index's dimensionality). A positional argument is deprecated. When a column carries more than one embedding index, `idx='name'` picks one.
 
 CLIP: `clip.using(model_id='openai/clip-vit-base-patch32')` then `similarity(string=...)` or `similarity(image=...)`. Metrics: `cosine` (default), `ip`, `l2`.
 

@@ -19,4 +19,4 @@ Method:
 4. Keep transformations declarative. No `for` loops calling models. No pandas intermediate store.
 5. After writing `app.py`: `pxt schema update app.py my_app`. Then insert (`t.insert`, `pxt dashboard`) and serve (`pxt service update`).
 
-Hard rules: to change a computed column's logic you must drop it then recreate. Verify provider imports against `providers.md`. Deliver the model classes and how to extend them in the same file.
+Hard rules: a computed column's expression cannot be edited in place. In an app, rename the column (one `pxt schema update --allow-destructive` pass) or drop and re-add it (two passes) -- editing it in place is `UNSUPPORTED` and applies nothing. In a notebook, `add_computed_column(..., if_exists='replace')`, which needs the column to have no dependents. Verify provider imports against `providers.md`. Deliver the model classes and how to extend them in the same file.

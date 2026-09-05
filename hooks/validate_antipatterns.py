@@ -29,11 +29,14 @@ CHECKS = [
         ),
     ),
     (
-        re.compile(r"\.similarity\(\s*(?!string\s*=)[^)\s]"),
+        re.compile(
+            r"\.similarity\(\s*(?!(?:string|image|audio|video|document|vector|idx)\s*=)[^)\s]"
+        ),
         "error",
         (
-            "Positional `.similarity(...)` call. Always use the keyword form: "
-            "`column.similarity(string=query)`."
+            "Positional `.similarity(...)` call. Always use a keyword: "
+            "`similarity(string=...)`, or `image=` / `audio=` / `video=` / `document=` / `vector=` "
+            "for the other modalities (`idx=` selects among several indexes on one column)."
         ),
     ),
     (

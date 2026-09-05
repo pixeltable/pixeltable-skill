@@ -13,6 +13,8 @@ Types are non-nullable by default. Optional is `T | None`. Do not use `pxt.Requi
 - [Indexes](#indexes)
 - [UDFs](#udfs)
 - [UDAs](#udas)
+- [Built-in functions](#built-in-functions)
+- [Import and export](#import-and-export)
 - [Serving](#serving)
 - [Tools](#tools)
 - [Pitfalls](#pitfalls)
@@ -48,9 +50,30 @@ t = pxt.create_table('dir.docs', {
 
 Types: `String`, `Int`, `Float`, `Bool`, `Image`, `Video`, `Audio`, `Document`, `Json`, `Timestamp`, `Date`, `UUID`, `Binary`, `Array[(3, 4), pxt.Float]`.
 
+`pxt.Column(...)` expresses what a bare annotation cannot:
+
+| Param | Purpose |
+|-------|---------|
+| `type=` | Explicit type where there is no annotation |
+| `value=` | Computed expression (a plain assignment does the same) |
+| `primary_key=True` | Part of the primary key |
+| `stored=False` | Computed on read, never materialized |
+| `media_validation=` | `'on_write'` (default) validates on insert; `'on_read'` defers to first read |
+| `destination=` | Object store for computed media: `s3`, `gs`, `az`, `r2`, `b2`, `tigris`, `http`, a local path, or `pxtfs` |
+| `comment=`, `custom_metadata=` | Docs / arbitrary JSON-serializable metadata |
+
+```python
+thumbnail = pxt.Column(value=cover.rotate(90), stored=False)
+scan = pxt.Column(type=pxt.Image, media_validation='on_read', comment='validated lazily')
+```
+
+The model class itself takes `name=`, `base=`, `iterator=`, plus `media_validation=`, `comment=`, `custom_metadata=`, `has_default_idxs=`.
+
 From a file: `pxt.create_table('dir.data', source='data.csv', if_exists='ignore')`.
 
-Insert: `t.insert([{...}])`. `return_rows=True` returns computed columns on the status object.
+Insert: `t.insert([{...}])`. `return_rows=True` returns computed columns on the status object. `source=` also takes a path or URL (`source_format='csv'|'excel'|'parquet'|'json'`, `schema_overrides=`), a DataFrame, a list of dicts or Pydantic models, another table or query, or a HF dataset.
+
+**Do not let one bad row abort a batch.** `insert(..., on_error='ignore')` and `add_computed_column(..., on_error='ignore')` keep the row, leave the failed cell `None`, and record the reason in `t.<col>.errortype` / `t.<col>.errormsg` (stored computed or media columns only). `t.<col>.fileurl` / `.localpath` locate a media cell.
 
 ```python
 t.update({'score': 1.0}, where=t.category == 'important')
@@ -104,6 +127,21 @@ Extract the field (`.text`, `.choices[0].message.content`). Cast Json with `.ast
 
 ## Views
 
+A view is either a **filter** over a base or an **iterator** that expands each base row into many. Rows follow the base; you never insert into a view.
+
+### Filtered views
+
+`base=` takes a query over another model, not just the model:
+
+```python
+class Titled(TableModel, name='titled', base=Docs.where(Docs.title != '')):
+    headline = Docs.title_upper + '!'      # may reference the base's computed columns
+```
+
+Notebook: `pxt.create_view('dir.titled', t.where(t.title != ''), if_exists='ignore')`. Add `is_snapshot=True` to freeze it.
+
+### Iterator views
+
 Iterator output columns are reserved. Do not redeclare them. `string_splitter` / `document_splitter(..., separators='sentence')` need spaCy. `token_limit` needs `tiktoken`.
 
 ```python
@@ -145,9 +183,25 @@ items = pxt.create_view('dir.items', t, iterator=list_iterator(t.tags), if_exist
 
 App: `base=` plus `iterator=` on the model. See [workflows.md](workflows.md).
 
+Every iterator view also gets `pos`. The nine that ship:
+
+| Iterator | Module | Output columns |
+|----------|--------|----------------|
+| `document_splitter` | `functions.document` | subset of `text, image, title, heading, sourceline, page, bounding_box` per `elements=` / `metadata=` |
+| `frame_iterator` | `functions.video` | `frame` (unstored), `frame_attrs` (`.time`, `.index`, `.key_frame`, ...) |
+| `video_splitter` | `functions.video` | `segment_start`, `segment_start_pts`, `segment_end`, `segment_end_pts`, `video_segment` |
+| `audio_splitter` | `functions.audio` | `segment_start`, `segment_end`, `audio_segment` |
+| `string_splitter` | `functions.string` | `text` |
+| `list_iterator` | `functions.json` | keys of `elements=`, or the kwarg names |
+| `tile_iterator` | `functions.image` | `tile` (unstored), `tile_coord`, `tile_box` |
+| `sam3_for_video_segmentation` | `functions.huggingface` | `frame`, `frame_attrs`, `object_ids`, `labels`, `scores`, `boxes`, `masks` |
+| `legacy_frame_iterator` | `functions.video` | `frame`, `frame_idx`, `pos_msec`, `pos_frame` -- back-compat only |
+
 ## Indexes
 
 App: `__indexes__ = [pxt.EmbeddingIndex(col, embedding=fn, name='...'), pxt.BtreeIndex(col)]`. Do not call `add_embedding_index()` in `app.py`. Index UDFs use `.using(...)`.
+
+One `embedding=` covers a single modality. For a column searchable by more than one, pass the per-modality functions instead: `string_embed=`, `image_embed=`, `audio_embed=`, `video_embed=`, `document_embed=`. Also `metric=` (`'cosine'` default), `precision=` (`'fp16'` default, `'fp32'` available). **The DSL names an index `name=`; `add_embedding_index()` names it `idx_name=`.**
 
 ```python
 from pixeltable.functions.openai import embeddings
@@ -218,7 +272,14 @@ t.group_by(t.category).select(t.category, avg_val=avg_int(t.value)).collect()
 | `allows_std_agg` | `True` | Plain `SELECT agg(col)` |
 | `allows_window` | `False` | `order_by=` / `group_by=` window calls |
 
-Built-ins: `make_video`, `concat_videos_agg` (`pixeltable.functions.video`), `make_list` (`json`), `mean_ap` (`vision`). Scalar `concat_videos` takes a **list** of videos.
+Built-ins: `make_video`, `concat_videos_agg` (`pixeltable.functions.video`), `make_list` (`json`), `stitch_tiles` (`image`), `mean_ap` (`vision`). Scalar `concat_videos` takes a **list** of videos.
+
+`requires_order_by` UDAs take the ordering expression as their **first positional argument**; passing `order_by=` raises. Two ship built in:
+
+```python
+t.select(pxtf.video.make_video(t.pos, t.frame, fps=30))          # not make_video(t.frame, order_by=t.pos)
+t.group_by(base).select(pxtf.image.stitch_tiles(t.pos, t.tile, t.tile_box, width, height))
+```
 
 ## Serving
 

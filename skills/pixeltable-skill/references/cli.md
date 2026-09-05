@@ -181,6 +181,8 @@ pxt service stop ingest
 
 `update` starts one background process per service, each on its own port. It always prompts unless `-f`. Adding a route is additive; changing or removing one needs `--allow-destructive`. OpenAPI docs are at `/docs`. `pxt service run` refuses a `pxt://` TARGET.
 
+**Tracing.** `service diff`, `service update` and `service run` take `--otel`, which emits OpenTelemetry traces and needs `pip install 'pixeltable[otel]'` (`serve` and `otel` are the only two extras). The setting belongs to the running service, not to the file: a service already running without it restarts when `update` is given the flag, dropping the flag restarts it again, and `diff --otel` reports tracing that is off but was asked for as a pending change.
+
 Do **not** write `[tool.pixeltable.service]` TOML or call `pxt serve`.
 
 ## Cloud (`pxt db`, `pxt org`, `pxt secret`)

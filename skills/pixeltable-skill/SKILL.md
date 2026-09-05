@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.7.4
+  version: 2.8.0
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -87,6 +87,7 @@ def excerpt(text: str, n: int = 12) -> str:
 
 
 class Docs(TableModel, name='docs'):
+    doc_id: pxt.Int
     title: pxt.String
     body: pxt.String | None
     title_upper = pxtf.string.upper(title)
@@ -95,7 +96,8 @@ class Docs(TableModel, name='docs'):
 
 ingest = FastAPIRouter(name='ingest')
 ingest.add_insert_route(
-    Docs, path='/docs', inputs=[Docs.title, Docs.body], outputs=[Docs.title_upper, Docs.summary]
+    Docs, path='/docs', inputs=[Docs.doc_id, Docs.title, Docs.body],
+    outputs=[Docs.title_upper, Docs.summary],
 )
 ingest.add_compute_route(Docs, path='/titles', inputs=[Docs.title], outputs=[Docs.title_upper])
 ```
@@ -132,15 +134,16 @@ Add video, audio, agents, or a UI by editing `app.py` (iterators: `frame_iterato
 
 | Wrong | Correct |
 |-------|---------|
-| `openai.vision(...)` | Deprecated. Use `chat_completions` with `image_url` |
-| `from pixeltable.iterators import FrameIterator` | `from pixeltable.functions.video import frame_iterator` |
+| `openai.vision(...)` | Deprecated (the only deprecated function in `pixeltable.functions`). Use `chat_completions` with `image_url`, or `responses` |
+| `from pixeltable.iterators import ...` | The whole `pixeltable.iterators` package is a deprecated shim (`FrameIterator`, `VideoSplitter`, `DocumentSplitter`, `StringSplitter`, `AudioSplitter`, `TileIterator`). Import the function from `pixeltable.functions.*` -- e.g. `from pixeltable.functions.video import frame_iterator` |
 | `similarity(query)` | `similarity(string=query)`. Also `image=` / `audio=` / `video=` / `document=` / `vector=`; `idx=` picks among several indexes on one column |
 | Re-run with `if_exists='ignore'` to fix logic | Notebook: `add_computed_column(..., if_exists='replace')`. App: **rename** the column, then `pxt schema update --allow-destructive` |
 | Edit a computed column's expression in place, then `--allow-destructive` | Editing an existing column's expression is `UNSUPPORTED`; the flag does not help and the whole update applies nothing. Rename the column |
 | `pxt.Required[pxt.String]` | Non-nullable by default. Optional: `T \| None` |
 | `recompute_columns(columns=['summary'])` | `t.recompute_columns('summary', errors_only=True)` |
 | TOML routes or a retired serve CLI | `FastAPIRouter` + `pxt schema update` + `pxt service update` |
-| `add_embedding_index()` in `app.py` | `__indexes__` on the TableModel |
+| `add_embedding_index()` in `app.py` | `__indexes__` on the TableModel. Note the DSL names an index `name=`, the SDK `idx_name=` |
+| `make_video(order_by=...)` / `stitch_tiles(order_by=...)` | Both are `requires_order_by` UDAs: the ordering expression is the **first positional** argument -- `make_video(t.pos, t.frame, fps=25)`. `order_by=` raises |
 | `pxt.create_table()` / `get_table()` at import in `app.py` | `TableModel` + `pxt schema update`. Import must not mutate the catalog |
 
 Extract the field (`.text`, `.choices[0].message.content`). Cast Json with `.astype(pxt.String)` only before embedding or concatenating.

@@ -202,7 +202,16 @@ Every iterator view also gets `pos`. The nine that ship:
 
 App: `__indexes__ = [pxt.EmbeddingIndex(col, embedding=fn, name='...'), pxt.BtreeIndex(col)]`. Do not call `add_embedding_index()` in `app.py`. Index UDFs use `.using(...)`.
 
-One `embedding=` covers a single modality. For a column searchable by more than one, pass the per-modality functions instead: `string_embed=`, `image_embed=`, `audio_embed=`, `video_embed=`, `document_embed=`. Also `metric=` (`'cosine'` default), `precision=` (`'fp16'` default, `'fp32'` available). **The DSL names an index `name=`; `add_embedding_index()` names it `idx_name=`.**
+`embedding=` is tried against every modality and registers each one whose signature it matches, so a bidirectional function covers them all at once. That is why a CLIP index on an **image** column answers `similarity(string=...)`:
+
+```python
+clip_embed = pxtf.huggingface.clip.using(model_id='openai/clip-vit-base-patch32')
+__indexes__ = [pxt.EmbeddingIndex(frame, embedding=clip_embed, name='frames_clip')]
+# frame is an Image column, yet this resolves:
+Frames.frame.similarity(string='a red bicycle')
+```
+
+Reach for the per-modality parameters -- `string_embed=`, `image_embed=`, `audio_embed=`, `video_embed=`, `document_embed=` -- when you want a *different* function per modality, or when you want a hard error: a per-modality argument that does not resolve raises, while `embedding=` quietly skips the modalities it cannot serve. Also `metric=` (`'cosine'` default), `precision=` (`'fp16'` default, `'fp32'` available). **The DSL names an index `name=`; `add_embedding_index()` names it `idx_name=`.**
 
 ```python
 from pixeltable.functions.openai import embeddings

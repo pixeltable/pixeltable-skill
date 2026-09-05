@@ -59,8 +59,7 @@ Types: `String`, `Int`, `Float`, `Bool`, `Image`, `Video`, `Audio`, `Document`, 
 | `primary_key=True` | Part of the primary key |
 | `stored=False` | Computed on read, never materialized |
 | `media_validation=` | `'on_write'` (default) validates on insert; `'on_read'` defers to first read |
-| `destination=` | Object store for computed media: `s3`, `gs`, `az`, `r2`, `b2`, `tigris`, `http`, a local path, or `pxtfs` |
-| `comment=`, `custom_metadata=` | Docs / arbitrary JSON-serializable metadata |
+| `destination=` | Object store for computed media: `s3`, `gs`, `az`, `r2`, `b2`, `tigris`, `http`, a local path, or `pxtfs`. Also takes a `ConfigVar[URI]`; `add_computed_column(destination=)` takes only `str \| Path` |
 
 ```python
 thumbnail = pxt.Column(value=cover.rotate(90), stored=False)
@@ -183,6 +182,8 @@ items = pxt.create_view('dir.items', t, iterator=list_iterator(t.tags), if_exist
 
 App: `base=` plus `iterator=` on the model. See [workflows.md](workflows.md).
 
+An unbound model class builds queries (`.where()`, `.select()`, `.order_by()`, `.group_by()`, `.limit()`, `.sample()`, `.join()`) -- that is what makes `base=Docs.where(...)` work. Anything that touches rows (`.collect()`, `.insert()`, `.count()`, `.update()`) needs the table to exist: use `pxt.get_table()`, or let a bound router reach it.
+
 Every iterator view also gets `pos`. The nine that ship:
 
 | Iterator | Module | Output columns |
@@ -194,8 +195,8 @@ Every iterator view also gets `pos`. The nine that ship:
 | `string_splitter` | `functions.string` | `text` |
 | `list_iterator` | `functions.json` | keys of `elements=`, or the kwarg names |
 | `tile_iterator` | `functions.image` | `tile` (unstored), `tile_coord`, `tile_box` |
-| `sam3_for_video_segmentation` | `functions.huggingface` | `frame`, `frame_attrs`, `object_ids`, `labels`, `scores`, `boxes`, `masks` |
-| `legacy_frame_iterator` | `functions.video` | `frame`, `frame_idx`, `pos_msec`, `pos_frame` -- back-compat only |
+
+`legacy_frame_iterator` (`frame_idx` / `pos_msec` / `pos_frame`) and `sam3_for_video_segmentation` also exist; prefer `frame_iterator`.
 
 ## Indexes
 
@@ -281,6 +282,25 @@ t.select(pxtf.video.make_video(t.pos, t.frame, fps=30))          # not make_vide
 t.group_by(base).select(pxtf.image.stitch_tiles(t.pos, t.tile, t.tile_box, width, height))
 ```
 
+## Built-in functions
+
+Before writing a UDF, check whether the operation already ships. `pixeltable.functions` (`pxtf`) carries `string`, `json`, `math`, `date`, `timestamp`, `array`, `uuid`, `image`, `audio`, `document`, `net`, `vision`, and `video` (which splits into `video.editing`, `video.filters`, `video.scene_detect`). Import the module and read its docs rather than guessing a name.
+
+The one path worth spelling out, because nothing else documents it -- video to transcript:
+
+```python
+class Clips(TableModel, name='clips'):
+    video: pxt.Video
+    audio = pxtf.video.extract_audio(video, format='mp3')
+    transcript = pxtf.openai.transcriptions(audio=audio, model='whisper-1').text
+```
+
+Also on video: `clip`, `segment_video`, `extract_frame`, `concat_videos`, `with_audio`, `get_duration`, `get_metadata`, plus the `filters` (`overlay_text`, `crop`, `resize`, `speed`, ...) and `scene_detect_*` families.
+
+## Import and export
+
+`pxt.io.import_{csv,json,parquet,excel,pandas,rows,sql,huggingface_dataset}` and `pxt.io.export_{csv,json,parquet,sql,iceberg,lancedb,images_as_fo_dataset}`. Do not hand-roll a reader or writer.
+
 ## Serving
 
 `from pixeltable.serving import FastAPIRouter`. Start from `pxt service example --out app.py`. `add_update_route` / `add_delete_route` need a primary key (or `match_columns=`).
@@ -313,7 +333,7 @@ tools = pxt.tools(search_docs, lookup_fn)
 # invoke_tools is per provider: openai.invoke_tools vs anthropic.invoke_tools
 ```
 
-MCP: `pxt.mcp_udfs(...)`. Keys: env or [Configuration](https://docs.pixeltable.com/platform/configuration), not `api_key=` in calls.
+MCP: `pxt.mcp_udfs(url)` returns one UDF per remote tool over streamable HTTP; tools returning images or audio are not supported. Keys: env or [Configuration](https://docs.pixeltable.com/platform/configuration), not `api_key=` in calls.
 
 ## Pitfalls
 

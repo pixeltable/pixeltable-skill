@@ -58,6 +58,7 @@ First run: [Quickstart](https://docs.pixeltable.com/overview/quick-start). Why: 
 pip install 'pixeltable[serve]'   # Python 3.11+
 pxt init
 pxt service example --out app.py
+pxt schema check app.py           # validates the file; warns if 'app' is shadowed
 pxt schema update app.py my_app
 pxt service update app.py my_app
 pxt service list                  # assigned port; do not hard-code :8000
@@ -128,7 +129,7 @@ RAG, views, and search: [workflows.md](references/workflows.md). Do not add Hugg
 | FastAPIRouter | [workflows.md](references/workflows.md) |
 | Wrong stack | [anti-patterns.md](references/anti-patterns.md) |
 
-Add video, audio, agents, or a UI by editing `app.py` (iterators: `frame_iterator`, `audio_splitter`, `document_splitter`). Start from `pxt service example` or `pxt schema example`. Do not invent a second `pxt schema update` path.
+Add video, audio, agents, or a UI by editing `app.py`. A view is either a filter (`base=Docs.where(...)`) or an iterator (`frame_iterator`, `audio_splitter`, `document_splitter`, `video_splitter`, `string_splitter`, `list_iterator`, `tile_iterator`). Check `pixeltable.functions` before writing a UDF. Start from `pxt service example` or `pxt schema example`. Do not invent a second `pxt schema update` path.
 
 ## API traps
 
@@ -139,6 +140,7 @@ Add video, audio, agents, or a UI by editing `app.py` (iterators: `frame_iterato
 | `similarity(query)` | `similarity(string=query)`. Also `image=` / `audio=` / `video=` / `document=` / `vector=`; `idx=` picks among several indexes on one column |
 | Re-run with `if_exists='ignore'` to fix logic | Notebook: `add_computed_column(..., if_exists='replace')`. App: **rename** the column, then `pxt schema update --allow-destructive` |
 | Edit a computed column's expression in place, then `--allow-destructive` | Editing an existing column's expression is `UNSUPPORTED`; the flag does not help and the whole update applies nothing. Rename the column |
+| `t.summary_errortype` | `t.summary.errortype` / `t.summary.errormsg`, on stored computed or media columns. `t.<col>.fileurl` / `.localpath` for media |
 | `pxt.Required[pxt.String]` | Non-nullable by default. Optional: `T \| None` |
 | `recompute_columns(columns=['summary'])` | `t.recompute_columns('summary', errors_only=True)` |
 | TOML routes or a retired serve CLI | `FastAPIRouter` + `pxt schema update` + `pxt service update` |
@@ -202,6 +204,7 @@ Always `if_exists='ignore'` on notebook `create_*` / `add_*`. Failed cells: `t.r
 ```bash
 pxt init
 pxt service example --out app.py
+pxt schema check app.py
 pxt schema update app.py my_app
 pxt service update app.py my_app
 pxt service list

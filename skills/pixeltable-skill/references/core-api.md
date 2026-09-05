@@ -17,7 +17,6 @@ Types are non-nullable by default. Optional is `T | None`. Do not use `pxt.Requi
 - [Import and export](#import-and-export)
 - [Serving](#serving)
 - [Tools](#tools)
-- [Pitfalls](#pitfalls)
 
 ## Tables
 
@@ -92,6 +91,8 @@ Aggregates run in queries, not computed columns:
 t.select(t.amount.sum()).collect()
 t.group_by(t.region).select(t.region, total=t.amount.sum()).collect()
 ```
+
+`@pxt.query` compiles at decoration time: do not `.collect()` or `get_table()` a table that does not exist yet inside one.
 
 Local handle: `pxt.get_table('my_app.docs')`. Cloud: `pxt.get_table('pxt://org:db/docs')`.
 
@@ -294,24 +295,13 @@ Do not hand-roll a reader or writer -- check `pxt.io.import_*` / `export_*` firs
 
 `from pixeltable.serving import FastAPIRouter`. Start from `pxt service example --out app.py`. `add_update_route` / `add_delete_route` need a primary key (or `match_columns=`).
 
+Routes: `add_insert_route` (stores the row), `add_compute_route` (same request shape, computes without storing), `add_update_route`, `add_delete_route`, `add_query_route` (wraps a `@pxt.query`).
+
 ```python
-from pixeltable.serving import FastAPIRouter
-
-ingest = FastAPIRouter(name='ingest')
-ingest.add_insert_route(Docs, path='/docs', inputs=[Docs.title, Docs.body], outputs=[Docs.title_upper])
-ingest.add_compute_route(Docs, path='/titles', inputs=[Docs.title], outputs=[Docs.title_upper])
 ingest.add_update_route(Docs, path='/update', inputs=[Docs.title], outputs=[Docs.title])
-ingest.add_delete_route(Docs, path='/delete')
-
-@pxt.query
-def search_docs(query_text: str):
-    sim = Docs.body.similarity(string=query_text)
-    return Docs.where(sim > 0.3).order_by(sim, asc=False).select(text=Docs.body, score=sim).limit(20)
-
-ingest.add_query_route(path='/search', query=search_docs, method='post')
 ```
 
-`background=True` returns `{ "id", "job_url" }`. Poll `job_url`; status is `pending` | `done` | `error` (not `succeeded`). JSON media fields are `{prefix}/_pxt/media/...` URLs. `add_compute_route` computes without inserting. `add_query_route(..., one_row=True, return_fileresponse=True)` returns one media file. Details: [workflows.md](workflows.md). Call `pxt.get_table()` inside custom FastAPI handlers. Do not `python app.py` if the file only declares models and routers. After a schema change, run `pxt service update` again.
+Call `pxt.get_table()` inside custom FastAPI handlers. Do not `python app.py` if the file only declares models and routers. After a schema change, run `pxt service update` again. Worked example, upload and media URLs, and `background=True` job polling: [workflows.md](workflows.md).
 
 ## Tools
 
@@ -323,13 +313,3 @@ tools = pxt.tools(search_docs, lookup_fn)
 ```
 
 MCP: `pxt.mcp_udfs(url)` returns one UDF per remote tool over streamable HTTP; tools returning images or audio are not supported. Keys: env or [Configuration](https://docs.pixeltable.com/platform/configuration), not `api_key=` in calls.
-
-## Pitfalls
-
-- `openai.vision` is deprecated. Use `chat_completions` with `image_url`.
-- `from pixeltable.iterators import FrameIterator` is wrong. Use `frame_iterator` from `pixeltable.functions.video`. Outputs: `pos`, `frame`, `frame_attrs` (`frame_attrs.time` is the timestamp). Not `frame_idx` / `pos_msec` / `pos_frame`.
-- `similarity(query)` is wrong. Use `similarity(string=query)`.
-- `@pxt.query` compiles at decoration time. Do not `.collect()` or `get_table()` a table that does not exist yet inside it.
-- Image in messages: `{'type': 'image_url', 'image_url': {'url': t.image}}`.
-- Data lives under `~/.pixeltable`, not in the repo.
-- Export (CSV / Parquet / SQL): [docs](https://docs.pixeltable.com/).

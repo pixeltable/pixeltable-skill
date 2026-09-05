@@ -9,13 +9,6 @@ Apps use `app.py` plus `pxt schema update`. This file is notebook form unless no
 **Right:**
 
 ```python
-from pixeltable.functions.openai import embeddings
-
-class Docs(TableModel, name='docs'):
-    document: pxt.Document
-    uuid = pxt.Column(value=pxtf.uuid.uuid7(), primary_key=True)
-
-
 class Chunks(
     TableModel,
     name='chunks',
@@ -26,6 +19,8 @@ class Chunks(
         pxt.EmbeddingIndex(text, embedding=embeddings.using(model='text-embedding-3-small'), name='chunks_embed')
     ]  # type: ignore[name-defined]
 ```
+
+Full pattern: [workflows.md](workflows.md).
 
 Chunking is `document_splitter`. Search is `.similarity()`. Tools are `pxt.tools()` + `invoke_tools()`.
 

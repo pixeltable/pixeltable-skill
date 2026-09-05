@@ -2,7 +2,7 @@
 
 Agent-focused map of the `pxt` CLI. Official source: [platform/cli.md](https://docs.pixeltable.com/platform/cli.md). Always run `pxt <command> --help` for version-specific flags -- never guess.
 
-Python 3.11+. There is no `pxt serve`, no `pxt deploy`, no `pxt app`, and no `[tool.pixeltable.service]` TOML.
+Python 3.11+. There is no `pxt serve`, no `pxt deploy`, no `pxt app`, no `pxt db create` (the CLI's own help string wrongly lists one -- `pxt db update` creates), and no `[tool.pixeltable.service]` TOML.
 
 ## Two surfaces
 
@@ -41,8 +41,10 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | **Schema** | `schema diff`, `schema update`, `schema prune`, `schema check`, `schema example` |
 | **Serving** | `service diff`, `service update`, `service run`, `service prune`, `service stop`, `service list`, `service check`, `service example` |
 | **Cloud** | `db`, `org`, `secret` |
-| **Interactive** | `shell` |
-| **Lifecycle** | `daemon`, `dashboard`, `health` |
+| **Interactive** | `shell`, `cd`, `pwd` |
+| **Lifecycle** | `daemon`, `dashboard`, `localproxy`, `health` |
+
+`cd` / `pwd` set and print a working directory prepended to relative paths. It is scoped to the invoking shell's process, so it does **not** survive between separate tool calls: always pass full catalog paths instead. `localproxy` manages the daemons behind `pxt://local:<db>` URIs and is not part of the normal app loop.
 
 ## Universal flags
 
@@ -119,6 +121,7 @@ pxt dashboard
 ## Mutation highlights
 
 - **`pxt drop`**: tables/views; `--cascade` drops dependent views; use `pxt drop-dir` for directories
+- **`pxt schema prune`**: never force-drops, and drops a view before its base; a table something outside the pruned set depends on is left in place
 - **`pxt drop-dir`**: `-r` for recursive directory removal
 - **`pxt revert`**: irreversible -- run `pxt history` first
 
@@ -146,7 +149,23 @@ pxt schema update app.py my_app --allow-destructive -f   # including column/inde
 pxt schema prune  app.py my_app -n
 ```
 
-`TARGET` is a catalog directory or a `pxt://org:db/...` URI. Destructive ops (drop column/index) need `--allow-destructive`. Exit `3` if the plan is destructive and that flag is missing. `UNSUPPORTED` diffs apply nothing (exit `1`).
+`TARGET` is a catalog directory or a `pxt://org:db/...` URI.
+
+Reading a diff: `+` created / added, `-` dropped, `~` migrated, `=` already matches, `!` cannot be migrated in place. Each op is marked safe, DESTRUCTIVE, or UNSUPPORTED.
+
+- **DESTRUCTIVE** (dropping a column or index) needs `--allow-destructive`; exit `3` without it. Applying is **all-or-nothing** -- without the flag a destructive plan applies *nothing at all*, not the safe parts.
+- **UNSUPPORTED** cannot be applied by any flag: a kind or iterator mismatch, or a column whose type or **value expression** changed. One unsupported table aborts the whole update, including other models' pending additive changes. Rename the column, or drop it and re-add it in a second pass. See [core-api.md](core-api.md#tables).
+
+The daemon imports the application file, so it must be readable there; the file's own directory joins `sys.path`, so it can import modules sitting next to it.
+
+**Run `pxt schema check APP` before the first update.** It validates the file with no catalog access, confirms every udf a column calls resolves to a module path another process can import, and warns when a top-level name in the project is shadowed:
+
+```
+app.py: an import of 'app' reads /.../site-packages/app/__init__.py, so this project
+cannot record a udf under 'app'; rename it
+```
+
+The project root goes on `sys.path` *after* installed packages, so an installed distribution of the same name wins. `check` warns and still exits `0`; `schema update`, `service update` and `service run` do **not** warn -- they import the wrong module silently. Generic single-file names collide most often, so heed the warning and rename.
 
 A CI drift check:
 
@@ -180,6 +199,8 @@ pxt service stop ingest
 ```
 
 `update` starts one background process per service, each on its own port. It always prompts unless `-f`. Adding a route is additive; changing or removing one needs `--allow-destructive`. OpenAPI docs are at `/docs`. `pxt service run` refuses a `pxt://` TARGET.
+
+**Tracing.** `service diff`, `service update` and `service run` take `--otel`, which emits OpenTelemetry traces and needs `pip install 'pixeltable[otel]'` (`serve` and `otel` are the only two extras). The setting belongs to the running service, not to the file: a service already running without it restarts when `update` is given the flag, dropping the flag restarts it again, and `diff --otel` reports tracing that is off but was asked for as a pending change.
 
 Do **not** write `[tool.pixeltable.service]` TOML or call `pxt serve`.
 

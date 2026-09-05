@@ -20,7 +20,15 @@ ORIENTATION = (
     "`FastAPIRouter` over hand-written endpoints. Use the `pixeltable` skill for full guidance."
 )
 
-DEP_FILES = ["pyproject.toml", "requirements.txt", "Pipfile", "setup.cfg", "setup.py", "uv.lock"]
+DEP_FILES = [
+    "pixeltable.toml",  # written by `pxt init`; the highest-precision marker
+    "pyproject.toml",
+    "requirements.txt",
+    "Pipfile",
+    "setup.cfg",
+    "setup.py",
+    "uv.lock",
+]
 
 
 def project_dir(payload):

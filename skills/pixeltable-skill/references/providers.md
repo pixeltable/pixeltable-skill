@@ -1,40 +1,57 @@
 # Pixeltable AI Provider Reference
 
-Functions live in `pixeltable.functions.*`. Use this table for import and output shape. In an app, embeddings go on `__indexes__`. In a notebook, `add_embedding_index()`.
+Every provider is a module under `pixeltable.functions.`. Call it in a computed column; never in a `for` loop. In an app, embeddings go on `__indexes__`; in a notebook, `add_embedding_index()`. Embedding and index functions are bound with `.using(...)`.
 
-## Quick Reference
+Keys come from the environment or [config](https://docs.pixeltable.com/platform/configuration), never `api_key=` in the call.
 
-| Provider | Import | Function | Extract answer |
-|----------|--------|----------|----------------|
-| OpenAI | `from pixeltable.functions.openai import chat_completions` | `chat_completions(messages=..., model='gpt-4o-mini')` | `.choices[0].message.content` |
-| OpenAI Embeddings | `from pixeltable.functions.openai import embeddings` | `embeddings.using(model='text-embedding-3-small')` | *(Array; use as embedding index)* |
-| OpenAI TTS | `from pixeltable.functions.openai import speech` | `speech(input=..., model='tts-1', voice='alloy')` | *(returns Audio directly)* |
-| OpenAI Transcription | `from pixeltable.functions.openai import transcriptions` | `transcriptions(audio=..., model='whisper-1')` | `.text` |
-| OpenAI DALL-E | `from pixeltable.functions.openai import image_generations` | `image_generations(prompt=..., model='dall-e-3')` | `.data[0]` *(PIL Image)* |
-| Anthropic | `from pixeltable.functions.anthropic import messages` | `messages(messages=..., model='claude-sonnet-4-20250514', max_tokens=1024)` | `.content[0].text` |
-| Gemini | `from pixeltable.functions.gemini import generate_content, embed_content` | `generate_content(contents=..., model='gemini-2.5-flash')` | *(returns dict; extract a field)* |
-| Together | `from pixeltable.functions.together import chat_completions` | `chat_completions(messages=..., model='meta-llama/...')` | `.choices[0].message.content` |
-| Fireworks | `from pixeltable.functions.fireworks import chat_completions` | `chat_completions(messages=..., model='accounts/fireworks/...')` | `.choices[0].message.content` |
-| Ollama | `from pixeltable.functions.ollama import chat, generate, embed` | `chat(messages=..., model='llama3.1')` | `.message.content` |
-| Mistral | `from pixeltable.functions.mistralai import chat_completions` | `chat_completions(messages=..., model='mistral-large-latest')` | `.choices[0].message.content` |
-| Groq | `from pixeltable.functions.groq import chat_completions` | `chat_completions(messages=..., model='openai/gpt-oss-20b')` | `.choices[0].message.content` |
-| DeepSeek | `from pixeltable.functions.deepseek import chat_completions` | `chat_completions(messages=..., model='deepseek-chat')` | `.choices[0].message.content` |
-| OpenRouter | `from pixeltable.functions.openrouter import chat_completions` | `chat_completions(messages=..., model='anthropic/claude-sonnet-4-20250514')` | `.choices[0].message.content` |
-| Hugging Face CLIP | `from pixeltable.functions.huggingface import clip` | `clip.using(model_id='openai/clip-vit-base-patch32')` | *(use as embedding index)* |
-| Hugging Face ST | `from pixeltable.functions.huggingface import sentence_transformer` | `sentence_transformer.using(model_id='all-MiniLM-L6-v2')` | *(use as embedding index)* |
-| Whisper (Local) | `from pixeltable.functions.whisper import transcribe` | `transcribe(audio=..., model='base')` | `.text` |
-| WhisperX (Local) | `from pixeltable.functions.whisperx import transcribe` | `transcribe(audio=..., model='large-v2', diarize=True)` | *(returns JSON with segments)* |
-| Voyage AI | `from pixeltable.functions.voyageai import embeddings` | `embeddings.using(model='voyage-2')` | *(use as embedding index)* |
-| Jina AI | `from pixeltable.functions.jina import embeddings` | `embeddings.using(model='jina-embeddings-v3')` | *(use as embedding index)* |
-| Twelve Labs | `from pixeltable.functions.twelvelabs import embed` | `embed(video=..., model_name='marengo3.0')` | *(use as video embedding index)* |
-| BFL FLUX | `from pixeltable.functions.bfl import generate` | `generate(prompt=..., model=..., width=1024, height=1024)` | *(returns Image directly)* |
-| RunwayML | `from pixeltable.functions.runwayml import text_to_video` | `text_to_video(prompt_text=..., ratio='1280:720', model='veo3.1')` | `response['output'].astype(pxt.Video)` |
-| fal.ai | `from pixeltable.functions.fal import run` | `run(input=json, app='fal-ai/flux/schnell')` | *(returns JSON)* |
-| Fabric | `from pixeltable.functions.fabric import chat_completions` | `chat_completions(messages=..., model='gpt-4.1')` | `.choices[0].message.content` |
-| llama.cpp | `from pixeltable.functions.llama_cpp import create_chat_completion` | `create_chat_completion(messages=..., repo_id='...', repo_filename='*q5_k_m.gguf')` | `.choices[0].message.content` |
-| vLLM (Local) | `from pixeltable.functions.vllm import chat_completions, generate` | `chat_completions(messages=..., model='Qwen/Qwen2.5-0.5B-Instruct')` | *(returns VllmRequestOutput dict)* |
-| YOLOX | `from pixeltable.functions.yolox import yolox` | `yolox(image=...)` | *(returns detection JSON)* |
-| Replicate | `from pixeltable.functions.replicate import run` | `run(input=json, model='owner/model')` | *(returns JSON)* |
-| Bedrock | `from pixeltable.functions.bedrock import converse` | `converse(messages=..., model='...')` | `.output.message.content[0].text` |
+## Quick reference
 
-OpenAI-compatible providers return `.choices[0].message.content`. Anthropic returns `.content[0].text`. Image generation (BFL) returns `pxt.Image`.
+| Provider | Module | Functions | Extract |
+|----------|--------|-----------|---------|
+| OpenAI | `openai` | `chat_completions`, `responses`, `embeddings`, `speech`, `transcriptions`, `translations`, `image_generations`, `image_edits`, `image_variations`, `moderations`, `invoke_tools` | `.choices[0].message.content` |
+| Anthropic | `anthropic` | `messages`, `invoke_tools` | `.content[0].text` |
+| Gemini | `gemini` | `generate_content`, `embed_content`, `generate_images`, `generate_videos`, `generate_speech`, `transcribe`, `invoke_tools` | Json -- extract a field |
+| Bedrock | `bedrock` | `converse`, `invoke_model`, `embed`, `invoke_tools` | `.output.message.content[0].text` |
+| Groq | `groq` | `chat_completions`, `invoke_tools` | `.choices[0].message.content` |
+| Together | `together` | `chat_completions`, `completions`, `embeddings`, `image_generations` | `.choices[0].message.content` |
+| Mistral | `mistralai` | `chat_completions`, `fim_completions`, `embeddings` | `.choices[0].message.content` |
+| Nebius | `nebius` | `chat_completions`, `embeddings` | `.choices[0].message.content` |
+| Fireworks | `fireworks` | `chat_completions` | `.choices[0].message.content` |
+| DeepSeek | `deepseek` | `chat_completions` | `.choices[0].message.content` |
+| OpenRouter | `openrouter` | `chat_completions` | `.choices[0].message.content` |
+| Fabric | `fabric` | `chat_completions`, `embeddings` | `.choices[0].message.content` |
+| Ollama (local) | `ollama` | `chat`, `generate`, `embed` | `.message.content` |
+| llama.cpp (local) | `llama_cpp` | `create_chat_completion` | `.choices[0].message.content` |
+| vLLM (local) | `vllm` | `chat_completions`, `generate` | `.choices[0].message.content` |
+| Hugging Face | `huggingface` | `sentence_transformer`, `clip`, `cross_encoder`, `detr_for_object_detection`, `sam3_for_segmentation`, `image_captioning`, `summarization`, `text_to_image`, ~15 more | index fn, or Json |
+| Whisper (local) | `whisper` | `transcribe` | `.text` |
+| WhisperX (local) | `whisperx` | `transcribe` | Json with `segments` |
+| Voyage AI | `voyageai` | `embeddings`, `rerank`, `multimodal_embed` | index fn / Json |
+| Jina AI | `jina` | `embeddings`, `rerank` | index fn / Json |
+| Twelve Labs | `twelvelabs` | `embed` | video index fn |
+| BFL FLUX | `bfl` | `generate`, `edit`, `fill`, `expand` | `pxt.Image` |
+| RunwayML | `runwayml` | `text_to_image`, `text_to_video`, `image_to_video`, `video_to_video` | `response['output'].astype(pxt.Video)` |
+| fal.ai | `fal` | `run` | Json |
+| Replicate | `replicate` | `run` | Json |
+| YOLOX | `yolox` | `yolox`, `yolo_to_coco` | Json detections |
+
+Not model providers, but in the same namespace: `net.presigned_url` turns a blob-storage URI into a time-limited HTTP URL for serving media, and `vision` carries `eval_detections`, the `mean_ap` UDA, `bboxes_draw` / `overlay_segmentation` and the `bboxes_*` conversion family.
+
+## Shapes
+
+```python
+from pixeltable.functions.openai import chat_completions, embeddings
+from pixeltable.functions.huggingface import sentence_transformer
+
+summary = chat_completions(messages=[{'role': 'user', 'content': body}], model='gpt-4o-mini') \
+    .choices[0].message.content
+
+embed_fn = embeddings.using(model='text-embedding-3-small')
+# or local: sentence_transformer.using(model_id='sentence-transformers/all-MiniLM-L6-v2')
+```
+
+OpenAI-compatible providers return `.choices[0].message.content`; Anthropic returns `.content[0].text`. An image goes in a message as `{'type': 'image_url', 'image_url': {'url': t.image}}` -- `openai.vision` is deprecated. Tool calling is per provider: pair `pxt.tools(...)` with that module's own `invoke_tools`.
+
+Rerankers (`voyageai.rerank`, `jina.rerank`, `huggingface.cross_encoder`) score query/document pairs; run one over the rows `.similarity()` returned rather than reaching for a framework.
+
+**Model ids go stale.** The ids here are examples, not recommendations -- check the provider's current list. Pixeltable's own docstrings lag further behind than this file does.

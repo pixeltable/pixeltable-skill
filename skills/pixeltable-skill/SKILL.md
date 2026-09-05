@@ -68,7 +68,7 @@ pxt service list                  # assigned port; do not hard-code :8000
 
 The last argument (`my_app`, or `pxt://org:db` on Cloud) is a catalog directory, not a folder on disk. `pxt init` marks the project root. Schema does not start HTTP. Service does not create tables. Non-interactive: `pxt service update ... -f`. Local handle: `pxt.get_table('my_app.docs')`.
 
-Same file on Cloud: set `PIXELTABLE_API_KEY`, add `[[pixeltable.database]]` with `name = 'pxt://org:db'`, then `pxt db update pxt://org:db`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. Cloud handle: `pxt.get_table('pxt://org:db/docs')`. `pxt db update` sets secrets, image, and workers. It does not insert rows and does not start app HTTP. On Cloud, try the app with dashboard insert plus `pxt schema diff`. [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
+Same file on Cloud: set `PIXELTABLE_API_KEY`, add `[[pixeltable.database]]` with `name = 'pxt://org:db'`, then `pxt db update pxt://org:db`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. Cloud handle: `pxt.get_table('pxt://org:db/docs')`. On Cloud, try the app with dashboard insert plus `pxt schema diff`. [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
 
 ## The application file
 

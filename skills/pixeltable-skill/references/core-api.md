@@ -50,23 +50,12 @@ t = pxt.create_table('dir.docs', {
 
 Types: `String`, `Int`, `Float`, `Bool`, `Image`, `Video`, `Audio`, `Document`, `Json`, `Timestamp`, `Date`, `UUID`, `Binary`, `Array[(3, 4), pxt.Float]`.
 
-`pxt.Column(...)` expresses what a bare annotation cannot:
-
-| Param | Purpose |
-|-------|---------|
-| `type=` | Explicit type where there is no annotation |
-| `value=` | Computed expression (a plain assignment does the same) |
-| `primary_key=True` | Part of the primary key |
-| `stored=False` | Computed on read, never materialized |
-| `media_validation=` | `'on_write'` (default) validates on insert; `'on_read'` defers to first read |
-| `destination=` | Object store for computed media: `s3`, `gs`, `az`, `r2`, `b2`, `tigris`, `http`, a local path, or `pxtfs`. Also takes a `ConfigVar[URI]`; `add_computed_column(destination=)` takes only `str \| Path` |
+`pxt.Column(...)` carries what an annotation cannot: `stored=False` (computed on read, never materialized), `media_validation='on_read'` (defer validation to first read; default `'on_write'`), and `destination=` (object store for computed media -- `s3`/`gs`/`az`/`r2`/`b2`/`tigris`/`http`/a local path/`pxtfs`).
 
 ```python
 thumbnail = pxt.Column(value=cover.rotate(90), stored=False)
 scan = pxt.Column(type=pxt.Image, media_validation='on_read', comment='validated lazily')
 ```
-
-The model class itself takes `name=`, `base=`, `iterator=`, plus `media_validation=`, `comment=`, `custom_metadata=`, `has_default_idxs=`.
 
 From a file: `pxt.create_table('dir.data', source='data.csv', if_exists='ignore')`.
 
@@ -172,7 +161,6 @@ sentences = pxt.create_view(
     'dir.sentences', t, iterator=string_splitter(text=t.body, separators='sentence'), if_exists='ignore',
 )
 
-# segment_start, segment_end, audio_segment
 audio = pxt.create_view(
     'dir.audio', t, iterator=audio_splitter(audio=t.audio, duration=30.0), if_exists='ignore',
 )
@@ -276,12 +264,6 @@ t.select(avg_int(t.value)).collect()
 t.group_by(t.category).select(t.category, avg_val=avg_int(t.value)).collect()
 ```
 
-| Parameter | Default | Purpose |
-|-----------|---------|---------|
-| `requires_order_by` | `False` | First positional arg is the order key |
-| `allows_std_agg` | `True` | Plain `SELECT agg(col)` |
-| `allows_window` | `False` | `order_by=` / `group_by=` window calls |
-
 Built-ins: `make_video`, `concat_videos_agg` (`pixeltable.functions.video`), `make_list` (`json`), `stitch_tiles` (`image`), `mean_ap` (`vision`). Scalar `concat_videos` takes a **list** of videos.
 
 `requires_order_by` UDAs take the ordering expression as their **first positional argument**; passing `order_by=` raises. Two ship built in:
@@ -293,7 +275,7 @@ t.group_by(base).select(pxtf.image.stitch_tiles(t.pos, t.tile, t.tile_box, width
 
 ## Built-in functions
 
-Before writing a UDF, check whether the operation already ships. `pixeltable.functions` (`pxtf`) carries `string`, `json`, `math`, `date`, `timestamp`, `array`, `uuid`, `image`, `audio`, `document`, `net`, `vision`, and `video` (which splits into `video.editing`, `video.filters`, `video.scene_detect`). Import the module and read its docs rather than guessing a name.
+Before writing a UDF, check whether the operation already ships. `pixeltable.functions` (`pxtf`) covers strings, json, math, dates, arrays, images, audio, documents, and video (`video.editing`, `video.filters`, `video.scene_detect`), plus `vision` and `net`. Import the module and read its docs rather than guessing a name.
 
 The one path worth spelling out, because nothing else documents it -- video to transcript:
 
@@ -304,11 +286,9 @@ class Clips(TableModel, name='clips'):
     transcript = pxtf.openai.transcriptions(audio=audio, model='whisper-1').text
 ```
 
-Also on video: `clip`, `segment_video`, `extract_frame`, `concat_videos`, `with_audio`, `get_duration`, `get_metadata`, plus the `filters` (`overlay_text`, `crop`, `resize`, `speed`, ...) and `scene_detect_*` families.
-
 ## Import and export
 
-`pxt.io.import_{csv,json,parquet,excel,pandas,rows,sql,huggingface_dataset}` and `pxt.io.export_{csv,json,parquet,sql,iceberg,lancedb,images_as_fo_dataset}`. Do not hand-roll a reader or writer.
+Do not hand-roll a reader or writer -- check `pxt.io.import_*` / `export_*` first (csv, json, parquet, excel, pandas, SQL, Iceberg, LanceDB, HuggingFace).
 
 ## Serving
 

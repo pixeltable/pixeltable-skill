@@ -65,7 +65,6 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | Apply tables | `pxt schema update` | `pxt schema update app.py my_app` |
 | Review schema drift | `pxt schema diff` | exit `0` in sync, `2` pending |
 | Start HTTP | `pxt service update` | `pxt service update app.py my_app -f` (always prompts) |
-| Foreground HTTP | `pxt service run` | container entrypoint / dev loop |
 | Inspect catalog | `pxt ls -l`, `pxt describe`, `pxt columns --computed` | `pxt ls --json \| jq '.entries[] \| select(.kind == "table")'` |
 | Debug failed columns | `pxt errors`, `pxt rows --cols` | `pxt errors my_app/docs --col embedding` |
 | Check runtime/config | `pxt status`, `pxt config` | `pxt config --section openai` |
@@ -181,7 +180,7 @@ Runs the `FastAPIRouter` instances an application file declares. Requires `pip i
 |---------|-------------|
 | `pxt service diff APP TARGET` | What `update` would change. Exit `2` if pending |
 | `pxt service update APP TARGET` | Start declared services in the background; restart those that changed. Does **not** create tables |
-| `pxt service run APP TARGET [SERVICE]` | Serve one service from this process until interrupted |
+| `pxt service run APP TARGET [SERVICE]` | Serve one service in the foreground until interrupted. For a container entrypoint, which must not return; **not** the command to recommend otherwise -- use `update` |
 | `pxt service prune APP TARGET` | Stop and forget services at `TARGET` that the file does not declare |
 | `pxt service stop NAME...` | Stop named services (`ingest` or `my_app/ingest`) |
 | `pxt service list [TARGET]` | What is running, and where |
@@ -194,11 +193,10 @@ pxt service check app.py
 pxt schema update app.py my_app
 pxt service update app.py my_app -f
 pxt service list
-pxt service run app.py my_app --port 9000    # foreground; name the service if the file declares several
 pxt service stop ingest
 ```
 
-`update` starts one background process per service, each on its own port. It always prompts unless `-f`. Adding a route is additive; changing or removing one needs `--allow-destructive`. OpenAPI docs are at `/docs`. `pxt service run` refuses a `pxt://` TARGET.
+`update` starts one background process per service, each on its own port, and is the serving command to use. It always prompts unless `-f`. Adding a route is additive; changing or removing one needs `--allow-destructive`. OpenAPI docs are at `/docs`. `pxt service run` refuses a `pxt://` TARGET and does not record anything, so `list` and `stop` cannot find it.
 
 **Tracing.** `service diff`, `service update` and `service run` take `--otel`, which emits OpenTelemetry traces and needs `pip install 'pixeltable[otel]'` (`serve` and `otel` are the only two extras). The setting belongs to the running service, not to the file: a service already running without it restarts when `update` is given the flag, dropping the flag restarts it again, and `diff --otel` reports tracing that is off but was asked for as a pending change.
 
@@ -223,7 +221,7 @@ pxt org status pxt://myorg
 
 `pxt db update pxt://org:db` selects `[[pixeltable.database]]` by `name = 'pxt://org:db'`. A URI with no matching entry is an error. First `update` creates the hosted database.
 
-Hosted order: `pxt db update pxt://org:db` sets secrets, image, and workers, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. `pxt service run` is local only. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
+Hosted order: `pxt db update pxt://org:db` sets secrets, image, and workers, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
 
 A UDF is recorded as a module path relative to the project root (`app.excerpt`), not a raw file path. `pxt db update` packs the project so Cloud can import it.
 

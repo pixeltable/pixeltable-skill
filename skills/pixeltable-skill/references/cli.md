@@ -70,7 +70,7 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | Check runtime/config | `pxt status`, `pxt config` | `pxt config --section openai` |
 | Many commands in sequence | `pxt shell` | amortizes startup; errors don't kill session |
 | Visual inspection | `pxt dashboard` | read-only UI at daemon port |
-| Hosted database | `pxt db update` | secrets, image, and archive. Then schema, then `pxt service update` on `pxt://` |
+| Hosted database | `pxt db update` | `pxt db update pxt://myorg:mydb`, then schema, then service |
 
 **SDK vs CLI:** Notebooks and one-off REPL use the Python SDK (`create_table`, `add_computed_column`). Apps use a `TableModel` file plus `pxt schema` / `pxt service`. Use CLI for inspect, debug, and CI drift checks.
 
@@ -207,16 +207,8 @@ Do **not** write `[tool.pixeltable.service]` TOML or call `pxt serve`.
 Require `PIXELTABLE_API_KEY`. URIs are `pxt://org` or `pxt://org:db`.
 
 ```bash
-pxt db update pxt://myorg:mydb
-pxt db list pxt://myorg
-pxt db status pxt://myorg:mydb
-pxt db start pxt://myorg:mydb
-pxt db stop pxt://myorg:mydb
-pxt db diff pxt://myorg:mydb
-pxt db build-image pxt://myorg:mydb
-pxt db delete pxt://myorg:mydb
-pxt org list
-pxt org status pxt://myorg
+pxt db update pxt://myorg:mydb     # also: list, status, start, stop, diff, build-image, delete
+pxt org status pxt://myorg         # also: list
 ```
 
 `pxt db update pxt://org:db` selects `[[pixeltable.database]]` by `name = 'pxt://org:db'`. A URI with no matching entry is an error. First `update` creates the hosted database.
@@ -228,10 +220,7 @@ A UDF is recorded as a module path relative to the project root (`app.excerpt`),
 ### Secrets
 
 ```bash
-pxt secret list pxt://myorg
-pxt secret list pxt://myorg:mydb
-pxt secret set  pxt://myorg OPENAI_API_KEY=sk-...
-pxt secret delete pxt://myorg:mydb OLD_KEY
+pxt secret set pxt://myorg OPENAI_API_KEY=sk-...    # also: list, delete
 ```
 
 An org secret applies to every database in the org; a database secret wins on a key collision. A project can declare secrets on `[[pixeltable.database]]` as `openai_api_key = 'env:OPENAI_API_KEY'`; `pxt db update` sets them. A running database keeps the values it started with. Run `pxt db stop` then `pxt db start` to pick up a change.
@@ -245,18 +234,6 @@ pxt count my_app/docs --json | jq '.count'
 pxt schema diff app.py my_app --json
 pxt service diff app.py my_app --json
 ```
-
-## Known gotchas
-
-1. **Never invent flags** -- `pxt <cmd> --help` is authoritative
-2. **CI mutations need `-f`** -- `drop`, `drop-dir`, `revert`, schema/service update/prune refuse without a TTY
-3. **Unstored computed columns** -- skipped in `rows`/`get` unless `--cols` forces evaluation (may invoke LLMs)
-4. **Revert is irreversible** -- check `pxt history` first
-5. **Serve extra** -- `pip install 'pixeltable[serve]'` before `pxt service`
-6. **Schema first** -- `pxt schema update` does not start HTTP; `pxt service update` does not create tables
-7. **No `pxt serve` / TOML service / `pxt app`** -- routes live on `FastAPIRouter` in the application file
-8. **`pxt service update` always prompts** -- pass `-f` without a TTY
-9. **Hosted `db update` needs a named entry** -- `[[pixeltable.database]]` `name = 'pxt://org:db'`
 
 ## Related references
 

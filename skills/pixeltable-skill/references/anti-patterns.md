@@ -9,13 +9,6 @@ Apps use `app.py` plus `pxt schema update`. This file is notebook form unless no
 **Right:**
 
 ```python
-from pixeltable.functions.openai import embeddings
-
-class Docs(TableModel, name='docs'):
-    document: pxt.Document
-    uuid = pxt.Column(value=pxtf.uuid.uuid7(), primary_key=True)
-
-
 class Chunks(
     TableModel,
     name='chunks',
@@ -26,6 +19,8 @@ class Chunks(
         pxt.EmbeddingIndex(text, embedding=embeddings.using(model='text-embedding-3-small'), name='chunks_embed')
     ]  # type: ignore[name-defined]
 ```
+
+Full pattern: [workflows.md](workflows.md).
 
 Chunking is `document_splitter`. Search is `.similarity()`. Tools are `pxt.tools()` + `invoke_tools()`.
 
@@ -58,11 +53,7 @@ Chunking is `document_splitter`. Search is `.similarity()`. Tools are `pxt.tools
 | Prior | Do this |
 |-------|---------|
 | `python app.py` for models + router | `pxt schema update` then `pxt service update` |
-| `add_embedding_index()` in `app.py` | `__indexes__` on the model |
-| `pxt.create_table()` / `get_table()` at import in `app.py` | `TableModel` + `pxt schema update` |
 | Drop + recreate tables as "init" | Edit `app.py`, then `pxt schema update` |
-| `if_exists='ignore'` to fix logic | Notebook: `if_exists='replace'`. App: rename the column, then `--allow-destructive` |
-| Edit a computed column's expression in place in `app.py` | `UNSUPPORTED`; the update applies nothing. Rename the column |
 | Hard-coded `api_key=` | Env or config.toml |
 | `psycopg2` against `~/.pixeltable/pgdata` | SDK / CLI only |
 | Chat history in Redis | A table |

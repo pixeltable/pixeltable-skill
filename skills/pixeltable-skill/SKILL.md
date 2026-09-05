@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.8.1
+  version: 2.8.2
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -68,7 +68,7 @@ pxt service list                  # assigned port; do not hard-code :8000
 
 The last argument (`my_app`, or `pxt://org:db` on Cloud) is a catalog directory, not a folder on disk. `pxt init` marks the project root. Schema does not start HTTP. Service does not create tables. Non-interactive: `pxt service update ... -f`. Local handle: `pxt.get_table('my_app.docs')`.
 
-Same file on Cloud: set `PIXELTABLE_API_KEY`, add `[[pixeltable.database]]` with `name = 'pxt://org:db'`, then `pxt db update pxt://org:db`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. Cloud handle: `pxt.get_table('pxt://org:db/docs')`. `pxt db update` sets secrets, image, and workers. It does not insert rows and does not start app HTTP. On Cloud, try the app with dashboard insert plus `pxt schema diff`. [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
+Same file on Cloud: set `PIXELTABLE_API_KEY`, add `[[pixeltable.database]]` with `name = 'pxt://org:db'`, then `pxt db update pxt://org:db`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. Cloud handle: `pxt.get_table('pxt://org:db/docs')`. On Cloud, try the app with dashboard insert plus `pxt schema diff`. [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
 
 ## The application file
 
@@ -105,12 +105,7 @@ ingest.add_compute_route(Docs, path='/titles', inputs=[Docs.title], outputs=[Doc
 
 Annotation is a stored column. Assignment is a computed column. Optional is `T | None`. Primary key is `pxt.Column(..., primary_key=True)`. Indexes on the model: `__indexes__ = [pxt.EmbeddingIndex(...)]`. `from pixeltable.serving import FastAPIRouter`.
 
-Already have FastAPI: after schema update, bind the catalog, then include the router. Call `pxt.get_table()` inside custom handlers.
-
-```python
-ingest.bind('my_app')
-app.include_router(ingest)
-```
+Already have FastAPI: after schema update, `ingest.bind('my_app')` then `app.include_router(ingest)`. Call `pxt.get_table()` inside custom handlers. [workflows.md](references/workflows.md).
 
 RAG, views, and search: [workflows.md](references/workflows.md). Do not add Hugging Face or spaCy unless the user asked.
 
@@ -124,9 +119,9 @@ RAG, views, and search: [workflows.md](references/workflows.md). Do not add Hugg
 | Need | Open |
 |------|------|
 | `pxt schema`, `pxt service`, inspect | [cli.md](references/cli.md) |
-| Types, views, UDFs, UDAs, serving | [core-api.md](references/core-api.md) |
+| Types, views, UDFs, UDAs | [core-api.md](references/core-api.md) |
 | Provider import and output shape | [providers.md](references/providers.md) |
-| FastAPIRouter | [workflows.md](references/workflows.md) |
+| Serving, FastAPIRouter, routes | [workflows.md](references/workflows.md) |
 | Wrong stack | [anti-patterns.md](references/anti-patterns.md) |
 
 Add video, audio, agents, or a UI by editing `app.py`. A view is either a filter (`base=Docs.where(...)`) or an iterator (`frame_iterator`, `audio_splitter`, `document_splitter`, `video_splitter`, `string_splitter`, `list_iterator`, `tile_iterator`). Check `pixeltable.functions` before writing a UDF. Start from `pxt service example` or `pxt schema example`. Do not invent a second `pxt schema update` path.

@@ -70,7 +70,7 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | Check runtime/config | `pxt status`, `pxt config` | `pxt config --section openai` |
 | Many commands in sequence | `pxt shell` | amortizes startup; errors don't kill session |
 | Visual inspection | `pxt dashboard` | read-only UI at daemon port |
-| Hosted database | `pxt db update` | secrets, image, and archive. Then schema, then `pxt service update` on `pxt://` |
+| Hosted database | `pxt db update` | `pxt db update pxt://myorg:mydb`, then schema, then service |
 
 **SDK vs CLI:** Notebooks and one-off REPL use the Python SDK (`create_table`, `add_computed_column`). Apps use a `TableModel` file plus `pxt schema` / `pxt service`. Use CLI for inspect, debug, and CI drift checks.
 

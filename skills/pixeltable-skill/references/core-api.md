@@ -28,6 +28,7 @@ class Docs(TableModel, name='docs'):
     body: pxt.String | None
     title_upper = pxtf.string.upper(title)
     uuid = pxt.Column(value=pxtf.uuid.uuid7(), primary_key=True)
+    # astype(pxt.String) fails on UUID; use uuid.to_string()
 ```
 
 Notebook:
@@ -199,6 +200,8 @@ __indexes__ = [pxt.EmbeddingIndex(frame, embedding=clip_embed, name='frames_clip
 # frame is an Image column, yet this resolves:
 Frames.frame.similarity(string='a red bicycle')
 ```
+
+Do not pass only `image_embed=` if you will query with `similarity(string=...)`.
 
 Reach for the per-modality parameters -- `string_embed=`, `image_embed=`, `audio_embed=`, `video_embed=`, `document_embed=` -- when you want a *different* function per modality, or when you want a hard error: a per-modality argument that does not resolve raises, while `embedding=` quietly skips the modalities it cannot serve. Also `metric=` (`'cosine'` default), `precision=` (`'fp16'` default, `'fp32'` available). **The DSL names an index `name=`; `add_embedding_index()` names it `idx_name=`.**
 

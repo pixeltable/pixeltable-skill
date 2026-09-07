@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.8.2
+  version: 2.8.3
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -142,6 +142,8 @@ Add video, audio, agents, or a UI by editing `app.py`. A view is either a filter
 | `add_embedding_index()` in `app.py` | `__indexes__` on the TableModel. Note the DSL names an index `name=`, the SDK `idx_name=` |
 | `make_video(order_by=...)` / `stitch_tiles(order_by=...)` | Both are `requires_order_by` UDAs: the ordering expression is the **first positional** argument -- `make_video(t.pos, t.frame, fps=25)`. `order_by=` raises |
 | `pxt.create_table()` / `get_table()` at import in `app.py` | `TableModel` + `pxt schema update`. Import must not mutate the catalog |
+| `EmbeddingIndex(frame, image_embed=clip)` | `embedding=clip` (covers text and image). Or both `string_embed=` and `image_embed=`. `image_embed=` alone cannot answer `similarity(string=...)` |
+| `uuid.astype(pxt.String)` | `uuid.to_string()` (`from pixeltable.functions.uuid import to_string`). `astype` is not UUID→String |
 
 Extract the field (`.text`, `.choices[0].message.content`). Cast Json with `.astype(pxt.String)` only before embedding or concatenating.
 

@@ -15,6 +15,10 @@ npx skills add pixeltable/pixeltable-skill
 This installs `SKILL.md` and its references for supported coding assistants,
 including Cursor, Copilot, Windsurf, and the Codex IDE extension.
 
+**Google Antigravity** is not one of them: it reads
+`~/.gemini/antigravity/skills`, which `npx skills` does not write to. Install
+there with `./install.sh --platform antigravity`.
+
 ### Full plugin
 
 Install the skill with its client-supported commands, agents, and hooks using

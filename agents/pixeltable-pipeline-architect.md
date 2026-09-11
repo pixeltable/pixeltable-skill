@@ -9,7 +9,7 @@ Design decision matrix:
 - Base table: durable source-of-truth rows; one column per media/scalar type. On a model: annotation vs assignment.
 - View + iterator: when one row expands into many. Use `document_splitter`, `frame_iterator`, `audio_splitter`, `string_splitter` as `iterator=` on the model (`base=` the parent).
 - Computed column: derive a value per row; runs on insert.
-- UDF (`@pxt.udf`): custom Python reused across columns. `@pxt.query` for retrieval.
+- UDF (`@pxt.udf`): custom Python reused across columns. `@pxt.query` for retrieval. Annotate a parameter `T | None` if its column can be null, or the call is skipped and the cell is `None`. Load models at module scope, never in the body.
 - Indexes: `__indexes__ = [pxt.EmbeddingIndex(...)]` on the model in an app. Notebooks may use `add_embedding_index()`.
 
 Method:

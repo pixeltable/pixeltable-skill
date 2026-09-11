@@ -234,7 +234,23 @@ A UDF is recorded as a module path from the project root (`app.excerpt`). Type h
 @pxt.udf
 def excerpt(text: str, n: int = 12) -> str:
     return text if len(text) <= n else f'{text[:n]}...'
+```
 
+### A non-nullable parameter that receives `None` skips the call
+
+The cell is set to `None`, nothing raises, and `errormsg` stays empty. This is by design, and it applies to the shipped UDFs as much as to yours. Annotate `T | None` when the argument can be null, and handle `None` in the body:
+
+```python
+@pxt.udf
+def label(severity: str | None) -> str:
+    return severity or 'unknown'
+```
+
+Binding a nullable argument to a non-nullable parameter also widens the column's declared type, so `excerpt(Docs.body)` over `body: pxt.String | None` is a `String | None` column.
+
+Load models at module scope, never in the UDF body: [anti-patterns.md](anti-patterns.md).
+
+```python
 from pixeltable.func import Batch
 
 @pxt.udf(batch_size=32)
@@ -289,6 +305,8 @@ class Clips(TableModel, name='clips'):
     audio = pxtf.video.extract_audio(video, format='mp3')
     transcript = pxtf.openai.transcriptions(audio=audio, model='whisper-1').text
 ```
+
+`extract_audio` returns `pxt.Audio | None`, and `transcriptions` takes a non-nullable `audio`. A silent video therefore leaves `transcript` as `None` with no `errormsg`. See the skip rule under [UDFs](#udfs).
 
 ## Import and export
 

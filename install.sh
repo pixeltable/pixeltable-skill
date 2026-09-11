@@ -5,7 +5,7 @@ set -euo pipefail
 # Prefer: npx skills add pixeltable/pixeltable-skill (audited, no curl|bash)
 # Usage:
 #   Interactive:  ./install.sh
-#   Direct:       ./install.sh --platform codex-skill
+#   Direct:       ./install.sh --help
 
 REPO_URL="https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main"
 REF_FILES="core-api cli providers workflows anti-patterns"

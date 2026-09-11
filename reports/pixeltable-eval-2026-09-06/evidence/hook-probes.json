@@ -1,0 +1,42 @@
+{
+  "probes": {
+    "valid_keyword_similarity": "result = t.text.similarity(string=query)",
+    "invalid_positional_similarity": "result = t.text.similarity(query)",
+    "comment_false_positive": "# Do not use t.text.similarity(query)",
+    "string_false_positive": "message = \"Do not use t.text.similarity(query)\"",
+    "unrelated_class_false_positive": "class FrameIterator: pass",
+    "unrelated_dict_false_positive": "result = response[\"request_errormsg\"]",
+    "app_full_write": "TableModel = pxt.model_base()\nt.add_embedding_index(\"text\", embedding=fn)",
+    "app_edit_fragment": "t.add_embedding_index(\"text\", embedding=fn)",
+    "multiline_import_false_negative": "from pixeltable.functions.openai import (\n    vision,\n)",
+    "keyword_then_positional_false_negative": "result = t.text.similarity(idx=\"my_idx\", *[query])",
+    "ordinary_framework_false_positive": "import langchain\n# Unrelated project; no Pixeltable imports."
+  },
+  "results": {
+    "valid_keyword_similarity": [],
+    "invalid_positional_similarity": [
+      "[FIX] Positional `.similarity(...)` call. Always use a keyword: `similarity(string=...)`, or `image=` / `audio=` / `video=` / `document=` / `vector=` for the other modalities (`idx=` selects among several indexes on one column)."
+    ],
+    "comment_false_positive": [
+      "[FIX] Positional `.similarity(...)` call. Always use a keyword: `similarity(string=...)`, or `image=` / `audio=` / `video=` / `document=` / `vector=` for the other modalities (`idx=` selects among several indexes on one column)."
+    ],
+    "string_false_positive": [
+      "[FIX] Positional `.similarity(...)` call. Always use a keyword: `similarity(string=...)`, or `image=` / `audio=` / `video=` / `document=` / `vector=` for the other modalities (`idx=` selects among several indexes on one column)."
+    ],
+    "unrelated_class_false_positive": [
+      "[FIX] `pixeltable.iterators` is a deprecated shim in full (FrameIterator, VideoSplitter, DocumentSplitter, StringSplitter, AudioSplitter, TileIterator). Import the function from `pixeltable.functions.*` instead -- e.g. `from pixeltable.functions.video import frame_iterator`."
+    ],
+    "unrelated_dict_false_positive": [
+      "[FIX] There is no `<col>_errortype` column. The error properties are attributes on the column: `t.summary.errortype` / `t.summary.errormsg`, valid on stored computed or media columns. Media cells also carry `.fileurl` / `.localpath`."
+    ],
+    "app_full_write": [
+      "[CONSIDER] This file declares a TableModel, so indexes belong on the model: `__indexes__ = [pxt.EmbeddingIndex(col, embedding=fn, name='...')]`. Note the model DSL spells it `name=` where the SDK spells it `idx_name=`."
+    ],
+    "app_edit_fragment": [],
+    "multiline_import_false_negative": [],
+    "keyword_then_positional_false_negative": [],
+    "ordinary_framework_false_positive": [
+      "[CONSIDER] Detected a framework/vector-DB that Pixeltable replaces (chunking, embedding indexes, retrieval, and tool-calling are built in). See the `pixeltable` skill `references/anti-patterns.md`."
+    ]
+  }
+}

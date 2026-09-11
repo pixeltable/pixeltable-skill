@@ -1,0 +1,1 @@
+2026-09-06T19:04:29.631908Z  WARN codex_core::session_startup_prewarm: startup websocket prewarm setup failed: Your workspace is out of credits. Add credits to continue.

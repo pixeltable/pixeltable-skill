@@ -1,0 +1,8 @@
+{"type":"thread.started","thread_id":"01a0781c-2f36-7642-b5b2-d2da86357b51"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in /Users/pjlb/.codex/config.toml."}}
+{"type":"turn.started"}
+{"type":"error","message":"Reconnecting... 2/5 (unexpected status 403 Forbidden: Unknown error, url: wss://chatgpt.com/backend-api/codex/responses, cf-ray: a36fbe5bbe09ec58-SEA)"}
+{"type":"error","message":"Reconnecting... 3/5 (unexpected status 403 Forbidden: Unknown error, url: wss://chatgpt.com/backend-api/codex/responses, cf-ray: a36fbe60fcec79fd-SEA)"}
+{"type":"error","message":"Reconnecting... 4/5 (unexpected status 403 Forbidden: Unknown error, url: wss://chatgpt.com/backend-api/codex/responses, cf-ray: a36fbe681b98532b-SEA)"}
+{"type":"error","message":"Your workspace is out of credits. Add credits to continue."}
+{"type":"turn.failed","error":{"message":"Your workspace is out of credits. Add credits to continue."}}

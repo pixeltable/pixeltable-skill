@@ -1,0 +1,23 @@
+{
+  "scenarios": {
+    "http-app": "Build a local Pixeltable HTTP application in app.py with a docs table (doc_id Int, title String, body optional String), computed uppercase title and a deterministic 12-character excerpt. Provide an insert endpoint and a compute-only uppercase endpoint. Apply schema, start the managed local HTTP service, discover its URL, POST a sample, and verify returned computed fields and that compute-only does not insert. Record runnable commands and evidence.",
+    "document-retrieval": "Build a declarative document retrieval application in app.py. Create a small local text or HTML document fixture, store it as Document, split it into chunks with document_splitter, and index chunk text with a deterministic local embedding UDF (no downloads or provider calls). Insert the fixture and execute similarity retrieval with scores in descending order. Show the input remains stored and chunks are generated automatically. Record runnable commands and evidence.",
+    "image-video": "Build app.py declaring a video table and a frame view using the current video frame iterator. Generate a tiny local 2-second video with PyAV or ffmpeg, insert it, and verify automatically extracted frames and a computed resized image per frame. Reconstruct a video from frames in frame order using the Pixeltable aggregate. Do not install or call a vision model. Record runnable commands and evidence.",
+    "audio": "Build app.py declaring an audio table and an audio-split view using the current audio splitter. Generate a local 3-second WAV fixture with Python standard-library wave, use 1-second chunks, insert it, and verify chunk count, timestamps and valid audio output. No transcription model or provider calls. Record runnable commands and evidence.",
+    "tool-calling": "Demonstrate a stored Pixeltable tool-calling pipeline with a deterministic local tool that adds two integers, pxt.tools, and a supported provider invoke_tools adapter. Use a hand-built provider-shaped response fixture instead of making an LLM call, store it, compute tool output automatically on insert, and verify 2 + 3 returns 5. Use app.py declarative tables and current API signatures. Do not install heavy ML packages or call a provider. Record runnable commands and evidence.",
+    "schema-evolution": "Build app.py with a docs table (text String and a deterministic computed cleaned field). Apply it, insert text containing spaces, then change the existing computed expression to uppercase. Demonstrate what schema diff/update report and whether --allow-destructive permits the in-place expression change. Implement the supported migration without deleting the table or losing its stored text, verify the new computed result, and show a second diff is in sync. Record runnable commands and evidence.",
+    "error-recovery": "Build a Pixeltable notebook-style local pipeline with a stored computed UDF that deliberately fails for one row when a local marker file is absent. Insert two rows with on_error=\"ignore\", inspect per-cell error type/message, create the marker file, and recompute only failed cells using the supported API. Verify both rows now have correct computed values and that the originally successful row was not recomputed. Record runnable commands and evidence.",
+    "cloud-preparation": "Prepare but DO NOT DEPLOY a Pixeltable Cloud app. Write app.py and a deployment.md runbook for the placeholder target pxt://exampleorg:evaldb. Include project configuration with an OpenAI secret binding, correct noninteractive provisioning/schema/service command order, API key setup, local versus hosted inspection, and authenticated hosted POST URL. Validate what can be checked locally without contacting Cloud. Do not use or request credentials; do not provision resources; clearly mark hosted behavior untested."
+  },
+  "conditions": [
+    "skill",
+    "get-started",
+    "llms"
+  ],
+  "repetitions": 2,
+  "seconds": 240,
+  "tool_limit": 24,
+  "workers": 3,
+  "model": "gpt-6-astra",
+  "reasoning": "medium"
+}

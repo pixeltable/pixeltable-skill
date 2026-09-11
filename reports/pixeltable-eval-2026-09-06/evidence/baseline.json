@@ -1,0 +1,30 @@
+{
+  "retrieved_at": "2026-09-06T19:00:23.673428+00:00",
+  "version": "0.7.5",
+  "requires_python": ">=3.11",
+  "artifact": {
+    "comment_text": null,
+    "core-metadata": {
+      "sha256": "f40f09e0f676733c3af7affbf24fadf34e1abdf117c78cda2f0d7ba90fd9e299"
+    },
+    "digests": {
+      "blake2b_256": "21ed9ea2d68ad5e8c83030e2a96f2bbcd0d4c1445babec75b848925c07fbf79d",
+      "md5": "e61eb349feed0543014ce31b332ea48f",
+      "sha256": "c551025dcd671300897f79f40aee176ee2040e94a06db5761d001c5b12560de3"
+    },
+    "downloads": -1,
+    "filename": "pixeltable-0.7.5-py3-none-any.whl",
+    "has_sig": false,
+    "md5_digest": "e61eb349feed0543014ce31b332ea48f",
+    "packagetype": "bdist_wheel",
+    "python_version": "py3",
+    "requires_python": ">=3.11",
+    "size": 1287730,
+    "upload_time": "2026-09-03T20:35:19",
+    "upload_time_iso_8601": "2026-09-03T20:35:19.958008Z",
+    "url": "https://files.pythonhosted.org/packages/21/ed/9ea2d68ad5e8c83030e2a96f2bbcd0d4c1445babec75b848925c07fbf79d/pixeltable-0.7.5-py3-none-any.whl",
+    "yanked": false,
+    "yanked_reason": null
+  },
+  "commit": "f0b0b5acbb6e562f370f19ac6515cbb0e786a39a"
+}

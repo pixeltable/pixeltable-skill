@@ -248,7 +248,7 @@ The cell is set to `None`, nothing raises, and `errormsg` stays empty. This is b
 ```python
 @pxt.udf
 def label(severity: str | None) -> str:
-    return payload or 'unknown'
+    return severity or 'unknown'
 ```
 
 Binding a nullable argument to a non-nullable parameter also widens the column's declared type, so `excerpt(Docs.body)` over `body: pxt.String | None` is a `String | None` column.

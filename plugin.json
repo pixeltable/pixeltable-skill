@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "pixeltable",
-  "version": "2.10.0",
+  "version": "2.10.1",
   "description": "Build multimodal AI applications with Pixeltable using declarative tables, computed columns, retrieval, agents, and HTTP services.",
   "author": {
     "name": "Pixeltable",

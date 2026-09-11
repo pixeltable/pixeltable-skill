@@ -21,10 +21,10 @@ Usage:
   ./install.sh                              Interactive mode
   ./install.sh --platform <name> [--target]  Direct mode
 
-Platforms: claude-code, cursor-skill, codex-skill
+Platforms: claude-code, cursor-skill, codex-skill, antigravity
 
 Options:
-  --platform  claude-code, cursor-skill, or codex-skill
+  --platform  claude-code, cursor-skill, codex-skill, or antigravity
   --target    Target project directory (defaults to current directory)
   --help      Show this help message
 EOF
@@ -52,9 +52,12 @@ install_skill() {
     skill_dest="$HOME/.agents/skills/pixeltable"
   elif [[ "$platform" == "claude-code" ]]; then
     skill_dest="$TARGET_DIR/.claude/skills/pixeltable-skill"
+  elif [[ "$platform" == "antigravity" ]]; then
+    # Antigravity reads ~/.gemini/antigravity/skills, not ~/.agents/skills.
+    skill_dest="$HOME/.gemini/antigravity/skills/pixeltable-skill"
   else
     echo "Unknown platform: $platform"
-    echo "Available: claude-code, cursor-skill, codex-skill"
+    echo "Available: claude-code, cursor-skill, codex-skill, antigravity"
     exit 1
   fi
 
@@ -108,13 +111,15 @@ echo ""
 echo "  1) Claude Code"
 echo "  2) Cursor (agent skill)"
 echo "  3) Codex (standalone skill)"
+echo "  4) Antigravity"
 echo ""
-read -rp "Choice [1-3]: " choice < /dev/tty
+read -rp "Choice [1-4]: " choice < /dev/tty
 
 case "$choice" in
   1) install_skill "claude-code" ;;
   2) install_skill "cursor-skill" ;;
   3) install_skill "codex-skill" ;;
+  4) install_skill "antigravity" ;;
   *) echo "Invalid choice."; exit 1 ;;
 esac
 

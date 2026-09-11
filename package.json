@@ -1,6 +1,6 @@
 {
   "name": "pixeltable-skill",
-  "version": "2.9.1",
+  "version": "2.10.0",
   "description": "Build multimodal AI applications with Pixeltable -- declarative tables, computed columns, embedding search, UDFs, and 25+ AI provider integrations.",
   "keywords": [
     "pi-package",
@@ -20,6 +20,8 @@
   },
   "homepage": "https://docs.pixeltable.com/",
   "pi": {
-    "skills": ["./skills"]
+    "skills": [
+      "./skills"
+    ]
   }
 }

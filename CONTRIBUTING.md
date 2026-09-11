@@ -24,17 +24,19 @@ pixeltable-skill/
 ├── agents/                    # Specialist subagents (Markdown): pipeline-architect, debugger
 ├── hooks/                     # Optional pure-Python hooks + hooks.json (Claude Code)
 ├── scripts/validate_plugin.py # Manifest + frontmatter validator
-├── install.sh                 # Installer for Claude Code and Cursor
+├── install.sh                 # Standalone skill installer
+├── plugin.json                # Portable Agent Plugins manifest
 ├── .plugin/ .cursor-plugin/   # Vendor-neutral + Cursor manifests (npx plugins)
 ├── .claude-plugin/            # Claude Code plugin + marketplace metadata
-├── .codex-plugin/ .agents/    # Codex + universal-agents metadata
+├── .codex-plugin/             # Codex compatibility manifest
+├── .agents/plugins/           # Repo marketplace metadata
 └── package.json               # pi.skills (npx skills)
 ```
 
 Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claude Code + Cursor) or `npx skills add pixeltable/pixeltable-skill` (skill only, 40+ agents). Keep both working.
 
 ### Conventions
-- Plugin identity is `pixeltable` (commands render as `/pixeltable:<name>`); keep all manifest `name`/`version` fields in sync.
+- Plugin identity is `pixeltable` (commands render as `/pixeltable:<name>`); keep root `plugin.json` and all compatibility manifest versions in sync.
 - Hooks are **pure Python** (`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/*.py"`) : no Node/Bun/TypeScript.
 - Run `python3 scripts/validate_plugin.py` before submitting structural changes.
 
@@ -72,10 +74,11 @@ Before submitting, verify:
 2. All code examples are syntactically correct Python
 3. Provider examples match the current Pixeltable API
 4. Start from `pxt service example --out app.py` (or `pxt schema example --brief`). No `--template` zoo. No starter kit.
-5. The install script works: `./install.sh --platform claude-code --target /tmp/test` and `./install.sh --platform cursor-skill`
+5. The install script works for `claude-code`, `cursor-skill`, and `codex-skill`
 6. Plugin layout validates: `python3 scripts/validate_plugin.py`
 7. Discovery resolves: `npx plugins discover .` and `npx skills add . --list`
 8. Cursor install (from repo): `npx plugins add . -y --target cursor` then restart Agent; verify `/pixeltable:scaffold` and 5 files under `~/.cursor/skills/pixeltable-skill/references/` (or plugin cache)
+9. Codex marketplace install resolves in an isolated `CODEX_HOME`; start a new conversation after installing
 
 ### No XML Tags
 

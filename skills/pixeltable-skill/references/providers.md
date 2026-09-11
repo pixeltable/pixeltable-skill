@@ -8,9 +8,9 @@ Keys come from the environment or [config](https://docs.pixeltable.com/platform/
 
 | Provider | Module | Functions | Extract |
 |----------|--------|-----------|---------|
-| OpenAI | `openai` | `chat_completions`, `responses`, `embeddings`, `speech`, `transcriptions`, `translations`, `image_generations`, `image_edits`, `image_variations`, `moderations`, `invoke_tools` | `.choices[0].message.content` |
+| OpenAI | `openai` | `chat_completions`, `responses`, `embeddings`, `speech`, `transcriptions`, `translations`, `image_generations`, `image_edits`, `image_variations`, `moderations`, `invoke_tools` | chat: `.choices[0].message.content`; Responses: `.output_text` |
 | Anthropic | `anthropic` | `messages`, `invoke_tools` | `.content[0].text` |
-| Gemini | `gemini` | `generate_content`, `embed_content`, `generate_images`, `generate_videos`, `generate_speech`, `transcribe`, `invoke_tools` | Json -- extract a field |
+| Gemini | `gemini` | `generate_content`, `embed_content`, `generate_images`, `generate_videos`, `generate_speech`, `transcribe`, `invoke_tools` | content: Json; generation/transcription returns typed Image, Video, Audio, or String |
 | Bedrock | `bedrock` | `converse`, `invoke_model`, `embed`, `invoke_tools` | `.output.message.content[0].text` |
 | Groq | `groq` | `chat_completions`, `invoke_tools` | `.choices[0].message.content` |
 | Together | `together` | `chat_completions`, `completions`, `embeddings`, `image_generations` | `.choices[0].message.content` |
@@ -20,7 +20,7 @@ Keys come from the environment or [config](https://docs.pixeltable.com/platform/
 | DeepSeek | `deepseek` | `chat_completions` | `.choices[0].message.content` |
 | OpenRouter | `openrouter` | `chat_completions` | `.choices[0].message.content` |
 | Fabric | `fabric` | `chat_completions`, `embeddings` | `.choices[0].message.content` |
-| Ollama (local) | `ollama` | `chat`, `generate`, `embed` | `.message.content` |
+| Ollama (local) | `ollama` | `chat`, `generate`, `embed` | chat: `.message.content`; generate: `.response` |
 | llama.cpp (local) | `llama_cpp` | `create_chat_completion` | `.choices[0].message.content` |
 | vLLM (local) | `vllm` | `chat_completions`, `generate` | `.choices[0].message.content` |
 | Hugging Face | `huggingface` | `sentence_transformer`, `clip`, `cross_encoder`, `detr_for_object_detection`, `sam3_for_segmentation`, `image_captioning`, `summarization`, `text_to_image`, ~15 more | index fn, or Json |
@@ -30,7 +30,7 @@ Keys come from the environment or [config](https://docs.pixeltable.com/platform/
 | Jina AI | `jina` | `embeddings`, `rerank` | index fn / Json |
 | Twelve Labs | `twelvelabs` | `embed` | video index fn |
 | BFL FLUX | `bfl` | `generate`, `edit`, `fill`, `expand` | `pxt.Image` |
-| RunwayML | `runwayml` | `text_to_image`, `text_to_video`, `image_to_video`, `video_to_video` | `response['output'].astype(pxt.Video)` |
+| RunwayML | `runwayml` | `text_to_image`, `text_to_video`, `image_to_video`, `video_to_video` | image: `response['output'][0].astype(pxt.Image)`; video: `response['output'].astype(pxt.Video)` |
 | fal.ai | `fal` | `run` | Json |
 | Replicate | `replicate` | `run` | Json |
 | YOLOX | `yolox` | `yolox`, `yolo_to_coco` | Json detections |
@@ -50,7 +50,7 @@ embed_fn = embeddings.using(model='text-embedding-3-small')
 # or local: sentence_transformer.using(model_id='sentence-transformers/all-MiniLM-L6-v2')
 ```
 
-OpenAI-compatible providers return `.choices[0].message.content`; Anthropic returns `.content[0].text`. An image goes in a message as `{'type': 'image_url', 'image_url': {'url': t.image}}` -- `openai.vision` is deprecated. Tool calling is per provider: pair `pxt.tools(...)` with that module's own `invoke_tools`.
+OpenAI-compatible chat-completion providers return `.choices[0].message.content`; OpenAI `responses` exposes simple text as `.output_text`. Anthropic returns `.content[0].text`. An image goes in a message as `{'type': 'image_url', 'image_url': {'url': t.image}}` -- `openai.vision` is deprecated. Tool calling is per provider: pair `pxt.tools(...)` with that module's own `invoke_tools`.
 
 Rerankers (`voyageai.rerank`, `jina.rerank`, `huggingface.cross_encoder`) score query/document pairs; run one over the rows `.similarity()` returned rather than reaching for a framework.
 

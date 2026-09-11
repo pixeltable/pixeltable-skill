@@ -21,7 +21,7 @@ Verify: `pxt --help` and `pxt health`.
 pxt init                          # project root; see cases above
 pxt schema update app.py my_app   # creates catalog dir + tables; does NOT start HTTP
 pxt service update app.py my_app  # starts local HTTP; does NOT create tables
-pxt service update app.py my_app -f   # CI / no TTY: service update always prompts
+pxt service update app.py my_app -f   # CI / no TTY when changes are pending
 ```
 
 `my_app` is a catalog directory, not a folder on disk. After apply: `t = pxt.get_table('my_app.docs')`. Cloud: `t = pxt.get_table('pxt://org:db/docs')`. Tables live under `~/.pixeltable`, not in the repo. Directory names from the project root to `app.py` must be Python identifiers. Do not `python app.py` if the file only declares models and routers. After a schema change, run `pxt service update` again if routes exist.
@@ -52,8 +52,8 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 |------|-------------|
 | `-h`, `--help` | Every command |
 | `--json` | Machine-readable output on catalog commands, `schema` / `service` verbs, `db`, `org`, `secret`, `daemon status`. Not on `shell`, `dashboard`, or `daemon start`/`stop`. `health` is always JSON. |
-| `-n`, `--dry-run` | Catalog mutations (`drop`, `drop-dir`, `rename`, `mv`, `revert`) plus `schema update`, `schema prune`, `service update`, `service prune` |
-| `-f`, `--force` | Skip `[y/N]` on `drop`, `drop-dir`, `revert`, `schema update`, `schema prune`, `service update`, `service prune`. Required in non-interactive/CI contexts. Not on `rename`/`mv`. |
+| `-n`, `--dry-run` | Catalog mutations (`drop`, `drop-dir`, `rename`, `mv`, `revert`) plus `schema update`, `schema prune`, `service update`, `service prune`, and `db update` |
+| `-f`, `--force` | Skip `[y/N]` on `drop`, `drop-dir`, `revert`, schema/service update and prune, and `db update`. Use it in non-interactive runs when a pending plan can prompt. Additive or no-op schema updates do not prompt. Not on `rename`/`mv`. |
 
 ## Agent workflows
 
@@ -64,13 +64,14 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | Validate a file | `pxt schema check`, `pxt service check` | no `TARGET`; reads no catalog |
 | Apply tables | `pxt schema update` | `pxt schema update app.py my_app` |
 | Review schema drift | `pxt schema diff` | exit `0` in sync, `2` pending |
-| Start HTTP | `pxt service update` | `pxt service update app.py my_app -f` (always prompts) |
+| Start HTTP | `pxt service update` | `pxt service update app.py my_app -f` (force pending changes in CI) |
 | Inspect catalog | `pxt ls -l`, `pxt describe`, `pxt columns --computed` | `pxt ls --json \| jq '.entries[] \| select(.kind == "table")'` |
 | Debug failed columns | `pxt errors`, `pxt rows --cols` | `pxt errors my_app/docs --col embedding` |
+| Debug a service | `pxt service logs` | `pxt service logs my_app/ingest --since 10m --tail 50` |
 | Check runtime/config | `pxt status`, `pxt config` | `pxt config --section openai` |
 | Many commands in sequence | `pxt shell` | amortizes startup; errors don't kill session |
 | Visual inspection | `pxt dashboard` | read-only UI at daemon port |
-| Hosted database | `pxt db update` | `pxt db update pxt://myorg:mydb`, then schema, then service |
+| Hosted database | `pxt db update` | `pxt db update pxt://myorg:mydb -f`, then schema, then service |
 
 **SDK vs CLI:** Notebooks and one-off REPL use the Python SDK (`create_table`, `add_computed_column`). Apps use a `TableModel` file plus `pxt schema` / `pxt service`. Use CLI for inspect, debug, and CI drift checks.
 
@@ -193,10 +194,13 @@ pxt service check app.py
 pxt schema update app.py my_app
 pxt service update app.py my_app -f
 pxt service list
+pxt service logs ingest --since 10m --tail 50
 pxt service stop ingest
 ```
 
-`update` starts one background process per service, each on its own port, and is the serving command to use. It always prompts unless `-f`. Adding a route is additive; changing or removing one needs `--allow-destructive`. OpenAPI docs are at `/docs`. `pxt service run` refuses a `pxt://` TARGET and does not record anything, so `list` and `stop` cannot find it.
+`update` starts one background process per service, each on its own port, and is the serving command to use. A no-op or dry run exits without prompting; pass `-f` when a pending update runs without a TTY. Adding a route is additive; changing or removing one needs `--allow-destructive`. OpenAPI docs are at `/docs`. `pxt service run` refuses a `pxt://` TARGET and does not record anything, so `list` and `stop` cannot find it.
+
+`pxt service logs NAME` accepts a bare service name or `TARGET/NAME`; use a full `pxt://org:db/path/name` for hosted services. `--since` accepts values such as `10m`, `--tail` is capped at 10,000 lines, and `--include-health` keeps health-probe requests. Local services report their log-file path. Hosted logs include request records and console output, including startup tracebacks.
 
 **Tracing.** `service diff`, `service update` and `service run` take `--otel`, which emits OpenTelemetry traces and needs `pip install 'pixeltable[otel]'` (`serve` and `otel` are the only two extras). The setting belongs to the running service, not to the file: a service already running without it restarts when `update` is given the flag, dropping the flag restarts it again, and `diff --otel` reports tracing that is off but was asked for as a pending change.
 
@@ -207,13 +211,16 @@ Do **not** write `[tool.pixeltable.service]` TOML or call `pxt serve`.
 Require `PIXELTABLE_API_KEY`. URIs are `pxt://org` or `pxt://org:db`.
 
 ```bash
-pxt db update pxt://myorg:mydb     # also: list, status, start, stop, diff, build-image, delete
+pxt db update pxt://myorg:mydb -f  # also: list, status, logs, start, stop, diff, build-image, delete
+pxt db logs pxt://myorg:mydb --since 10m --tail 50
 pxt org status pxt://myorg         # also: list
 ```
 
 `pxt db update pxt://org:db` selects `[[pixeltable.database]]` by `name = 'pxt://org:db'`. A URI with no matching entry is an error. First `update` creates the hosted database.
 
-Hosted order: `pxt db update pxt://org:db` sets secrets, image, and workers, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
+Hosted order: `pxt db update pxt://org:db -f` sets secrets, image, and workers, then `pxt schema update app.py pxt://org:db -f`, then `pxt service update app.py pxt://org:db -f`. Database capacity or secret changes can also require `--allow-destructive`. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
+
+Every Cloud database stores inserted and computed media in its managed home bucket by default. Set a column `destination=` to send that output elsewhere, or configure `input_media_dest` / `output_media_dest` to change the database defaults.
 
 A UDF is recorded as a module path relative to the project root (`app.excerpt`), not a raw file path. `pxt db update` packs the project so Cloud can import it.
 
@@ -223,7 +230,7 @@ A UDF is recorded as a module path relative to the project root (`app.excerpt`),
 pxt secret set pxt://myorg OPENAI_API_KEY=sk-...    # also: list, delete
 ```
 
-An org secret applies to every database in the org; a database secret wins on a key collision. A project can declare secrets on `[[pixeltable.database]]` as `openai_api_key = 'env:OPENAI_API_KEY'`; `pxt db update` sets them. A running database keeps the values it started with. Run `pxt db stop` then `pxt db start` to pick up a change.
+An org secret applies to every database in the org; a database secret wins on a key collision. A project declares database secrets under the `secrets` mapping, for example `secrets.openai_api_key = 'env:OPENAI_API_KEY'`; `pxt db update` sets them. A running database keeps the values it started with. Run `pxt db stop` then `pxt db start` to pick up a change.
 
 ## Scripting with `--json`
 

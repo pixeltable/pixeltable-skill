@@ -4,7 +4,33 @@ Agent Skill that teaches AI coding assistants to write Pixeltable application fi
 
 ## Install
 
-**Which path?** Use `npx plugins add` for the full plugin (skill + agents + slash commands) on Claude Code and Cursor. Use `npx skills add` to install just the skill content across 40+ agents (Copilot, Windsurf, Gemini, etc.) or in CI. Both work; they're complementary.
+Choose the package for your client. This repository packages the skill with
+client-specific commands, agents, and optional hooks; each client loads the
+components it supports. The standalone skill includes `SKILL.md`, references,
+and its ChatGPT/Codex display metadata.
+
+### ChatGPT desktop and Codex
+
+Add this repository as a marketplace, then install the plugin:
+
+```bash
+codex plugin marketplace add pixeltable/pixeltable-skill --ref main
+codex plugin add pixeltable@pixeltable-skill
+```
+
+Restart or start a new conversation after installation. In Codex CLI, `/plugins`
+opens the plugin browser. In the ChatGPT desktop app, open **Plugins**, select
+the **Pixeltable** marketplace under Personal, and install **Pixeltable**.
+
+The Codex IDE extension does not load plugins. Install the standalone skill for
+the IDE:
+
+```bash
+npx skills add pixeltable/pixeltable-skill
+```
+
+Repository marketplaces are local authoring and team-distribution sources.
+They do not publish a plugin to ChatGPT's universal public directory.
 
 ### Plugin: Claude Code and Cursor ([npx plugins](https://github.com/vercel-labs/plugins))
 
@@ -12,7 +38,7 @@ Agent Skill that teaches AI coding assistants to write Pixeltable application fi
 npx plugins add pixeltable/pixeltable-skill
 ```
 
-### Skill only: Cursor, Copilot, Windsurf, and 40+ agents ([npx skills](https://github.com/vercel-labs/skills))
+### Skill only: Codex IDE, Cursor, Copilot, Windsurf, and other agents ([npx skills](https://github.com/vercel-labs/skills))
 
 ```bash
 npx skills add pixeltable/pixeltable-skill
@@ -23,13 +49,6 @@ npx skills add pixeltable/pixeltable-skill
 ```
 /plugin marketplace add pixeltable/pixeltable-skill
 /plugin install pixeltable@pixeltable-skill
-```
-
-### Codex
-
-```bash
-codex plugin marketplace add pixeltable/pixeltable-skill --ref main
-codex plugin add pixeltable@pixeltable-skill
 ```
 
 ### Any LLM (paste URL into context)
@@ -50,7 +69,9 @@ skills/pixeltable-skill/
     └── anti-patterns.md        # Wrong/right stack
 ```
 
-The plugin install (`npx plugins add`) bundles the skill, commands, agents, and hooks. The skill install (`npx skills add`) delivers just the skill content.
+The root [`plugin.json`](plugin.json) is the portable Agent Plugins manifest.
+`.codex-plugin/plugin.json` remains as a Codex compatibility fallback. The
+repository marketplace is `.agents/plugins/marketplace.json`.
 
 ## Contributing
 

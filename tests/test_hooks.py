@@ -39,14 +39,35 @@ class ValidateAntiPatterns(unittest.TestCase):
             "from pixeltable.iterators import FrameIterator\n")))
 
     def test_flags_positional_similarity(self):
-        self.assertIn("similarity", context(self.write("r = t.txt.similarity(query)\n")))
+        self.assertIn("similarity", context(self.write(
+            "import pixeltable as pxt\nr = t.txt.similarity(query)\n"
+        )))
 
     def test_flags_openai_vision(self):
-        self.assertIn("chat_completions", context(self.write("x = openai.vision(img)\n")))
+        self.assertIn("chat_completions", context(self.write(
+            "import pixeltable as pxt\nx = openai.vision(img)\n"
+        )))
 
     def test_flags_framework_import(self):
-        out = self.write("from langchain.text_splitter import X\n", key="new_string", tool="Edit")
+        out = self.write(
+            "import pixeltable as pxt\nfrom langchain.text_splitter import X\n",
+            key="new_string", tool="Edit",
+        )
         self.assertIn("replaces", context(out))
+
+    def test_silent_on_comments_strings_and_unrelated_symbols(self):
+        self.assertEqual("", self.write(
+            "# t.text.similarity(query)\n"
+            "note = 'from pixeltable.iterators import FrameIterator'\n"
+            "class FrameIterator: pass\n"
+            "response = {'request_errormsg': 'ok'}\n"
+            "from langchain.text_splitter import X\n"
+        ))
+
+    def test_flags_parenthesized_vision_import(self):
+        self.assertIn("deprecated", context(self.write(
+            "from pixeltable.functions.openai import (\n    vision,\n)\n"
+        )))
 
     def test_silent_on_correct_code(self):
         self.assertEqual("", self.write(
@@ -70,13 +91,19 @@ class ValidateAntiPatterns(unittest.TestCase):
             "h = t.body.similarity(\n    string=q,\n)\n"))
 
     def test_flags_named_deprecated_similarity_item(self):
-        self.assertIn("similarity", context(self.write("r = t.txt.similarity(item=q)\n")))
+        self.assertIn("similarity", context(self.write(
+            "import pixeltable as pxt\nr = t.txt.similarity(item=q)\n"
+        )))
 
     def test_flags_underscore_error_property(self):
-        self.assertIn("errortype", context(self.write("t.select(t.summary_errortype).collect()\n")))
+        self.assertIn("errortype", context(self.write(
+            "import pixeltable as pxt\nt.select(t.summary_errortype).collect()\n"
+        )))
 
     def test_flags_order_by_on_requires_order_by_uda(self):
-        self.assertIn("POSITIONAL", context(self.write("make_video(t.frame, order_by=t.pos)\n")))
+        self.assertIn("POSITIONAL", context(self.write(
+            "import pixeltable as pxt\nmake_video(t.frame, order_by=t.pos)\n"
+        )))
 
     def test_flags_pxt_required(self):
         self.assertIn("Required", context(self.write("x: pxt.Required[pxt.String]\n")))
@@ -99,9 +126,26 @@ class ValidateAntiPatterns(unittest.TestCase):
         self.assertIn("__indexes__", out)
         self.assertIn("must not mutate the catalog", out)
 
+    def test_apply_patch_reads_resulting_full_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "app.py"
+            path.write_text(
+                "import pixeltable as pxt\n"
+                "TableModel = pxt.model_base()\n"
+                "t.add_embedding_index('body', embedding=fn)\n"
+            )
+            out = run(VALIDATE, {
+                "tool_name": "apply_patch",
+                "cwd": d,
+                "tool_input": {"command": "*** Update File: app.py\n"},
+            })
+            self.assertIn("__indexes__", context(out))
+
     def test_reads_notebook_edits(self):
         out = run(VALIDATE, {"tool_name": "NotebookEdit", "tool_input": {
-            "notebook_path": "explore.ipynb", "new_source": "x = t.txt.similarity(query)\n"}})
+            "notebook_path": "explore.ipynb",
+            "new_source": "import pixeltable as pxt\nx = t.txt.similarity(query)\n",
+        }})
         self.assertIn("similarity", context(out))
 
     def test_silent_on_non_edit_tool(self):

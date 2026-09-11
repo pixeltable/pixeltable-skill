@@ -20,7 +20,7 @@ hooks/
 scripts/validate_plugin.py
 ```
 
-Manifests: `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/`, `package.json`. Keep name `pixeltable` and versions in sync (`2.9.1`).
+Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), and `package.json`. Keep name `pixeltable` and versions in sync (`2.10.0`).
 
 ## Rules
 

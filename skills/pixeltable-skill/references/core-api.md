@@ -44,6 +44,8 @@ t = pxt.create_table('dir.docs', {
     'video': pxt.Video,
     'audio': pxt.Audio,
     'doc': pxt.Document,
+    'tags': pxt.Json[list[str]],
+    'records': pxt.Json[list[dict[str, str]]],
     'uuid': uuid7(),
 }, primary_key=['uuid'], if_exists='ignore')
 ```
@@ -71,8 +73,8 @@ t.recompute_columns('summary', errors_only=True)
 
 Changing a computed column's logic:
 
-- **App.** Editing an existing column's expression in place is reported `UNSUPPORTED`. `--allow-destructive` does **not** help, and one unsupported table makes the whole `pxt schema update` apply nothing. **Rename** the column instead: the old name is a destructive drop, the new one an additive add, so it lands in one pass with `--allow-destructive`. Or drop it in one pass and re-add it in a second. Either way the data is destroyed and recomputed. (`pxt.move()` is for a genuine rename, where you keep the values.)
-- **Notebook.** `t.add_computed_column(summary=..., if_exists='replace')` replaces it in one call. It raises `AlreadyExistsError` if the column has dependents or is a base-table column; then drop the dependents, or `drop_column` and recreate.
+- **App.** Editing an existing column's expression in place is reported `UNSUPPORTED`. `--allow-destructive` does **not** help, and one unsupported table makes the whole `pxt schema update` apply nothing. **Rename** the column instead: the old name is a destructive drop, the new one an additive add, so it lands in one pass with `--allow-destructive`. Or drop it in one pass and re-add it in a second. Either way the data is destroyed and recomputed. `Table.rename_column()` preserves an existing column and its existing expression; it does not install new logic. `pxt.move()` moves a table or directory.
+- **Notebook.** `t.add_computed_column(summary=..., if_exists='replace')` replaces it in one call when the column is directly replaceable and has no dependents. Otherwise drop dependents first, or `drop_column` and recreate; do not depend on one exception class for every rejected replacement.
 - `if_exists='ignore'` never fixes logic -- it skips the call.
 
 ## Querying
@@ -167,8 +169,11 @@ audio = pxt.create_view(
     'dir.audio', t, iterator=audio_splitter(audio=t.audio, duration=30.0), if_exists='ignore',
 )
 
-items = pxt.create_view('dir.items', t, iterator=list_iterator(t.tags), if_exists='ignore')
+tags = pxt.create_view('dir.tags', t, iterator=list_iterator(tag=t.tags), if_exists='ignore')
+records = pxt.create_view('dir.records', t, iterator=list_iterator(t.records), if_exists='ignore')
 ```
+
+`list_iterator` requires typed Json. Use keyword arguments for typed scalar lists, such as `tag=t.tags`; the keyword becomes the output column. Its single positional form requires a typed list of dictionaries with compatible keys. Untyped `pxt.Json` is rejected because Pixeltable cannot infer the view schema.
 
 App: `base=` plus `iterator=` on the model. See [workflows.md](workflows.md).
 
@@ -190,7 +195,7 @@ Every iterator view also gets `pos`. The nine that ship:
 
 ## Indexes
 
-App: `__indexes__ = [pxt.EmbeddingIndex(col, embedding=fn, name='...'), pxt.BtreeIndex(col)]`. Do not call `add_embedding_index()` in `app.py`. Index UDFs use `.using(...)`.
+App: `__indexes__ = [pxt.EmbeddingIndex(col, embedding=fn, name='...'), pxt.BtreeIndex(col)]`. Do not call `add_embedding_index()` in `app.py`. Use `.using(...)` when provider or model arguments must be bound. A custom embedding UDF must return a fixed-length, one-dimensional `pxt.Array[(N,), pxt.Float]`; Json or an array with an unknown length is not a valid embedding index function.
 
 `embedding=` is tried against every modality and registers each one whose signature it matches, so a bidirectional function covers them all at once. That is why a CLIP index on an **image** column answers `similarity(string=...)`:
 
@@ -286,11 +291,12 @@ t.group_by(t.category).select(t.category, avg_val=avg_int(t.value)).collect()
 
 Built-ins: `make_video`, `concat_videos_agg` (`pixeltable.functions.video`), `make_list` (`json`), `stitch_tiles` (`image`), `mean_ap` (`vision`). Scalar `concat_videos` takes a **list** of videos.
 
-`requires_order_by` UDAs take the ordering expression as their **first positional argument**; passing `order_by=` raises. Two ship built in:
+`requires_order_by` UDAs take the ordering expression as their **first positional argument**; passing `order_by=` raises. Built-ins include:
 
 ```python
 t.select(pxtf.video.make_video(t.pos, t.frame, fps=30))          # t.pos orders; order_by= raises
 t.group_by(base).select(pxtf.image.stitch_tiles(t.pos, t.tile, t.tile_box, width, height))
+t.select(pxtf.video.concat_videos_agg(t.pos, t.video))
 ```
 
 ## Built-in functions
@@ -314,7 +320,7 @@ Do not hand-roll a reader or writer -- check `pxt.io.import_*` / `export_*` firs
 
 ## Serving
 
-`from pixeltable.serving import FastAPIRouter`. Start from `pxt service example --out app.py`. `add_update_route` / `add_delete_route` need a primary key (or `match_columns=`).
+`from pixeltable.serving import FastAPIRouter`. Start from `pxt service example --out app.py`. `add_update_route` requires the target's primary key. `add_delete_route` uses the primary key by default and can instead take a nonempty `match_columns=` list.
 
 Routes: `add_insert_route` (stores the row), `add_compute_route` (same request shape, computes without storing), `add_update_route`, `add_delete_route`, `add_query_route` (wraps a `@pxt.query`).
 

@@ -3,7 +3,7 @@
 
 Checks:
   1. All JSON manifests parse.
-  2. Manifest component pointers (skills/agents/commands) resolve on disk.
+  2. Portable and compatibility manifests agree and component pointers resolve.
   3. Every skills/<name>/SKILL.md has `name` and `description` frontmatter.
   4. Listed command/agent files in .claude-plugin/plugin.json exist.
 
@@ -49,6 +49,7 @@ def frontmatter(md_path):
 def main():
     # 1. JSON manifests
     manifests = [
+        "plugin.json",
         ".plugin/plugin.json",
         ".cursor-plugin/plugin.json",
         ".claude-plugin/plugin.json",
@@ -58,6 +59,33 @@ def main():
         "package.json",
     ]
     parsed = {m: load_json(m) for m in manifests}
+
+    portable = parsed.get("plugin.json") or {}
+    check(
+        portable.get("$schema") == "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+        "plugin.json: missing Agent Plugins 1.0 schema",
+    )
+    check(portable.get("name") == "pixeltable", "plugin.json: name must be 'pixeltable'")
+    openai_extension = ((portable.get("extensions") or {}).get("com.openai") or {})
+    codex = parsed.get(".codex-plugin/plugin.json") or {}
+    check(
+        openai_extension.get("interface") == codex.get("interface"),
+        "plugin.json OpenAI interface must match .codex-plugin compatibility metadata",
+    )
+    check(codex.get("skills") == "./skills/", ".codex-plugin/plugin.json: skills must point to ./skills/")
+
+    marketplace = parsed.get(".agents/plugins/marketplace.json") or {}
+    entries = marketplace.get("plugins") or []
+    entry = next((item for item in entries if item.get("name") == "pixeltable"), None)
+    check(entry is not None, ".agents/plugins/marketplace.json: missing pixeltable entry")
+    if entry is not None:
+        source = entry.get("source") or {}
+        path = source.get("path")
+        check(source.get("source") == "local", "Codex marketplace source must be local")
+        check(
+            isinstance(path, str) and (ROOT / path).resolve() == ROOT,
+            "Codex marketplace path must resolve to plugin root",
+        )
 
     # 2. Component dir pointers resolve (.plugin / .cursor-plugin)
     for m in (".plugin/plugin.json", ".cursor-plugin/plugin.json"):
@@ -100,6 +128,7 @@ def main():
     # 5. Version sync across all versioned manifests + SKILL.md frontmatter
     versions = {}
     version_getters = {
+        "plugin.json": lambda d: d.get("version"),
         ".plugin/plugin.json": lambda d: d.get("version"),
         ".cursor-plugin/plugin.json": lambda d: d.get("version"),
         ".claude-plugin/plugin.json": lambda d: d.get("version"),
@@ -119,6 +148,12 @@ def main():
         m = re.search(r"^\s*version:\s*(.+?)\s*$", frontmatter(sf), re.MULTILINE)
         if m:
             versions[str(sf.relative_to(ROOT))] = m.group(1).strip().strip("\"'")
+        openai_yaml = sf.parent / "agents" / "openai.yaml"
+        check(openai_yaml.is_file(), f"{sf.parent.relative_to(ROOT)}: missing agents/openai.yaml")
+        if openai_yaml.is_file():
+            metadata = openai_yaml.read_text(encoding="utf-8", errors="ignore")
+            check("display_name:" in metadata, f"{openai_yaml.relative_to(ROOT)}: missing display_name")
+            check("short_description:" in metadata, f"{openai_yaml.relative_to(ROOT)}: missing short_description")
     check(
         len(set(versions.values())) <= 1,
         "version mismatch (all manifests + SKILL.md must match): "

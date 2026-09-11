@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.9.1
+  version: 2.10.0
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -68,7 +68,7 @@ pxt service list                  # assigned port; do not hard-code :8000
 
 The last argument (`my_app`, or `pxt://org:db` on Cloud) is a catalog directory, not a folder on disk. `pxt init` marks the project root. Schema does not start HTTP. Service does not create tables. Non-interactive: `pxt service update ... -f`. Local handle: `pxt.get_table('my_app.docs')`.
 
-Same file on Cloud: set `PIXELTABLE_API_KEY`, add `[[pixeltable.database]]` with `name = 'pxt://org:db'`, then `pxt db update pxt://org:db`, then `pxt schema update app.py pxt://org:db`, then `pxt service update app.py pxt://org:db`. Cloud handle: `pxt.get_table('pxt://org:db/docs')`. On Cloud, try the app with dashboard insert plus `pxt schema diff`. [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
+Same file on Cloud: set `PIXELTABLE_API_KEY`, add `[[pixeltable.database]]` with `name = 'pxt://org:db'`, then `pxt db update pxt://org:db -f`, then `pxt schema update app.py pxt://org:db -f`, then `pxt service update app.py pxt://org:db -f`. Cloud handle: `pxt.get_table('pxt://org:db/docs')`. Cloud databases store media in their managed home bucket by default; set a column `destination=` only to override it. On Cloud, try the app with dashboard insert plus `pxt schema diff`, and inspect failures with `pxt service logs` / `pxt db logs`. [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
 
 ## The application file
 

@@ -5,7 +5,7 @@ set -euo pipefail
 # Prefer: npx skills add pixeltable/pixeltable-skill (audited, no curl|bash)
 # Usage:
 #   Interactive:  ./install.sh
-#   Direct:       ./install.sh --platform claude-code --target ./my-project
+#   Direct:       ./install.sh --platform codex-skill
 
 REPO_URL="https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main"
 REF_FILES="core-api cli providers workflows anti-patterns"
@@ -21,10 +21,10 @@ Usage:
   ./install.sh                              Interactive mode
   ./install.sh --platform <name> [--target]  Direct mode
 
-Platforms: claude-code, cursor-skill
+Platforms: claude-code, cursor-skill, codex-skill
 
 Options:
-  --platform  claude-code or cursor-skill
+  --platform  claude-code, cursor-skill, or codex-skill
   --target    Target project directory (defaults to current directory)
   --help      Show this help message
 EOF
@@ -48,11 +48,13 @@ install_skill() {
 
   if [[ "$platform" == "cursor-skill" ]]; then
     skill_dest="$HOME/.cursor/skills/pixeltable-skill"
+  elif [[ "$platform" == "codex-skill" ]]; then
+    skill_dest="$HOME/.agents/skills/pixeltable"
   elif [[ "$platform" == "claude-code" ]]; then
     skill_dest="$TARGET_DIR/.claude/skills/pixeltable-skill"
   else
     echo "Unknown platform: $platform"
-    echo "Available: claude-code, cursor-skill"
+    echo "Available: claude-code, cursor-skill, codex-skill"
     exit 1
   fi
 
@@ -65,7 +67,7 @@ install_skill() {
     fi
   fi
 
-  mkdir -p "$skill_dest/references"
+  mkdir -p "$skill_dest/references" "$skill_dest/agents"
 
   local script_dir
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo ".")"
@@ -73,14 +75,16 @@ install_skill() {
   if [[ -f "$script_dir/skills/pixeltable-skill/SKILL.md" ]]; then
     cp "$script_dir/skills/pixeltable-skill/SKILL.md" "$skill_dest/"
     cp "$script_dir/skills/pixeltable-skill/references/"*.md "$skill_dest/references/"
+    cp "$script_dir/skills/pixeltable-skill/agents/openai.yaml" "$skill_dest/agents/"
   else
     curl -fsSL "$REPO_URL/skills/pixeltable-skill/SKILL.md" -o "$skill_dest/SKILL.md"
     for ref_file in $REF_FILES; do
       curl -fsSL "$REPO_URL/skills/pixeltable-skill/references/${ref_file}.md" -o "$skill_dest/references/${ref_file}.md"
     done
+    curl -fsSL "$REPO_URL/skills/pixeltable-skill/agents/openai.yaml" -o "$skill_dest/agents/openai.yaml"
   fi
 
-  echo "  Installed: $skill_dest/SKILL.md + references/ (5 files)"
+  echo "  Installed: $skill_dest/SKILL.md + references/ (5 files) + agents/openai.yaml"
 }
 
 # Direct mode
@@ -103,12 +107,14 @@ echo "=========================="
 echo ""
 echo "  1) Claude Code"
 echo "  2) Cursor (agent skill)"
+echo "  3) Codex (standalone skill)"
 echo ""
-read -rp "Choice [1-2]: " choice < /dev/tty
+read -rp "Choice [1-3]: " choice < /dev/tty
 
 case "$choice" in
   1) install_skill "claude-code" ;;
   2) install_skill "cursor-skill" ;;
+  3) install_skill "codex-skill" ;;
   *) echo "Invalid choice."; exit 1 ;;
 esac
 

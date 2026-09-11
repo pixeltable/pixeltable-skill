@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.8.3
+  version: 2.9.0
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -38,7 +38,7 @@ If you find yourself importing any of these, you are off-path:
 4. **Do not install a separate vector database.** In an app, `__indexes__ = [pxt.EmbeddingIndex(...)]` on the model. In a notebook, `t.add_embedding_index(col, embedding=fn)`. Search with `.similarity(string=query)`.
 5. **Do not write `while not done:` agent loops.** Insert a row. The computed-column chain runs.
 
-See [anti-patterns.md](references/anti-patterns.md) (5 macros).
+See [anti-patterns.md](references/anti-patterns.md) (6 macros).
 
 ## What is Pixeltable?
 
@@ -137,6 +137,8 @@ Add video, audio, agents, or a UI by editing `app.py`. A view is either a filter
 | Edit a computed column's expression in place, then `--allow-destructive` | Editing an existing column's expression is `UNSUPPORTED`; the flag does not help and the whole update applies nothing. Rename the column |
 | `t.summary_errortype` | `t.summary.errortype` / `t.summary.errormsg`, on stored computed or media columns. `t.<col>.fileurl` / `.localpath` for media |
 | `pxt.Required[pxt.String]` | Non-nullable by default. Optional: `T \| None` |
+| `@pxt.udf def f(x: str)` fed a nullable column | A non-nullable parameter that receives `None` **skips the call**: the cell is `None` and `errormsg` is empty. Annotate `x: str \| None` and handle `None` in the body |
+| `whisper.load_model(...)` inside a UDF body | Weights reload on every row. Use the shipped wrapper (`pxtf.whisper.transcribe`, `clip.using(...)`), or a module-scope cached loader |
 | `recompute_columns(columns=['summary'])` | `t.recompute_columns('summary', errors_only=True)` |
 | TOML routes or a retired serve CLI | `FastAPIRouter` + `pxt schema update` + `pxt service update` |
 | `add_embedding_index()` in `app.py` | `__indexes__` on the TableModel. Note the DSL names an index `name=`, the SDK `idx_name=` |

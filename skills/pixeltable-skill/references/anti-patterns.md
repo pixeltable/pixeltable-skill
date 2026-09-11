@@ -48,6 +48,36 @@ Chunking is `document_splitter`. Search is `.similarity()`. Tools are `pxt.tools
 
 **Right:** insert a row. The computed-column chain runs (`chat_completions` → `invoke_tools` → final). `invoke_tools` is per provider.
 
+## 6. Loading a model inside the UDF body
+
+**Wrong:** `whisper.load_model('tiny.en')` or `Model.from_pretrained(...)` called inside `@pxt.udf`. The weights reload on every row: 100ms of work becomes 1.8s.
+
+**Right:** the shipped wrapper. It keeps a process-level model cache keyed on (model, device), so the weights load once.
+
+```python
+transcript = pxtf.whisper.transcribe(audio, model='tiny.en').text
+```
+
+Embeddings the same way: `clip.using(model_id=...)`, `sentence_transformer.using(model_id=...)`. [providers.md](providers.md) lists the wrappers.
+
+If nothing ships for your model, load it once at module scope and cache the handle:
+
+```python
+import functools
+
+
+@functools.cache
+def _scorer():
+    from my_lib import Scorer
+
+    return Scorer.load('checkpoint.pt')
+
+
+@pxt.udf
+def score(text: str) -> float:
+    return _scorer().score(text)
+```
+
 ## Also wrong
 
 | Prior | Do this |
@@ -57,3 +87,4 @@ Chunking is `document_splitter`. Search is `.similarity()`. Tools are `pxt.tools
 | Hard-coded `api_key=` | Env or config.toml |
 | `psycopg2` against `~/.pixeltable/pgdata` | SDK / CLI only |
 | Chat history in Redis | A table |
+| `def f(x: str)` to "handle" a nullable column | A non-nullable parameter that receives `None` skips the call and leaves the cell `None`. Annotate `x: str \| None` |

@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.10.1
+  version: 2.10.2
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -88,7 +88,7 @@ def excerpt(text: str, n: int = 12) -> str:
 
 
 class Docs(TableModel, name='docs'):
-    doc_id: pxt.Int
+    id = pxt.Column(value=pxtf.uuid.uuid7(), primary_key=True)
     title: pxt.String
     body: pxt.String | None
     title_upper = pxtf.string.upper(title)
@@ -97,8 +97,12 @@ class Docs(TableModel, name='docs'):
 
 ingest = FastAPIRouter(name='ingest')
 ingest.add_insert_route(
-    Docs, path='/docs', inputs=[Docs.doc_id, Docs.title, Docs.body],
-    outputs=[Docs.title_upper, Docs.summary],
+    Docs, path='/docs', inputs=[Docs.title, Docs.body],
+    outputs=[Docs.id, Docs.title_upper, Docs.summary],
+)
+ingest.add_update_route(
+    Docs, path='/docs/update', inputs=[Docs.title],
+    outputs=[Docs.id, Docs.title_upper],
 )
 ingest.add_compute_route(Docs, path='/titles', inputs=[Docs.title], outputs=[Docs.title_upper])
 ```

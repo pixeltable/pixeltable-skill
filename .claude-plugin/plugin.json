@@ -1,11 +1,14 @@
 {
   "name": "pixeltable",
   "description": "Build multimodal AI applications with Pixeltable -- tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
-  "version": "2.10.2",
+  "version": "2.10.3",
   "author": {
     "name": "Pixeltable",
     "url": "https://github.com/pixeltable"
   },
+  "homepage": "https://github.com/pixeltable/pixeltable-skill",
+  "repository": "https://github.com/pixeltable/pixeltable-skill",
+  "license": "Apache-2.0",
   "commands": [
     "./commands/scaffold.md",
     "./commands/add-provider.md"

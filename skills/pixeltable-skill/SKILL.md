@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.10.2
+  version: 2.10.3
   type: documentation
   executes-code: false
   category: data-infrastructure

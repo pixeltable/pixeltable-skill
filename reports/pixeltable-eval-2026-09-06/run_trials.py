@@ -53,7 +53,7 @@ def run_trial(spec):
  prompt=COMMON.format(python=PYTHON,entry=entry,task=SCENARIOS[scenario]);(out/'prompt.txt').write_text(prompt)
  env={k:v for k,v in os.environ.items() if not k.startswith('CODEX_') and not any(x in k.upper() for x in ['API_KEY','ACCESS_KEY','SECRET','TOKEN','CREDENTIAL'])}
  env.update(PATH=str(PYTHON.parent)+os.pathsep+env.get('PATH',''),PIXELTABLE_HOME=str(trial/'catalog'),PIXELTABLE_ENABLE_TELEMETRY='false',PYTHONUNBUFFERED='1')
- args=['codex','exec','--ignore-user-config','--ignore-rules','--skip-git-repo-check','-C',str(trial),'--enable','skip_host_skill_discovery','--disable','plugins','--disable','hooks','--disable','memories','--disable','apps','--disable','multi_agent','-c','project_doc_max_bytes=0','-c','model_reasoning_effort="medium"','-c','approval_policy="never"','-s','danger-full-access','-m','gpt-6-astra','--json','-o',str(trial/'final.txt'),'-']
+ args=['codex','exec','--ignore-user-config','--ignore-rules','--skip-git-repo-check','-C',str(trial),'--enable','skip_host_skill_discovery','--disable','plugins','--disable','hooks','--disable','memories','--disable','apps','--disable','multi_agent','-c','project_doc_max_bytes=0','-c','model_reasoning_effort="medium"','-c','approval_policy="never"','-s','danger_full_access','-m','gpt-6-astra','--json','-o',str(trial/'final.txt'),'-']
  start=time.monotonic();status='completed';calls=0
  with open(out/'events.jsonl','w') as stdout,open(out/'stderr.txt','w') as stderr:
   p=subprocess.Popen(args,stdin=subprocess.PIPE,stdout=stdout,stderr=stderr,env=env,start_new_session=True,text=True)

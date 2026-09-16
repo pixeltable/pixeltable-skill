@@ -10,9 +10,9 @@ The CLI material closely tracks the released application's declarative workflow,
 
 ### C1 — P1: documented project secret declaration fails configuration validation
 
-`skills/pixeltable-skill/references/cli.md:237` says to put `openai_api_key = 'env:OPENAI_API_KEY'` on `[[pixeltable.database]]`. The released `pixeltable/config.py:33-43` sets `extra='forbid'` and declares a **secrets mapping**, not an `openai_api_key` field. Direct `DatabaseConfig.model_validate()` under the isolated 0.7.5 environment rejects the documented entry with `extra_forbidden`; replacing the key with `secrets.openai_api_key` succeeds. The `env:` value form itself is supported (`pixeltable/service/db.py:54-55,390-400`).
+`skills/pixeltable-skill/references/cli.md:237` says to put `openai_api_key = '<env:OPENAI_API_KEY>'` on `[[pixeltable.database]]`. The released `pixeltable/config.py:33-43` sets `extra='forbid'` and declares a **secrets mapping**, not an `openai_api_key` field. Direct `DatabaseConfig.model_validate()` under the isolated 0.7.5 environment rejects the documented entry with `extra_forbidden`; replacing the key with `secrets.openai_api_key` succeeds. The `env:` value form itself is supported (`pixeltable/service/db.py:54-55,390-400`).
 
-Correction: explicitly teach `secrets.openai_api_key = 'env:OPENAI_API_KEY'` inside the database entry. Verify both standalone and `pyproject.toml` representations using the real parser/model without contacting Cloud. Neither website baseline supplies this erroneous secret assignment; this defect belongs to the skill reference.
+Correction: explicitly teach `secrets.openai_api_key = '<env:OPENAI_API_KEY>'` inside the database entry. Verify both standalone and `pyproject.toml` representations using the real parser/model without contacting Cloud. Neither website baseline supplies this erroneous secret assignment; this defect belongs to the skill reference.
 
 ### C2 — P2: database updates are omitted from the noninteractive flags reference
 

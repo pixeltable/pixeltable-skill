@@ -38,7 +38,7 @@
     "-c",
     "approval_policy=\"never\"",
     "-s",
-    "danger-full-access",
+    "danger_full_access",
     "-m",
     "gpt-6-astra",
     "--json",

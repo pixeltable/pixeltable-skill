@@ -19,6 +19,11 @@
   ],
   "skills": "./skills/",
   "interface": {
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/icon.png",
+    "screenshots": [
+      "./assets/icon.png"
+    ],
     "displayName": "Pixeltable",
     "shortDescription": "Build Pixeltable apps with declarative tables, pxt CLI, RAG, agents, and serving",
     "longDescription": "Use Pixeltable to build multimodal AI applications with declarative tables, computed columns, embeddings, retrieval, provider integrations, the pxt CLI (schema, service, inspect), and production workflow patterns.",
@@ -29,6 +34,8 @@
       "Write"
     ],
     "websiteURL": "https://docs.pixeltable.com/",
+    "privacyPolicyURL": "https://github.com/pixeltable/pixeltable-skill/blob/main/SECURITY.md",
+    "termsOfServiceURL": "https://github.com/pixeltable/pixeltable-skill/blob/main/LICENSE",
     "brandColor": "#2563EB",
     "defaultPrompt": [
       "Start a Pixeltable project with pxt service example",

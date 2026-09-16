@@ -227,10 +227,10 @@ A UDF is recorded as a module path relative to the project root (`app.excerpt`),
 ### Secrets
 
 ```bash
-pxt secret set pxt://myorg OPENAI_API_KEY=sk-...    # also: list, delete
+pxt secret set pxt://myorg OPENAI_API_KEY=<your-key>    # also: list, delete
 ```
 
-An org secret applies to every database in the org; a database secret wins on a key collision. A project declares database secrets under the `secrets` mapping, for example `secrets.openai_api_key = 'env:OPENAI_API_KEY'`; `pxt db update` sets them. A running database keeps the values it started with. Run `pxt db stop` then `pxt db start` to pick up a change.
+An org secret applies to every database in the org; a database secret wins on a key collision. A project declares database secrets under the `secrets` mapping, for example `secrets.openai_api_key = '<env:OPENAI_API_KEY>'`; `pxt db update` sets them. A running database keeps the values it started with. Run `pxt db stop` then `pxt db start` to pick up a change.
 
 ## Scripting with `--json`
 

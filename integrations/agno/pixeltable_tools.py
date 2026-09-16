@@ -13,7 +13,9 @@ Usage:
 
 from __future__ import annotations
 
+import ast
 import json
+import operator
 from typing import Any, Optional
 
 import pixeltable as pxt
@@ -146,6 +148,58 @@ class PixeltableTools(Toolkit):
             df = t.limit(limit).collect()
         return df.to_json(orient='records', default_handler=str)
 
+_SAFE_OPS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.FloorDiv: operator.floordiv,
+    ast.Mod: operator.mod,
+    ast.Pow: operator.pow,
+    ast.USub: operator.neg,
+    ast.UAdd: operator.pos,
+}
+
+
+def _eval_ast_node(node: ast.AST, scope: dict[str, Any]) -> Any:
+    if isinstance(node, ast.Expression):
+        return _eval_ast_node(node.body, scope)
+    if isinstance(node, ast.Constant):
+        return node.value
+    if isinstance(node, ast.Name):
+        if node.id in scope:
+            return scope[node.id]
+        raise ValueError(f'Unknown identifier: {node.id}')
+    if isinstance(node, ast.Attribute):
+        value = _eval_ast_node(node.value, scope)
+        return getattr(value, node.attr)
+    if isinstance(node, ast.Call):
+        func = _eval_ast_node(node.func, scope)
+        args = [_eval_ast_node(arg, scope) for arg in node.args]
+        keywords = {kw.arg: _eval_ast_node(kw.value, scope) for kw in node.keywords if kw.arg is not None}
+        return func(*args, **keywords)
+    if isinstance(node, ast.BinOp):
+        op_type = type(node.op)
+        if op_type in _SAFE_OPS:
+            return _SAFE_OPS[op_type](_eval_ast_node(node.left, scope), _eval_ast_node(node.right, scope))
+        raise ValueError(f'Unsupported binary operator: {op_type.__name__}')
+    if isinstance(node, ast.UnaryOp):
+        op_type = type(node.op)
+        if op_type in _SAFE_OPS:
+            return _SAFE_OPS[op_type](_eval_ast_node(node.operand, scope))
+        raise ValueError(f'Unsupported unary operator: {op_type.__name__}')
+    if isinstance(node, ast.Subscript):
+        val = _eval_ast_node(node.value, scope)
+        sl = _eval_ast_node(node.slice, scope)
+        return val[sl]
+    raise ValueError(f'Unsupported AST node: {type(node).__name__}')
+
+
+def _safe_eval_expr(expression: str, scope: dict[str, Any]) -> Any:
+    tree = ast.parse(expression.strip(), mode='eval')
+    return _eval_ast_node(tree, scope)
+
+
     def add_computed_column(self, path: str, column_name: str, expression: str) -> str:
         """Add a computed column using a Pixeltable expression.
 
@@ -159,7 +213,7 @@ class PixeltableTools(Toolkit):
             Confirmation message.
         """
         t = pxt.get_table(path)
-        expr = eval(expression, {'t': t, 'pxt': pxt})  # noqa: S307
+        expr = _safe_eval_expr(expression, {'t': t, 'pxt': pxt})
         t.add_computed_column(**{column_name: expr}, if_exists='ignore')
         return json.dumps({'status': 'ok', 'column': column_name, 'table': path})
 
@@ -188,7 +242,11 @@ class PixeltableTools(Toolkit):
             module_path, attr = base.rsplit('.', 1)
             mod = importlib.import_module(module_path)
             func = getattr(mod, attr)
-            kwargs = eval(f'dict({call}')  # noqa: S307
+            tree = ast.parse(f'call({call}', mode='eval')
+            call_node = tree.body
+            if not isinstance(call_node, ast.Call):
+                raise ValueError(f'Invalid .using call expression: {call}')
+            kwargs = {kw.arg: ast.literal_eval(kw.value) for kw in call_node.keywords if kw.arg is not None}
             embed_fn = func.using(**kwargs)
         else:
             module_path, attr = embedding_function.rsplit('.', 1)

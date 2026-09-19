@@ -199,9 +199,12 @@ pxt service check app.py
 pxt schema update app.py my_app
 pxt service update app.py my_app -f
 pxt service list
-pxt service logs ingest --since 10m --tail 50
+pxt service logs ingest                # local: exits 1 and prints the log file's path
+tail -50 "$(pxt service logs ingest 2>&1 | sed 's/.*the log is at //')"
 pxt service stop ingest
 ```
+
+Hosted: `pxt service logs pxt://org:db/ingest --since 10m --tail 50`.
 
 `update` starts one background process per service, each on its own port, and is the serving command to use. A no-op or dry run exits without prompting; pass `-f` when a pending update runs without a TTY. Adding a route is additive; changing or removing one needs `--allow-destructive`. OpenAPI docs are at `/docs`. `pxt service run` refuses a `pxt://` TARGET and does not record anything, so `list` and `stop` cannot find it.
 

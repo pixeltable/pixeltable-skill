@@ -37,7 +37,7 @@ Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claud
 
 ### Conventions
 - Plugin identity is `pixeltable` (commands render as `/pixeltable:<name>`); keep root `plugin.json` and all compatibility manifest versions in sync.
-- Hooks are **pure Python** (`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/*.py"`), no Node/Bun/TypeScript.
+- Hooks are **pure Python** (`hooks/*.py`, 3.9+), no Node/Bun/TypeScript. The `hooks.json` command tries `python`, `python3`, then `py -3`, because a python.org install on Windows ships no `python3.exe`.
 - Run `python3 scripts/validate_plugin.py` before submitting structural changes.
 
 ## What to Contribute

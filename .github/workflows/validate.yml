@@ -37,7 +37,7 @@ jobs:
 
       - name: Lint hooks and scripts (ruff)
         run: |
-          pip install ruff
+          pip install 'ruff==0.16.8'
           ruff check hooks/ scripts/ tests/ integrations/
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0

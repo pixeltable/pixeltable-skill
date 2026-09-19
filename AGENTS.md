@@ -20,12 +20,12 @@ hooks/
 scripts/validate_plugin.py
 ```
 
-Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), and `package.json`. Keep name `pixeltable` and versions in sync (`2.11.0`).
+Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), and `package.json`. Keep name `pixeltable` and versions in sync (`2.11.1`).
 
 ## Rules
 
 - Single skill. Do not split it.
-- Hooks are pure Python (`python3`). No Node/Bun/TypeScript.
+- Hooks are pure Python. No Node/Bun/TypeScript. `hooks.json` finds the interpreter itself (`python`, then `python3`, then `py -3`): a python.org install on Windows has no `python3.exe` (#23).
 - SKILL.md teaches the application file first. Notebook SDK is an appendix.
 - Start from `pxt init` then `pxt service example --out app.py` (or `pxt schema example --brief`). Then `pxt schema update app.py my_app`. No template zoo. No starter kit.
 - `if_exists='ignore'` on notebook `create_*` / `add_*`.

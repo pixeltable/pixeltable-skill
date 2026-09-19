@@ -2,6 +2,8 @@
 
 Agent Skill that teaches AI coding assistants to write Pixeltable application files: `TableModel` in `app.py`, then `pxt schema update`, then `pxt service update`.
 
+Verified against Pixeltable 0.7.8 on 2026-09-19: [docs/review-2.11.0.md](docs/review-2.11.0.md).
+
 ## Install
 
 ### Skill (recommended for most assistants)
@@ -67,7 +69,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Run `python3 scripts/validate_plugin.py`
 
 ## Links
 
-- [Pixeltable Docs](https://docs.pixeltable.com/) · [GitHub](https://github.com/pixeltable/pixeltable) · [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) · [Discord](https://discord.gg/QPyqFYx2UN)
+- [Pixeltable Docs](https://docs.pixeltable.com/) | [GitHub](https://github.com/pixeltable/pixeltable) | [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer) | [Discord](https://discord.gg/QPyqFYx2UN)
 - Start: `pxt init` then `pxt service example --out app.py` then `pxt schema update app.py my_app` then `pxt service update app.py my_app`.
 
 ## License

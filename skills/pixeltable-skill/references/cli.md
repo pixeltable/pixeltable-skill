@@ -2,7 +2,7 @@
 
 Agent-focused map of the `pxt` CLI. Official source: [platform/cli.md](https://docs.pixeltable.com/platform/cli.md). Always run `pxt <command> --help` for version-specific flags -- never guess.
 
-Python 3.11+. There is no `pxt serve`, no `pxt deploy`, no `pxt app`, no `pxt db create` (the CLI's own help string wrongly lists one -- `pxt db update` creates), and no `[tool.pixeltable.service]` TOML.
+Python 3.11+. There is no `pxt serve`, no `pxt deploy`, no `pxt app`, no `pxt db create` (`pxt db update` creates), and no `[tool.pixeltable.service]` TOML.
 
 ## Two surfaces
 
@@ -37,9 +37,9 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | **Project** | `init` |
 | **Inspection** | `ls`, `describe`, `columns`, `computed`, `idxs`, `history`, `status`, `config` |
 | **Query** | `rows`, `get`, `count`, `errors` |
-| **Mutation** | `drop`, `drop-dir`, `rename`, `mv`, `revert` |
+| **Mutation** | `drop`, `drop-dir`, `rename`, `mv`, `recompute`, `revert` |
 | **Schema** | `schema diff`, `schema update`, `schema prune`, `schema check`, `schema example` |
-| **Serving** | `service diff`, `service update`, `service run`, `service prune`, `service stop`, `service list`, `service check`, `service example` |
+| **Serving** | `service diff`, `service update`, `service run`, `service prune`, `service stop`, `service restart`, `service list`, `service logs`, `service check`, `service example` |
 | **Cloud** | `db`, `org`, `secret` |
 | **Interactive** | `shell`, `cd`, `pwd` |
 | **Lifecycle** | `daemon`, `dashboard`, `localproxy`, `health` |
@@ -52,8 +52,8 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 |------|-------------|
 | `-h`, `--help` | Every command |
 | `--json` | Machine-readable output on catalog commands, `schema` / `service` verbs, `db`, `org`, `secret`, `daemon status`. Not on `shell`, `dashboard`, or `daemon start`/`stop`. `health` is always JSON. |
-| `-n`, `--dry-run` | Catalog mutations (`drop`, `drop-dir`, `rename`, `mv`, `revert`) plus `schema update`, `schema prune`, `service update`, `service prune`, and `db update` |
-| `-f`, `--force` | Skip `[y/N]` on `drop`, `drop-dir`, `revert`, schema/service update and prune, and `db update`. Use it in non-interactive runs when a pending plan can prompt. Additive or no-op schema updates do not prompt. Not on `rename`/`mv`. |
+| `-n`, `--dry-run` | Catalog mutations (`drop`, `drop-dir`, `rename`, `mv`, `recompute`, `revert`) plus `schema update`, `schema prune`, `service update`, `service prune`, and `db update` |
+| `-f`, `--force` | Skip `[y/N]` on `drop`, `drop-dir`, `recompute`, `revert`, schema/service update and prune, and `db update`. Use it in non-interactive runs when a pending plan can prompt. Additive or no-op schema updates do not prompt. Not on `rename`/`mv`. |
 
 ## Agent workflows
 
@@ -67,7 +67,8 @@ On the first catalog command, `pxt` auto-spawns a daemon at `127.0.0.1:22089` (~
 | Start HTTP | `pxt service update` | `pxt service update app.py my_app -f` (force pending changes in CI) |
 | Inspect catalog | `pxt ls -l`, `pxt describe`, `pxt columns --computed` | `pxt ls --json \| jq '.entries[] \| select(.kind == "table")'` |
 | Debug failed columns | `pxt errors`, `pxt rows --cols` | `pxt errors my_app/docs --col embedding` |
-| Debug a service | `pxt service logs` | `pxt service logs my_app/ingest --since 10m --tail 50` |
+| Retry failed cells | `pxt recompute` | `pxt recompute my_app/docs embedding --errors-only -f` |
+| Debug a hosted service | `pxt service logs` | `pxt service logs pxt://org:db/ingest --since 10m --tail 50`. A local service is not readable this way: the command exits 1 and prints the log file's path; `tail` that file |
 | Check runtime/config | `pxt status`, `pxt config` | `pxt config --section openai` |
 | Many commands in sequence | `pxt shell` | amortizes startup; errors don't kill session |
 | Visual inspection | `pxt dashboard` | read-only UI at daemon port |
@@ -93,6 +94,7 @@ pxt rows my_app/docs -n 5
 pxt get my_app/docs 42
 pxt count my_app/docs
 pxt errors my_app/docs
+pxt recompute my_app/docs summary --errors-only -f
 
 # mutations (use -f in CI)
 pxt drop my_app/docs -f
@@ -124,6 +126,7 @@ pxt dashboard
 - **`pxt schema prune`**: never force-drops, and drops a view before its base; a table something outside the pruned set depends on is left in place
 - **`pxt drop-dir`**: `-r` for recursive directory removal
 - **`pxt revert`**: irreversible -- run `pxt history` first
+- **`pxt recompute`**: `pxt recompute PATH COLUMN...`; `--errors-only` narrows it to the rows that failed and takes one column; `--no-cascade` leaves dependent columns alone; `-n` reports the row count without running. The CLI form of `t.recompute_columns()`
 
 Table paths accept `my_app/docs` or `my_app.docs`.
 
@@ -180,10 +183,12 @@ Runs the `FastAPIRouter` instances an application file declares. Requires `pip i
 | Command | Description |
 |---------|-------------|
 | `pxt service diff APP TARGET` | What `update` would change. Exit `2` if pending |
-| `pxt service update APP TARGET` | Start declared services in the background; restart those that changed. Does **not** create tables |
-| `pxt service run APP TARGET [SERVICE]` | Serve one service in the foreground until interrupted. For a container entrypoint, which must not return; **not** the command to recommend otherwise -- use `update` |
+| `pxt service update APP TARGET [SERVICE]` | Start declared services in the background; restart those that changed. Does **not** create tables. `--port` pins one named service's port; a restarted service keeps its port |
+| `pxt service run APP TARGET [SERVICE]` | Serve one service in the foreground until interrupted (`--host`, `--port`; default `127.0.0.1:8000`). For a container entrypoint, which must not return; **not** the command to recommend otherwise -- use `update` |
 | `pxt service prune APP TARGET` | Stop and forget services at `TARGET` that the file does not declare |
 | `pxt service stop NAME...` | Stop named services (`ingest` or `my_app/ingest`) |
+| `pxt service restart NAME...` | Restart named services onto the current project and secrets |
+| `pxt service logs NAME` | Read a hosted service's log; a local service gets its log file's path instead |
 | `pxt service list [TARGET]` | What is running, and where |
 | `pxt service check APP` | Validate the file only. No `TARGET`. Reads no catalog |
 | `pxt service example` | Write a working application file |
@@ -200,7 +205,7 @@ pxt service stop ingest
 
 `update` starts one background process per service, each on its own port, and is the serving command to use. A no-op or dry run exits without prompting; pass `-f` when a pending update runs without a TTY. Adding a route is additive; changing or removing one needs `--allow-destructive`. OpenAPI docs are at `/docs`. `pxt service run` refuses a `pxt://` TARGET and does not record anything, so `list` and `stop` cannot find it.
 
-`pxt service logs NAME` accepts a bare service name or `TARGET/NAME`; use a full `pxt://org:db/path/name` for hosted services. `--since` accepts values such as `10m`, `--tail` is capped at 10,000 lines, and `--include-health` keeps health-probe requests. Local services report their log-file path. Hosted logs include request records and console output, including startup tracebacks.
+`pxt service logs NAME` reads a hosted service's log: `pxt://org:db/ingest` or `pxt://org:db/path/ingest`. `--since` accepts `30s`, `10m`, `1h`, `2d` (default `1h`), `--tail` is capped at 10,000 lines (default 200), and `--include-health` keeps health-probe requests. Hosted logs merge request records with console output, including startup tracebacks. A service on this machine is not readable through it: the command exits 1 and prints the log file's path (`$PIXELTABLE_HOME/logs/services/<target>/<name>.log`); `tail` that file.
 
 **Tracing.** `service diff`, `service update` and `service run` take `--otel`, which emits OpenTelemetry traces and needs `pip install 'pixeltable[otel]'` (`serve` and `otel` are the only two extras). The setting belongs to the running service, not to the file: a service already running without it restarts when `update` is given the flag, dropping the flag restarts it again, and `diff --otel` reports tracing that is off but was asked for as a pending change.
 
@@ -211,7 +216,7 @@ Do **not** write `[tool.pixeltable.service]` TOML or call `pxt serve`.
 Require `PIXELTABLE_API_KEY`. URIs are `pxt://org` or `pxt://org:db`.
 
 ```bash
-pxt db update pxt://myorg:mydb -f  # also: list, status, logs, start, stop, diff, build-image, delete
+pxt db update pxt://myorg:mydb -f  # also: diff, list, status, logs, start, stop, restart, build-image, delete
 pxt db logs pxt://myorg:mydb --since 10m --tail 50
 pxt org status pxt://myorg         # also: list
 ```
@@ -230,7 +235,7 @@ A UDF is recorded as a module path relative to the project root (`app.excerpt`),
 pxt secret set pxt://myorg OPENAI_API_KEY=<your-key>    # also: list, delete
 ```
 
-An org secret applies to every database in the org; a database secret wins on a key collision. A project declares database secrets under the `secrets` mapping, for example `secrets.openai_api_key = '<env:OPENAI_API_KEY>'`; `pxt db update` sets them. A running database keeps the values it started with. Run `pxt db stop` then `pxt db start` to pick up a change.
+An org secret applies to every database in the org; a database secret wins on a key collision. A project declares database secrets under the `secrets` mapping, for example `secrets.openai_api_key = '<env:OPENAI_API_KEY>'`; `pxt db update` sets them. A process reads its secrets once, at startup, so a running one keeps the values it began with. After `pxt secret set` or `pxt secret delete`, run `pxt db restart pxt://org:db` for the database's tables and `pxt service restart pxt://org:db/NAME` for its services.
 
 ## Scripting with `--json`
 
@@ -244,6 +249,6 @@ pxt service diff app.py my_app --json
 
 ## Related references
 
-- [core-api.md → Serving](core-api.md#serving) -- `FastAPIRouter` Python API
+- [core-api.md, Serving](core-api.md#serving) -- `FastAPIRouter` Python API
 - [workflows.md](workflows.md) -- application-file example
 - [Configuration](https://docs.pixeltable.com/platform/configuration) -- API keys, paths, env vars

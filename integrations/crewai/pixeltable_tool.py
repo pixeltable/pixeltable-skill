@@ -5,7 +5,7 @@ Install:
 
 Usage:
     from crewai import Agent
-    from pixeltable_tool import (
+    from integrations.crewai import (
         PixeltableListTablesTool,
         PixeltableCreateTableTool,
         PixeltableInsertTool,
@@ -29,11 +29,21 @@ Usage:
 from __future__ import annotations
 
 import json
-from typing import Optional, Type
 
 import pixeltable as pxt
-from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
+
+from crewai.tools import BaseTool
+
+
+def _schema(t: pxt.Table) -> dict[str, str]:
+    """Column name to type, from Table.get_metadata(); Table.columns() returns names only."""
+    return {name: col['type_'] for name, col in t.get_metadata()['columns'].items()}
+
+
+def _rows_json(rows: object) -> str:
+    """Serialize a collect() ResultSet, which has no to_json()."""
+    return json.dumps(rows.to_pandas().to_dict(orient='records'), default=str)
 
 
 class _ListTablesInput(BaseModel):
@@ -46,7 +56,7 @@ class PixeltableListTablesTool(BaseTool):
         'List all Pixeltable tables and directories. '
         'Always call this before creating tables to avoid duplicates.'
     )
-    args_schema: Type[BaseModel] = _ListTablesInput
+    args_schema: type[BaseModel] = _ListTablesInput
 
     def _run(self) -> str:
         tables = pxt.list_tables()
@@ -68,7 +78,7 @@ class _CreateTableInput(BaseModel):
 class PixeltableCreateTableTool(BaseTool):
     name: str = 'pixeltable_create_table'
     description: str = 'Create a Pixeltable table with multimodal column types.'
-    args_schema: Type[BaseModel] = _CreateTableInput
+    args_schema: type[BaseModel] = _CreateTableInput
 
     def _run(self, path: str, schema_json: str, if_exists: str = 'ignore') -> str:
         type_map = {
@@ -89,7 +99,7 @@ class PixeltableCreateTableTool(BaseTool):
             pxt.create_dir(parts[0], if_exists='ignore')
 
         t = pxt.create_table(path, schema, if_exists='ignore' if if_exists == 'ignore' else 'error')
-        cols = {c.name: str(c.col_type) for c in t.columns()}
+        cols = _schema(t)
         return json.dumps({'table': path, 'columns': cols, 'rows': t.count()})
 
 
@@ -104,7 +114,7 @@ class _InsertInput(BaseModel):
 class PixeltableInsertTool(BaseTool):
     name: str = 'pixeltable_insert'
     description: str = 'Insert rows into a Pixeltable table. Supports text, numbers, and media (images, video, audio, documents) via paths or URLs.'
-    args_schema: Type[BaseModel] = _InsertInput
+    args_schema: type[BaseModel] = _InsertInput
 
     def _run(self, path: str, rows_json: str) -> str:
         t = pxt.get_table(path)
@@ -120,23 +130,23 @@ class PixeltableInsertTool(BaseTool):
 class _QueryInput(BaseModel):
     path: str = Field(..., description='Dot-separated table path.')
     limit: int = Field(20, description='Maximum rows to return.')
-    columns: Optional[str] = Field(None, description='Comma-separated column names. Returns all if omitted.')
+    columns: str | None = Field(None, description='Comma-separated column names. Returns all if omitted.')
 
 
 class PixeltableQueryTool(BaseTool):
     name: str = 'pixeltable_query'
     description: str = 'Query and collect rows from a Pixeltable table.'
-    args_schema: Type[BaseModel] = _QueryInput
+    args_schema: type[BaseModel] = _QueryInput
 
-    def _run(self, path: str, limit: int = 20, columns: Optional[str] = None) -> str:
+    def _run(self, path: str, limit: int = 20, columns: str | None = None) -> str:
         t = pxt.get_table(path)
         if columns:
             col_names = [c.strip() for c in columns.split(',')]
             col_refs = [getattr(t, name) for name in col_names]
-            df = t.select(*col_refs).limit(limit).collect()
+            rows = t.select(*col_refs).limit(limit).collect()
         else:
-            df = t.limit(limit).collect()
-        return df.to_json(orient='records', default_handler=str)
+            rows = t.limit(limit).collect()
+        return _rows_json(rows)
 
 
 class _SimilaritySearchInput(BaseModel):
@@ -152,14 +162,14 @@ class PixeltableSimilaritySearchTool(BaseTool):
         'Run similarity search on a Pixeltable column that has an embedding index. '
         'Returns results ranked by relevance with similarity scores.'
     )
-    args_schema: Type[BaseModel] = _SimilaritySearchInput
+    args_schema: type[BaseModel] = _SimilaritySearchInput
 
     def _run(self, path: str, column: str, query: str, limit: int = 10) -> str:
         t = pxt.get_table(path)
         col_ref = getattr(t, column)
         sim = col_ref.similarity(string=query)
-        df = t.order_by(sim, asc=False).limit(limit).select(col_ref, sim=sim).collect()
-        return df.to_json(orient='records', default_handler=str)
+        rows = t.order_by(sim, asc=False).limit(limit).select(col_ref, score=sim).collect()
+        return _rows_json(rows)
 
 
 class _SchemaInput(BaseModel):
@@ -169,9 +179,9 @@ class _SchemaInput(BaseModel):
 class PixeltableGetSchemaTool(BaseTool):
     name: str = 'pixeltable_get_schema'
     description: str = 'Get the schema and row count of an existing Pixeltable table.'
-    args_schema: Type[BaseModel] = _SchemaInput
+    args_schema: type[BaseModel] = _SchemaInput
 
     def _run(self, path: str) -> str:
         t = pxt.get_table(path)
-        cols = {c.name: str(c.col_type) for c in t.columns()}
+        cols = _schema(t)
         return json.dumps({'table': path, 'columns': cols, 'rows': t.count()})

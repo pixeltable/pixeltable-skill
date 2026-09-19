@@ -14,11 +14,14 @@ Usage:
 from __future__ import annotations
 
 import ast
+import inspect
 import json
 import operator
+import types
 from typing import Any
 
 import pixeltable as pxt
+import pixeltable.functions as pxtf
 
 from agno.tools import Toolkit
 
@@ -46,7 +49,31 @@ _SAFE_OPS = {
 }
 
 
+_TYPES = {
+    'String': pxt.String, 'Int': pxt.Int, 'Float': pxt.Float,
+    'Bool': pxt.Bool, 'Timestamp': pxt.Timestamp, 'Json': pxt.Json,
+    'Image': pxt.Image, 'Video': pxt.Video, 'Audio': pxt.Audio,
+    'Document': pxt.Document, 'Array': pxt.Array,
+}
+
+
+def _is_pxt_module(value: Any) -> bool:
+    return isinstance(value, types.ModuleType) and value.__name__.startswith('pixeltable.functions')
+
+
+def _is_expr_method(value: Any) -> bool:
+    """A bound method of an Expr, such as `t.col.astype`; MethodRefs like `t.col.upper` are Exprs."""
+    return inspect.ismethod(value) and isinstance(value.__self__, pxt.exprs.Expr)
+
+
 def _eval_ast_node(node: ast.AST, scope: dict[str, Any]) -> Any:
+    """Evaluate an agent-supplied expression into a Pixeltable Expr.
+
+    The expression comes from a model, so every step is allowlisted: no name that starts
+    with an underscore, attributes only on the table, an Expr, `pxt` (types only) or a
+    `pixeltable.functions` module, and calls only to Pixeltable functions and Expr
+    methods. Anything else raises ValueError or TypeError before it is evaluated.
+    """
     if isinstance(node, ast.Expression):
         return _eval_ast_node(node.body, scope)
     if isinstance(node, ast.Constant):
@@ -56,10 +83,28 @@ def _eval_ast_node(node: ast.AST, scope: dict[str, Any]) -> Any:
             return scope[node.id]
         raise ValueError(f'Unknown identifier: {node.id}')
     if isinstance(node, ast.Attribute):
+        if node.attr.startswith('_'):
+            raise ValueError(f'Attribute not allowed: {node.attr}')
         value = _eval_ast_node(node.value, scope)
-        return getattr(value, node.attr)
+        if value is pxt:
+            if node.attr not in _TYPES:
+                raise ValueError(f'pxt.{node.attr} is not a column type')
+            return _TYPES[node.attr]
+        if isinstance(value, (pxt.Table, pxt.exprs.Expr)):
+            result = getattr(value, node.attr)
+            if isinstance(result, pxt.exprs.Expr) or _is_expr_method(result):
+                return result
+            raise TypeError(f'{node.attr} is not a column or an expression method')
+        if _is_pxt_module(value):
+            result = getattr(value, node.attr)
+            if not (_is_pxt_module(result) or isinstance(result, pxt.func.Function)):
+                raise ValueError(f'{node.attr} is not a Pixeltable function')
+            return result
+        raise ValueError(f'Attribute access not allowed on {type(value).__name__}')
     if isinstance(node, ast.Call):
         func = _eval_ast_node(node.func, scope)
+        if not (isinstance(func, (pxt.func.Function, pxt.exprs.Expr)) or _is_expr_method(func)):
+            raise TypeError('Only Pixeltable functions and expression methods can be called')
         args = [_eval_ast_node(arg, scope) for arg in node.args]
         keywords = {kw.arg: _eval_ast_node(kw.value, scope) for kw in node.keywords if kw.arg is not None}
         return func(*args, **keywords)
@@ -75,14 +120,20 @@ def _eval_ast_node(node: ast.AST, scope: dict[str, Any]) -> Any:
         raise ValueError(f'Unsupported unary operator: {op_type.__name__}')
     if isinstance(node, ast.Subscript):
         val = _eval_ast_node(node.value, scope)
-        sl = _eval_ast_node(node.slice, scope)
-        return val[sl]
+        if not isinstance(val, pxt.exprs.Expr):
+            raise TypeError('Subscripts are only allowed on column expressions')
+        return val[_eval_ast_node(node.slice, scope)]
+    if isinstance(node, (ast.List, ast.Tuple)):
+        return [_eval_ast_node(elt, scope) for elt in node.elts]
     raise ValueError(f'Unsupported AST node: {type(node).__name__}')
 
 
-def _safe_eval_expr(expression: str, scope: dict[str, Any]) -> Any:
+def _safe_eval_expr(expression: str, scope: dict[str, Any]) -> pxt.exprs.Expr:
     tree = ast.parse(expression.strip(), mode='eval')
-    return _eval_ast_node(tree, scope)
+    result = _eval_ast_node(tree, scope)
+    if not isinstance(result, pxt.exprs.Expr):
+        raise TypeError('The expression must produce a column expression')
+    return result
 
 
 class PixeltableTools(Toolkit):
@@ -136,12 +187,7 @@ class PixeltableTools(Toolkit):
         Returns:
             Confirmation message with table info.
         """
-        type_map = {
-            'String': pxt.String, 'Int': pxt.Int, 'Float': pxt.Float,
-            'Bool': pxt.Bool, 'Timestamp': pxt.Timestamp, 'Json': pxt.Json,
-            'Image': pxt.Image, 'Video': pxt.Video, 'Audio': pxt.Audio,
-            'Document': pxt.Document, 'Array': pxt.Array,
-        }
+        type_map = _TYPES
         raw_schema = json.loads(schema_json)
         schema = {}
         for col_name, col_type in raw_schema.items():
@@ -217,14 +263,16 @@ class PixeltableTools(Toolkit):
         Args:
             path: Dot-separated table path.
             column_name: Name for the new computed column.
-            expression: Python expression string using table column references
-                (e.g., "t.text.upper()" or "t.price * 1.1").
+            expression: Pixeltable expression over `t` (the table), `pxtf`
+                (`pixeltable.functions`) and `pxt` column types, e.g. "t.text.upper()",
+                "t.price * 1.1", "pxtf.string.len(t.text)". Only Pixeltable functions and
+                column methods can be called.
 
         Returns:
             Confirmation message.
         """
         t = pxt.get_table(path)
-        expr = _safe_eval_expr(expression, {'t': t, 'pxt': pxt})
+        expr = _safe_eval_expr(expression, {'t': t, 'pxt': pxt, 'pxtf': pxtf})
         t.add_computed_column(**{column_name: expr}, if_exists='ignore')
         return json.dumps({'status': 'ok', 'column': column_name, 'table': path})
 

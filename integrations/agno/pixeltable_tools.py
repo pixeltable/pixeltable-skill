@@ -5,7 +5,7 @@ Install:
 
 Usage:
     from agno.agent import Agent
-    from pixeltable_tools import PixeltableTools
+    from integrations.agno import PixeltableTools
 
     agent = Agent(tools=[PixeltableTools()])
     agent.print_response("Create a table for storing articles with text and images")
@@ -20,6 +20,68 @@ from typing import Any, Optional
 
 import pixeltable as pxt
 from agno.tools import Toolkit
+
+
+def _schema(t: pxt.Table) -> dict[str, str]:
+    """Column name to type, from Table.get_metadata(); Table.columns() returns names only."""
+    return {name: col['type_'] for name, col in t.get_metadata()['columns'].items()}
+
+
+def _rows_json(rows: Any) -> str:
+    """Serialize a collect() ResultSet, which has no to_json()."""
+    return json.dumps(rows.to_pandas().to_dict(orient='records'), default=str)
+
+
+_SAFE_OPS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.FloorDiv: operator.floordiv,
+    ast.Mod: operator.mod,
+    ast.Pow: operator.pow,
+    ast.USub: operator.neg,
+    ast.UAdd: operator.pos,
+}
+
+
+def _eval_ast_node(node: ast.AST, scope: dict[str, Any]) -> Any:
+    if isinstance(node, ast.Expression):
+        return _eval_ast_node(node.body, scope)
+    if isinstance(node, ast.Constant):
+        return node.value
+    if isinstance(node, ast.Name):
+        if node.id in scope:
+            return scope[node.id]
+        raise ValueError(f'Unknown identifier: {node.id}')
+    if isinstance(node, ast.Attribute):
+        value = _eval_ast_node(node.value, scope)
+        return getattr(value, node.attr)
+    if isinstance(node, ast.Call):
+        func = _eval_ast_node(node.func, scope)
+        args = [_eval_ast_node(arg, scope) for arg in node.args]
+        keywords = {kw.arg: _eval_ast_node(kw.value, scope) for kw in node.keywords if kw.arg is not None}
+        return func(*args, **keywords)
+    if isinstance(node, ast.BinOp):
+        op_type = type(node.op)
+        if op_type in _SAFE_OPS:
+            return _SAFE_OPS[op_type](_eval_ast_node(node.left, scope), _eval_ast_node(node.right, scope))
+        raise ValueError(f'Unsupported binary operator: {op_type.__name__}')
+    if isinstance(node, ast.UnaryOp):
+        op_type = type(node.op)
+        if op_type in _SAFE_OPS:
+            return _SAFE_OPS[op_type](_eval_ast_node(node.operand, scope))
+        raise ValueError(f'Unsupported unary operator: {op_type.__name__}')
+    if isinstance(node, ast.Subscript):
+        val = _eval_ast_node(node.value, scope)
+        sl = _eval_ast_node(node.slice, scope)
+        return val[sl]
+    raise ValueError(f'Unsupported AST node: {type(node).__name__}')
+
+
+def _safe_eval_expr(expression: str, scope: dict[str, Any]) -> Any:
+    tree = ast.parse(expression.strip(), mode='eval')
+    return _eval_ast_node(tree, scope)
 
 
 class PixeltableTools(Toolkit):
@@ -92,7 +154,7 @@ class PixeltableTools(Toolkit):
 
         if_exists_val = 'ignore' if if_exists == 'ignore' else 'error'
         t = pxt.create_table(path, schema, if_exists=if_exists_val)
-        cols = {c.name: str(c.col_type) for c in t.columns()}
+        cols = _schema(t)
         return json.dumps({'table': path, 'columns': cols, 'rows': t.count()})
 
     def get_table_schema(self, path: str) -> str:
@@ -105,7 +167,7 @@ class PixeltableTools(Toolkit):
             JSON with column names/types and row count.
         """
         t = pxt.get_table(path)
-        cols = {c.name: str(c.col_type) for c in t.columns()}
+        cols = _schema(t)
         return json.dumps({'table': path, 'columns': cols, 'rows': t.count()})
 
     def insert_rows(self, path: str, rows_json: str) -> str:
@@ -143,62 +205,10 @@ class PixeltableTools(Toolkit):
         if columns:
             col_names = [c.strip() for c in columns.split(',')]
             col_refs = [getattr(t, name) for name in col_names]
-            df = t.select(*col_refs).limit(limit).collect()
+            rows = t.select(*col_refs).limit(limit).collect()
         else:
-            df = t.limit(limit).collect()
-        return df.to_json(orient='records', default_handler=str)
-
-_SAFE_OPS = {
-    ast.Add: operator.add,
-    ast.Sub: operator.sub,
-    ast.Mult: operator.mul,
-    ast.Div: operator.truediv,
-    ast.FloorDiv: operator.floordiv,
-    ast.Mod: operator.mod,
-    ast.Pow: operator.pow,
-    ast.USub: operator.neg,
-    ast.UAdd: operator.pos,
-}
-
-
-def _eval_ast_node(node: ast.AST, scope: dict[str, Any]) -> Any:
-    if isinstance(node, ast.Expression):
-        return _eval_ast_node(node.body, scope)
-    if isinstance(node, ast.Constant):
-        return node.value
-    if isinstance(node, ast.Name):
-        if node.id in scope:
-            return scope[node.id]
-        raise ValueError(f'Unknown identifier: {node.id}')
-    if isinstance(node, ast.Attribute):
-        value = _eval_ast_node(node.value, scope)
-        return getattr(value, node.attr)
-    if isinstance(node, ast.Call):
-        func = _eval_ast_node(node.func, scope)
-        args = [_eval_ast_node(arg, scope) for arg in node.args]
-        keywords = {kw.arg: _eval_ast_node(kw.value, scope) for kw in node.keywords if kw.arg is not None}
-        return func(*args, **keywords)
-    if isinstance(node, ast.BinOp):
-        op_type = type(node.op)
-        if op_type in _SAFE_OPS:
-            return _SAFE_OPS[op_type](_eval_ast_node(node.left, scope), _eval_ast_node(node.right, scope))
-        raise ValueError(f'Unsupported binary operator: {op_type.__name__}')
-    if isinstance(node, ast.UnaryOp):
-        op_type = type(node.op)
-        if op_type in _SAFE_OPS:
-            return _SAFE_OPS[op_type](_eval_ast_node(node.operand, scope))
-        raise ValueError(f'Unsupported unary operator: {op_type.__name__}')
-    if isinstance(node, ast.Subscript):
-        val = _eval_ast_node(node.value, scope)
-        sl = _eval_ast_node(node.slice, scope)
-        return val[sl]
-    raise ValueError(f'Unsupported AST node: {type(node).__name__}')
-
-
-def _safe_eval_expr(expression: str, scope: dict[str, Any]) -> Any:
-    tree = ast.parse(expression.strip(), mode='eval')
-    return _eval_ast_node(tree, scope)
-
+            rows = t.limit(limit).collect()
+        return _rows_json(rows)
 
     def add_computed_column(self, path: str, column_name: str, expression: str) -> str:
         """Add a computed column using a Pixeltable expression.
@@ -226,8 +236,8 @@ def _safe_eval_expr(expression: str, scope: dict[str, Any]) -> Any:
             path: Dot-separated table path.
             column: Column name to index.
             embedding_function: Fully qualified function reference
-                (e.g., "pixeltable.functions.openai.embeddings" or
-                "pixeltable.functions.sentence_transformers.SentenceTransformer.using(model_id='all-MiniLM-L6-v2')").
+                (e.g., "pixeltable.functions.openai.embeddings.using(model='text-embedding-3-small')" or
+                "pixeltable.functions.huggingface.sentence_transformer.using(model_id='sentence-transformers/all-MiniLM-L6-v2')").
             metric: Distance metric ("cosine", "ip", or "l2").
 
         Returns:
@@ -253,7 +263,7 @@ def _safe_eval_expr(expression: str, scope: dict[str, Any]) -> Any:
             mod = importlib.import_module(module_path)
             embed_fn = getattr(mod, attr)
 
-        t.add_embedding_index(column, embedding=embed_fn, metric=metric, if_not_exists=True)
+        t.add_embedding_index(column, embedding=embed_fn, metric=metric, if_exists='ignore')
         return json.dumps({'status': 'ok', 'column': column, 'metric': metric, 'table': path})
 
     def similarity_search(self, path: str, column: str, query: str, limit: int = 10) -> str:
@@ -271,8 +281,8 @@ def _safe_eval_expr(expression: str, scope: dict[str, Any]) -> Any:
         t = pxt.get_table(path)
         col_ref = getattr(t, column)
         sim = col_ref.similarity(string=query)
-        df = t.order_by(sim, asc=False).limit(limit).select(col_ref, sim=sim).collect()
-        return df.to_json(orient='records', default_handler=str)
+        rows = t.order_by(sim, asc=False).limit(limit).select(col_ref, score=sim).collect()
+        return _rows_json(rows)
 
     def drop_table(self, path: str, force: bool = False) -> str:
         """Drop a Pixeltable table.

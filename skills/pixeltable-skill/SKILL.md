@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.10.3
+  version: 2.11.0
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -66,7 +66,7 @@ pxt service list                  # assigned port; do not hard-code :8000
 
 `pxt service example` writes models plus a `FastAPIRouter`. Schema only (no HTTP): `pxt schema example --brief --out app.py`. Then edit `app.py` and run `pxt schema update` again. After a schema change, run `pxt service update` again if routes exist. Do not `python app.py`. Full flags: [cli.md](references/cli.md).
 
-The last argument (`my_app`, or `pxt://org:db` on Cloud) is a catalog directory, not a folder on disk. `pxt init` marks the project root. Schema does not start HTTP. Service does not create tables. Non-interactive: `pxt service update ... -f`. Local handle: `pxt.get_table('my_app.docs')`.
+The last argument (`my_app`, or `pxt://org:db` on Cloud) is a catalog directory, not a folder on disk. `pxt init` marks the project root. Schema does not start HTTP. Service does not create tables. Non-interactive: `pxt service update ... -f`. Local handle: `pxt.get_table('my_app.docs')`, or bind the models: `import app; app.TableModel.bind_all('my_app')`, then `app.Docs.insert(...)` / `app.Docs.select(...).collect()`.
 
 Same file on Cloud: set `PIXELTABLE_API_KEY`, add `[[pixeltable.database]]` with `name = 'pxt://org:db'`, then `pxt db update pxt://org:db -f`, then `pxt schema update app.py pxt://org:db -f`, then `pxt service update app.py pxt://org:db -f`. Cloud handle: `pxt.get_table('pxt://org:db/docs')`. Cloud databases store media in their managed home bucket by default; set a column `destination=` only to override it. On Cloud, try the app with dashboard insert plus `pxt schema diff`, and inspect failures with `pxt service logs` / `pxt db logs`. [Cloud](https://docs.pixeltable.com/howto/deployment/cloud).
 
@@ -107,9 +107,9 @@ ingest.add_update_route(
 ingest.add_compute_route(Docs, path='/titles', inputs=[Docs.title], outputs=[Docs.title_upper])
 ```
 
-Annotation is a stored column. Assignment is a computed column. Optional is `T | None`. Primary key is `pxt.Column(..., primary_key=True)`. Indexes on the model: `__indexes__ = [pxt.EmbeddingIndex(...)]`. `from pixeltable.serving import FastAPIRouter`.
+Annotation is a stored column. Assignment is a computed column. Optional is `T | None`. Primary key is `pxt.Column(..., primary_key=True)`; `add_update_route` matches rows by it, so the request body carries `id` even though `inputs` does not list it. Indexes on the model: `__indexes__ = [pxt.EmbeddingIndex(...)]`. `from pixeltable.serving import FastAPIRouter`.
 
-Already have FastAPI: after schema update, `ingest.bind('my_app')` then `app.include_router(ingest)`. Call `pxt.get_table()` inside custom handlers. [workflows.md](references/workflows.md).
+Already have FastAPI: after schema update, `ingest.bind('my_app')` then `app.include_router(ingest)`. Or define the `fastapi.FastAPI` object in `app.py` and `include_router()` each router there; `pxt service update` then serves that one application. Call `pxt.get_table()` inside custom handlers. [workflows.md](references/workflows.md).
 
 RAG, views, and search: [workflows.md](references/workflows.md). Do not add Hugging Face or spaCy unless the user asked.
 
@@ -149,7 +149,7 @@ Add video, audio, agents, or a UI by editing `app.py`. A view is either a filter
 | `make_video(order_by=...)` / `stitch_tiles(order_by=...)` | Both are `requires_order_by` UDAs: the ordering expression is the **first positional** argument -- `make_video(t.pos, t.frame, fps=25)`. `order_by=` raises |
 | `pxt.create_table()` / `get_table()` at import in `app.py` | `TableModel` + `pxt schema update`. Import must not mutate the catalog |
 | `EmbeddingIndex(frame, image_embed=clip)` | `embedding=clip` (covers text and image). Or both `string_embed=` and `image_embed=`. `image_embed=` alone cannot answer `similarity(string=...)` |
-| `uuid.astype(pxt.String)` | `uuid.to_string()` (`from pixeltable.functions.uuid import to_string`). `astype` is not UUID→String |
+| `uuid.astype(pxt.String)` | `uuid.to_string()` (`from pixeltable.functions.uuid import to_string`). `astype` does not cast UUID to String |
 
 Extract the field (`.text`, `.choices[0].message.content`). Cast Json with `.astype(pxt.String)` only before embedding or concatenating.
 
@@ -213,6 +213,7 @@ pxt service update app.py my_app
 pxt service list
 pxt ls -l
 pxt errors my_app/docs
+pxt recompute my_app/docs summary --errors-only -f
 pxt dashboard
 ```
 

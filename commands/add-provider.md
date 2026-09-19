@@ -3,13 +3,13 @@ description: Add an AI provider call as a Pixeltable computed column (correct im
 argument-hint: "[provider] [task, e.g. summarize/classify/embed/transcribe]"
 ---
 
-Wire an AI provider into a Pixeltable table as a computed column. The model runs automatically on insert : never write a `for row in ...:` loop calling the model.
+Wire an AI provider into a Pixeltable table as a computed column. The model runs automatically on insert; never write a `for row in ...:` loop calling the model.
 
 Request: `$ARGUMENTS`
 
 Steps:
 
-1. Identify the provider module under `pixeltable.functions.<provider>` (e.g. `openai`, `anthropic`, `gemini`, `groq`, `bedrock`, `together`, `fireworks`, `ollama`, `whisper`). Confirm the exact import and output shape in the `pixeltable` skill (`references/providers.md` → Quick Reference) before writing code.
+1. Identify the provider module under `pixeltable.functions.<provider>` (e.g. `openai`, `anthropic`, `gemini`, `groq`, `bedrock`, `together`, `fireworks`, `ollama`, `whisper`). Confirm the exact import and output shape in the `pixeltable` skill (`references/providers.md`, Quick reference) before writing code.
 
 2. Add the call as a computed column, extracting the right field from the response. App file (assignment on the model):
 

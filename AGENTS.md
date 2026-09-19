@@ -20,7 +20,7 @@ hooks/
 scripts/validate_plugin.py
 ```
 
-Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), and `package.json`. Keep name `pixeltable` and versions in sync (`2.10.3`).
+Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), and `package.json`. Keep name `pixeltable` and versions in sync (`2.11.0`).
 
 ## Rules
 
@@ -33,7 +33,8 @@ Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin
 - Keep SKILL.md under 500 lines (enforced by `validate_plugin.py`).
 - Fenced ```python blocks in `skills/`, `agents/` and `commands/` must pass the hook's own `error` checks -- the validator imports `CHECKS` and runs them. Quote a wrong form in prose or a traps table, never in a code block.
 - Changing a computed column's expression in place is `UNSUPPORTED`. Rename the column, or drop and re-add it. `--allow-destructive` does not help.
-- Run `python3 scripts/validate_plugin.py` and `python3 tests/test_hooks.py` after any change.
+- Run `python3 scripts/validate_plugin.py`, `python3 tests/test_hooks.py` and `python3 tests/test_integrations.py` after any change.
+- Re-verify against the current Pixeltable release before a version bump: the record of the last pass is `docs/review-<skill version>.md`.
 
 ## Do not
 

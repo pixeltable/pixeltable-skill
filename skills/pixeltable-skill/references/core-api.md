@@ -97,7 +97,7 @@ t.group_by(t.region).select(t.region, total=t.amount.sum()).collect()
 
 `@pxt.query` compiles at decoration time: do not `.collect()` or `get_table()` a table that does not exist yet inside one.
 
-Local handle: `pxt.get_table('my_app.docs')`. Cloud: `pxt.get_table('pxt://org:db/docs')`.
+Local handle: `pxt.get_table('my_app.docs')`. Cloud: `pxt.get_table('pxt://org:db/docs')`. Or bind the models themselves: `import app; app.TableModel.bind_all('my_app')`, after which `app.Docs.insert(...)`, `app.Docs.count()` and `app.Docs.select(...).collect()` work.
 
 ## Computed columns
 
@@ -268,7 +268,7 @@ lookup_fn = pxt.retrieval_udf(t, name='lookup_items', description='Look up items
 
 ## UDAs
 
-`@pxt.uda` is many rows → one value. Use in `select()` / `group_by()`, not `add_computed_column`. Subclass `pxt.Aggregator`: `__init__`, `update`, `value`. `__init__` args must be constants.
+`@pxt.uda` is many rows to one value. Use in `select()` / `group_by()`, not `add_computed_column`. Subclass `pxt.Aggregator`: `__init__`, `update`, `value`. `__init__` args must be constants.
 
 ```python
 @pxt.uda
@@ -320,7 +320,7 @@ Do not hand-roll a reader or writer -- check `pxt.io.import_*` / `export_*` firs
 
 ## Serving
 
-`from pixeltable.serving import FastAPIRouter`. Start from `pxt service example --out app.py`. `add_update_route` requires the target's primary key. `add_delete_route` uses the primary key by default and can instead take a nonempty `match_columns=` list.
+`from pixeltable.serving import FastAPIRouter`. Start from `pxt service example --out app.py`. `add_update_route` requires the target's primary key and matches rows by it: the request body carries the key even though `inputs` does not list it. `add_delete_route` uses the primary key by default and can instead take a nonempty `match_columns=` list.
 
 Routes: `add_insert_route` (stores the row), `add_compute_route` (same request shape, computes without storing), `add_update_route`, `add_delete_route`, `add_query_route` (wraps a `@pxt.query`).
 

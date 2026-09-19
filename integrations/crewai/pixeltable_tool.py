@@ -5,7 +5,7 @@ Install:
 
 Usage:
     from crewai import Agent
-    from pixeltable_tool import (
+    from integrations.crewai import (
         PixeltableListTablesTool,
         PixeltableCreateTableTool,
         PixeltableInsertTool,
@@ -34,6 +34,16 @@ from typing import Optional, Type
 import pixeltable as pxt
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
+
+
+def _schema(t: pxt.Table) -> dict[str, str]:
+    """Column name to type, from Table.get_metadata(); Table.columns() returns names only."""
+    return {name: col['type_'] for name, col in t.get_metadata()['columns'].items()}
+
+
+def _rows_json(rows: object) -> str:
+    """Serialize a collect() ResultSet, which has no to_json()."""
+    return json.dumps(rows.to_pandas().to_dict(orient='records'), default=str)
 
 
 class _ListTablesInput(BaseModel):
@@ -89,7 +99,7 @@ class PixeltableCreateTableTool(BaseTool):
             pxt.create_dir(parts[0], if_exists='ignore')
 
         t = pxt.create_table(path, schema, if_exists='ignore' if if_exists == 'ignore' else 'error')
-        cols = {c.name: str(c.col_type) for c in t.columns()}
+        cols = _schema(t)
         return json.dumps({'table': path, 'columns': cols, 'rows': t.count()})
 
 
@@ -133,10 +143,10 @@ class PixeltableQueryTool(BaseTool):
         if columns:
             col_names = [c.strip() for c in columns.split(',')]
             col_refs = [getattr(t, name) for name in col_names]
-            df = t.select(*col_refs).limit(limit).collect()
+            rows = t.select(*col_refs).limit(limit).collect()
         else:
-            df = t.limit(limit).collect()
-        return df.to_json(orient='records', default_handler=str)
+            rows = t.limit(limit).collect()
+        return _rows_json(rows)
 
 
 class _SimilaritySearchInput(BaseModel):
@@ -158,8 +168,8 @@ class PixeltableSimilaritySearchTool(BaseTool):
         t = pxt.get_table(path)
         col_ref = getattr(t, column)
         sim = col_ref.similarity(string=query)
-        df = t.order_by(sim, asc=False).limit(limit).select(col_ref, sim=sim).collect()
-        return df.to_json(orient='records', default_handler=str)
+        rows = t.order_by(sim, asc=False).limit(limit).select(col_ref, score=sim).collect()
+        return _rows_json(rows)
 
 
 class _SchemaInput(BaseModel):
@@ -173,5 +183,5 @@ class PixeltableGetSchemaTool(BaseTool):
 
     def _run(self, path: str) -> str:
         t = pxt.get_table(path)
-        cols = {c.name: str(c.col_type) for c in t.columns()}
+        cols = _schema(t)
         return json.dumps({'table': path, 'columns': cols, 'rows': t.count()})

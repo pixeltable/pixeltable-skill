@@ -46,7 +46,7 @@ Chunking is `document_splitter`. Search is `.similarity()`. Tools are `pxt.tools
 
 **Wrong:** `while True:` tool loop that loses state on failure.
 
-**Right:** insert a row. The computed-column chain runs (`chat_completions` → `invoke_tools` → final). `invoke_tools` is per provider.
+**Right:** insert a row. The computed-column chain runs (`chat_completions`, then `invoke_tools`, then the final answer). `invoke_tools` is per provider.
 
 ## 6. Loading a model inside the UDF body
 

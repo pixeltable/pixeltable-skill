@@ -16,9 +16,10 @@ from __future__ import annotations
 import ast
 import json
 import operator
-from typing import Any, Optional
+from typing import Any
 
 import pixeltable as pxt
+
 from agno.tools import Toolkit
 
 
@@ -190,7 +191,7 @@ class PixeltableTools(Toolkit):
             'total_rows': t.count(),
         })
 
-    def query_table(self, path: str, limit: int = 20, columns: Optional[str] = None) -> str:
+    def query_table(self, path: str, limit: int = 20, columns: str | None = None) -> str:
         """Query rows from a Pixeltable table.
 
         Args:

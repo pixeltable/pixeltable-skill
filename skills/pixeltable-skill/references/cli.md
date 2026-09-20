@@ -226,7 +226,7 @@ pxt org status pxt://myorg         # also: list
 
 `pxt db update pxt://org:db` selects `[[pixeltable.database]]` by `name = 'pxt://org:db'`. A URI with no matching entry is an error. First `update` creates the hosted database.
 
-Hosted order: `pxt db update pxt://org:db -f` sets secrets, image, and workers, then `pxt schema update app.py pxt://org:db -f`, then `pxt service update app.py pxt://org:db -f`. Database capacity or secret changes can also require `--allow-destructive`. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
+Hosted order: `pxt db update pxt://org:db -f` uploads the project and sets image and workers, then `pxt schema update app.py pxt://org:db -f`, then `pxt service update app.py pxt://org:db -f`. Taking capacity away requires `--allow-destructive`. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
 
 Every Cloud database stores inserted and computed media in its managed home bucket by default. Set a column `destination=` to send that output elsewhere, or configure `input_media_dest` / `output_media_dest` to change the database defaults.
 
@@ -238,7 +238,7 @@ A UDF is recorded as a module path relative to the project root (`app.excerpt`),
 pxt secret set pxt://myorg OPENAI_API_KEY=<your-key>    # also: list, delete
 ```
 
-An org secret applies to every database in the org; a database secret wins on a key collision. A project declares database secrets under the `secrets` mapping, for example `secrets.openai_api_key = '<env:OPENAI_API_KEY>'`; `pxt db update` sets them. A process reads its secrets once, at startup, so a running one keeps the values it began with. After `pxt secret set` or `pxt secret delete`, run `pxt db restart pxt://org:db` for the database's tables and `pxt service restart pxt://org:db/NAME` for its services.
+An org secret applies to every database in the org; a database secret wins on a key collision. Secrets are set with `pxt secret`, never in `pixeltable.toml`: a `[[pixeltable.database]]` entry with a `secrets` mapping fails to load. A process reads its secrets once, at startup, so a running one keeps the values it began with. After `pxt secret set` or `pxt secret delete`, run `pxt db restart pxt://org:db` for the database's tables and `pxt service restart pxt://org:db/NAME` for its services.
 
 ## Scripting with `--json`
 

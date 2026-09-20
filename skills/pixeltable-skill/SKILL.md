@@ -12,7 +12,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.11.1
+  version: 2.11.2
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -48,7 +48,7 @@ One application file (`app.py`) is the backend.
 - Insert a sample, `.select()`, `pxt dashboard`, or `pxt schema diff`. Compute runs on insert. After `pxt service update`, curl POST.
 - `pxt service update`: starts HTTP (local or `pxt://`). `pxt service list` prints the URL. This is the serving command; do not reach for `pxt service run`.
 
-`pxt db update` sets hosted image, secrets, and workers. It does not insert rows and does not start app HTTP.
+`pxt db update` uploads the project files and sets the hosted image and workers. It does not set secrets (`pxt secret` does), insert rows, or start app HTTP.
 
 First run: [Quickstart](https://docs.pixeltable.com/overview/quick-start). Why: [Why Pixeltable](https://docs.pixeltable.com/overview/pixeltable).
 

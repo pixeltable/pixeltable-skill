@@ -60,7 +60,7 @@ pxt service update app.py my_app
 
 After apply: `t = pxt.get_table('my_app.docs')`.
 
-Already have FastAPI: after schema update, bind the catalog, then include the router. Call `pxt.get_table()` inside custom handlers; invoke a provider function imperatively with `await fn.aexec(*args, **kwargs)` in an `async def` handler.
+Already have FastAPI: after schema update, bind the catalog, then include the router. Call `pxt.get_table()` inside custom handlers, which must be `def`, not `async def`: an async handler that calls Pixeltable blocks the event loop. A provider function has no public imperative call from a handler; use the provider's own SDK there.
 
 ```python
 ingest.bind('my_app')

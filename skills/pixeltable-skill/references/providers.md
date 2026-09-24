@@ -50,7 +50,7 @@ embed_fn = embeddings.using(model='text-embedding-3-small')
 # or local: sentence_transformer.using(model_id='sentence-transformers/all-MiniLM-L6-v2')
 ```
 
-OpenAI-compatible chat-completion providers return `.choices[0].message.content`; OpenAI `responses` exposes simple text as `.output_text`. Anthropic returns `.content[0].text`. An image goes in a message as `{'type': 'image_url', 'image_url': {'url': t.image}}` -- `openai.vision` is deprecated. Tool calling is per provider: pair `pxt.tools(...)` with that module's own `invoke_tools`.
+OpenAI-compatible chat-completion providers return `.choices[0].message.content`; OpenAI `responses` exposes simple text as `.output_text`. Anthropic returns `.content[0].text`. An image goes in a message as `{'type': 'image_url', 'image_url': t.image}` -- the image column itself, not the HTTP API's `{'url': ...}` envelope; Pixeltable serializes it. `openai.vision` is deprecated. Params the signature lacks (`max_tokens`, `temperature`, `response_format`) go in `model_kwargs={...}`; an unknown top-level kwarg fails signature binding. Tool calling is per provider: pair `pxt.tools(...)` with that module's own `invoke_tools`.
 
 Rerankers (`voyageai.rerank`, `jina.rerank`, `huggingface.cross_encoder`) score query/document pairs; run one over the rows `.similarity()` returned rather than reaching for a framework.
 

@@ -60,7 +60,7 @@ pxt service update app.py my_app
 
 After apply: `t = pxt.get_table('my_app.docs')`.
 
-Already have FastAPI: after schema update, bind the catalog, then include the router. Call `pxt.get_table()` inside custom handlers.
+Already have FastAPI: after schema update, bind the catalog, then include the router. Call `pxt.get_table()` inside custom handlers; invoke a provider function imperatively with `await fn.aexec(*args, **kwargs)` in an `async def` handler.
 
 ```python
 ingest.bind('my_app')

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "pixeltable-cloud": {
+      "type": "streamable-http",
+      "url": "https://www.pixeltable.com/mcp/cloud"
+    }
+  }
+}

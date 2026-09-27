@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "pixeltable-cloud": {
+      "type": "http",
+      "url": "https://www.pixeltable.com/mcp/cloud"
+    }
+  }
+}

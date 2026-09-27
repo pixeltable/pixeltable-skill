@@ -21,6 +21,7 @@ scripts/validate_plugin.py
 ```
 
 Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), and `package.json`. Keep name `pixeltable` and versions in sync (`2.11.3`).
+Root `mcp.json` packages the hosted Cloud MCP for portable and Cursor plugins; `.mcp.json` packages the same endpoint for Claude Code. Keep their server name and URL in sync.
 
 ## Rules
 

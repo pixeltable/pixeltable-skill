@@ -63,6 +63,14 @@ skills/pixeltable-skill/
 Client manifests and marketplace metadata live alongside the shared skill so
 each supported installer can discover the format it understands.
 
+## Pixeltable Cloud MCP
+
+The full Pixeltable plugin also configures the hosted [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) for supported clients. After installing or updating the plugin, connect `pixeltable-cloud` in your client and complete the WorkOS AuthKit browser sign-in. It reads the Cloud organization selected during sign-in, including databases, services, catalog entries, schemas, and up to 25 table rows per call. It cannot deploy or change resources. Use the `pxt` CLI for changes.
+
+The plugin has one identity across Claude, Cursor, and ChatGPT. The Cloud MCP is a bundled remote connection, not a second Pixeltable plugin. A skill-only install with `npx skills add` does not configure MCP. To connect just the Cloud server without the full plugin, use `https://www.pixeltable.com/mcp/cloud` and follow the [setup instructions](https://pixeltable.com/developers/mcp-cloud). If the plugin already provides `pixeltable-cloud`, do not add a second manual entry.
+
+The [Docs MCP](https://docs.pixeltable.com/mcp) searches public documentation. The [developer MCP](https://github.com/pixeltable/mcp-server-pixeltable-developer) is a separate local server with catalog, query, and REPL tools.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Run `python3 scripts/validate_plugin.py` after structural changes.

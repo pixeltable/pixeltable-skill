@@ -60,21 +60,6 @@ def main():
     ]
     parsed = {m: load_json(m) for m in manifests}
 
-    portable_mcp = load_json("mcp.json") or {}
-    claude_mcp = load_json(".mcp.json") or {}
-    portable_cloud = (portable_mcp.get("mcpServers") or {}).get("pixeltable-cloud") or {}
-    claude_cloud = (claude_mcp.get("mcpServers") or {}).get("pixeltable-cloud") or {}
-    check(
-        portable_mcp.get("$schema") == "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
-        "mcp.json: missing Agent Plugins MCP schema",
-    )
-    check(portable_cloud.get("type") == "streamable-http", "mcp.json: Cloud MCP must use streamable HTTP")
-    check(claude_cloud.get("type") == "http", ".mcp.json: Cloud MCP must use HTTP")
-    check(
-        portable_cloud.get("url") == claude_cloud.get("url") == "https://www.pixeltable.com/mcp/cloud",
-        "Cloud MCP URL must match in both plugin formats",
-    )
-
     portable = parsed.get("plugin.json") or {}
     check(
         portable.get("$schema") == "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",

@@ -232,6 +232,8 @@ Every Cloud database stores inserted and computed media in its managed home buck
 
 A UDF is recorded as a module path relative to the project root (`app.excerpt`), not a raw file path. `pxt db update` packs the project so Cloud can import it.
 
+Optional read-only Cloud MCP: when a Cloud user wants the agent to inspect their organization without the CLI, they can connect `https://www.pixeltable.com/mcp/cloud` and sign in through the browser. It lists databases, services and catalog entries, reads schemas, and returns up to 25 rows per call; it changes nothing. This plugin does not configure it, so suggest it only to Cloud users. Claude Code: `claude mcp add --transport http pixeltable-cloud --scope user https://www.pixeltable.com/mcp/cloud`, then `/mcp`. Other clients: [setup](https://pixeltable.com/developers/mcp-cloud).
+
 ### Secrets
 
 ```bash

@@ -223,5 +223,6 @@ pxt dashboard
 
 - [Quickstart](https://docs.pixeltable.com/overview/quick-start)
 - [CLI](https://docs.pixeltable.com/platform/cli)
-- [MCP Server](https://github.com/pixeltable/mcp-server-pixeltable-developer)
+- [Developer MCP](https://github.com/pixeltable/mcp-server-pixeltable-developer)
+- [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) (optional, read-only; see [cli.md](references/cli.md))
 - [Docs](https://docs.pixeltable.com/llms-full.txt)

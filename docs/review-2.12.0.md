@@ -156,16 +156,24 @@ tool-calling agents, so a tools request triggers the skill. `SKILL.md` went from
 but from 12,647 to 13,202 bytes: the Cloud command block, the provider-key paragraph and two traps
 rows outweigh the cuts, and each replaces a failure an agent hit on the first try.
 
-## Upstream issue found
+## Upstream issue: PXT-1429, open on 0.7.11
 
 A computed column whose expression holds a constant dict whose keys are not in length order never
 reaches agreement. The stored expression comes back with its keys in PostgreSQL `jsonb` order,
 shorter keys first, and `diff.py` compares rendered strings. Every column with
 `tools=pxt.tools(...)` is affected, and so is `model_kwargs={'max_tokens': 5, 'seed': 1}`;
-`{'seed': 1, 'max_tokens': 5}` and dicts that hold column references are not. `pxt schema diff`
-exits 2 forever, and each `pxt schema update` bumps the table version (0, 1, 2 in three runs), so a
-running service answers 409 after every update. `cli.md` and `core-api.md` note it. Not yet reported
-upstream.
+`{'seed': 1, 'max_tokens': 5}` and dicts that hold column references are not. This is PXT-1429
+(Highest), whose 2026-09-18 comment has the same root cause; it is unfixed on 0.7.11 and on upstream
+`main`.
+
+Live on 0.7.11: `pxt schema diff` exits 2 on the unedited file forever, and each `pxt schema update`
+bumps the table version (0, 1, 2 in three runs) and suggests a `pxt recompute` that would call the
+model again on every row. From the 0.7.11 source, not run live: `pxt service update` validates every
+model the app file reaches (`serving/service.py` `_get_app_info()`, `utils/app_module.py`
+`validate_models()`), refuses every service on any resolution other than `up_to_date`, and exits 1;
+`FastAPIRouter.bind()` raises `SCHEMA_MISMATCH`. An app file with a `tools=` column therefore cannot
+be served on 0.7.11. `TableModel.bind_all()` with insert and collect still works; that path ran
+live. `core-api.md` and `cli.md` say so.
 
 ## Correction to the 2.11.3 record
 

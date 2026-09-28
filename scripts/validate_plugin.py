@@ -6,6 +6,8 @@ Checks:
   2. Portable and compatibility manifests agree and component pointers resolve.
   3. Every skills/<name>/SKILL.md has `name` and `description` frontmatter.
   4. Listed command/agent files in .claude-plugin/plugin.json exist.
+  5-9. Versions agree, doc code blocks pass the hook's error checks, documented modules exist,
+     SKILL.md stays under 500 lines, and shell blocks pass -f to `pxt service update`.
 
 Exit non-zero if any check fails. Intended for CI / pre-commit.
 """
@@ -213,6 +215,19 @@ def main():
     for sf in skill_files:
         n = len(sf.read_text(encoding="utf-8", errors="ignore").splitlines())
         check(n < 500, f"{sf.relative_to(ROOT)}: {n} lines, must stay under 500")
+
+    # 9. An agent has no TTY, and a pending `pxt service update` without -f exits 3 there.
+    shell_fence = re.compile(r"^```(?:bash|sh|shell)\n(.*?)^```", re.DOTALL | re.MULTILINE)
+    for root_name in doc_roots:
+        for md in sorted((ROOT / root_name).rglob("*.md")):
+            for block in shell_fence.findall(md.read_text(encoding="utf-8", errors="ignore")):
+                for line in block.splitlines():
+                    command = line.split("#", 1)[0]
+                    if re.search(r"\bpxt service update\b", command):
+                        check(
+                            re.search(r"\s-(?:f|n)\b|--force\b|--dry-run\b", command) is not None,
+                            f"{md.relative_to(ROOT)}: `pxt service update` without -f: {command.strip()!r}",
+                        )
 
     if errors:
         print(f"FAIL ({len(errors)} of {checks} checks):", file=sys.stderr)

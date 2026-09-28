@@ -2,7 +2,7 @@
 
 Agent Skill that teaches AI coding assistants to write Pixeltable application files: `TableModel` in `app.py`, then `pxt schema update`, then `pxt service update`.
 
-Verified against Pixeltable 0.7.8 on 2026-09-19: [docs/review-2.11.0.md](docs/review-2.11.0.md).
+Verified against Pixeltable 0.7.11 on 2026-09-28: [docs/review-2.12.0.md](docs/review-2.12.0.md).
 
 ## Install
 
@@ -24,7 +24,7 @@ there with `./install.sh --platform antigravity`.
 ### Full plugin
 
 Install the skill with its client-supported commands, agents, and hooks using
-[npx plugins](https://github.com/vercel-labs/plugins):
+[npx plugins](https://www.npmjs.com/package/plugins):
 
 ```bash
 npx plugins add pixeltable/pixeltable-skill

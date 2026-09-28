@@ -9,7 +9,7 @@ Request: `$ARGUMENTS`
 
 Steps:
 
-1. Identify the provider module under `pixeltable.functions.<provider>` (e.g. `openai`, `anthropic`, `gemini`, `groq`, `bedrock`, `together`, `fireworks`, `ollama`, `whisper`). Confirm the exact import and output shape in the `pixeltable` skill (`references/providers.md`, Quick reference) before writing code.
+1. Identify the provider module under `pixeltable.functions.<provider>` (e.g. `openai`, `anthropic`, `gemini`, `groq`, `bedrock`, `together`, `fireworks`, `ollama`, `whisper`). Confirm the exact import, model argument (`model=` on most, `model_id=` on `bedrock` and `huggingface`), extra-parameter dict, and output shape in the `pixeltable` skill (`references/providers.md`) before writing code. Anthropic `messages` requires `max_tokens=`.
 
 2. Add the call as a computed column, extracting the right field from the response. App file (assignment on the model):
 

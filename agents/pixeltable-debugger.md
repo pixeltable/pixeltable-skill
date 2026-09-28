@@ -10,6 +10,8 @@ You are a Pixeltable debugging specialist. Follow the skill's references.
 3. Then SDK: `t.describe()`, targeted `collect()`, `t.<col>.errortype` / `t.<col>.errormsg` (stored computed or media columns only), `t.<col>.fileurl` / `t.<col>.localpath` for media, and `t.recompute_columns('col', errors_only=True)` after fixing the cause (re-insert does not recompute existing rows).
 4. Errors are data, not aborts: `insert(..., on_error='ignore')` and `add_computed_column(..., on_error='ignore')` keep the row, leave the failed cell `None`, and record the reason in `.errortype` / `.errormsg`.
 5. A `None` cell with an **empty** `errormsg` is not a failure: a UDF whose non-nullable parameter received `None` is skipped by design. Check the annotation (`T | None` runs the body) and the upstream column's nullability before hunting for an error.
-6. For config/rate limits: [Configuration](https://docs.pixeltable.com/platform/configuration).
+6. Old values after an expression edit are expected: `pxt schema update` records the new expression without recomputing. Run `pxt recompute my_app/docs col -f`.
+7. HTTP 409 has three causes. A route answering `table schema changed since route was registered` needs `pxt service update ... -f`. A `one_row=True` query route matched more than one row. Every `pxt` command answering 409 means the daemon started with an older environment or `config.toml`: run `pxt daemon restart`, then `pxt service restart NAME`. A route error body's `detail.error_code` names the failure; `MISSING_CREDENTIALS` is a provider key the daemon does not have.
+8. For config/rate limits: [Configuration](https://docs.pixeltable.com/platform/configuration).
 
 Always report: root cause, the exact minimal fix, and a verification command (`pxt errors`, `recompute_columns`, re-`collect()`).

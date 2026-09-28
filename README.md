@@ -63,6 +63,12 @@ skills/pixeltable-skill/
 Client manifests and marketplace metadata live alongside the shared skill so
 each supported installer can discover the format it understands.
 
+## Pixeltable Cloud MCP
+
+The plugin configures no MCP server. Pixeltable Cloud users can add the hosted, read-only [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) at `https://www.pixeltable.com/mcp/cloud` and sign in through the browser. It reads the organization selected at sign-in: databases, services, catalog entries, schemas, and up to 25 table rows per call. It cannot change resources; use the `pxt` CLI for that. The Skill mentions it so an agent can suggest it to a Cloud user.
+
+The [Docs MCP](https://docs.pixeltable.com/mcp) searches public documentation. The [developer MCP](https://github.com/pixeltable/mcp-server-pixeltable-developer) is a separate local server with catalog, query, and REPL tools.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Run `python3 scripts/validate_plugin.py` after structural changes.

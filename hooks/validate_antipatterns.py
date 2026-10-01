@@ -234,7 +234,11 @@ def findings_for(text):
 
 def main():
     try:
-        payload = json.load(sys.stdin)
+        # Bytes, not text-mode stdin. On Windows the text wrapper uses the ANSI
+        # code page (often cp1252), which cannot decode ordinary UTF-8 such as
+        # U+2190. UnicodeDecodeError is a ValueError, so the handler below would
+        # skip the check (#30). JSON is UTF-8.
+        payload = json.load(sys.stdin.buffer)
     except (json.JSONDecodeError, ValueError):
         sys.exit(0)
 

@@ -66,7 +66,10 @@ def uses_pixeltable(root: Path) -> bool:
 
 def main():
     try:
-        payload = json.load(sys.stdin)
+        # Bytes, not text-mode stdin: Windows decodes text stdin as the ANSI
+        # code page, and cp1252 rejects ordinary UTF-8. A decode error used to
+        # drop the payload, including cwd (#30). JSON is UTF-8.
+        payload = json.load(sys.stdin.buffer)
     except (json.JSONDecodeError, ValueError):
         payload = {}
 

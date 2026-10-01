@@ -4,6 +4,7 @@ Pure stdlib (unittest); no third-party deps, mirroring the repo's no-Node policy
 """
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,38 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 VALIDATE = ROOT / "hooks" / "validate_antipatterns.py"
 ORIENT = ROOT / "hooks" / "session_orientation.py"
+# UTF-8 for U+2190 and U+201D contains 0x90 and 0x9D, which cp1252 cannot decode.
+CP1252_UNMAPPED = "\u2190\u201d"
+
+
+def write_blind_interpreter(path):
+    """A program named python whose probe cannot see the hook file.
+
+    A version-only check treats it as usable and execs it. It then exits 2, which
+    Claude Code reports as a blocking hook error (#30).
+    """
+    path.write_text(
+        "#!/bin/sh\n"
+        "if [ \"$1\" = \"-c\" ]; then\n"
+        f"  exec {shlex.quote(sys.executable)} -c \"$2\" /no/such/pixeltable-hook.py\n"
+        "fi\n"
+        "exit 2\n",
+        encoding="utf-8",
+    )
+    path.chmod(0o755)
+
+
+def run_cp1252(script, payload, cwd=None):
+    """Pipe UTF-8 JSON into a hook with UTF-8 mode off and stdin set to cp1252."""
+    env = {**os.environ, "PYTHONUTF8": "0", "PYTHONIOENCODING": "cp1252"}
+    return subprocess.run(
+        [sys.executable, str(script)],
+        input=payload,
+        capture_output=True,
+        check=False,
+        cwd=cwd,
+        env=env,
+    )
 
 
 def run(script, payload):
@@ -152,32 +185,60 @@ class ValidateAntiPatterns(unittest.TestCase):
     def test_silent_on_non_edit_tool(self):
         self.assertEqual("", run(VALIDATE, {"tool_name": "Read", "tool_input": {"file_path": "a.py"}}))
 
+    def test_utf8_stdin_survives_cp1252_text_mode(self):
+        payload = json.dumps({
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "app.py",
+                "content": f"x: pxt.Required[pxt.String]  # {CP1252_UNMAPPED}\n",
+            },
+        }, ensure_ascii=False).encode("utf-8")
+        self.assertIn(b"\x90", payload)
+        self.assertIn(b"\x9d", payload)
+        p = run_cp1252(VALIDATE, payload)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("Required", context(p.stdout.decode("utf-8")))
+
 
 class HooksJsonCommand(unittest.TestCase):
     """The command in hooks.json must find an interpreter and pass stdin through.
 
-    Windows installs from python.org ship python.exe and the py launcher, not python3
-    (issue #23), so the command tries python, python3, then py -3."""
+    Windows installs from python.org ship python.exe and the py launcher, not
+    python3 (issue #23). Python Install Manager aliases can pass a version check
+    and still fail to open the hook file (issue #30), so the launcher also
+    requires the interpreter to see the script."""
 
     def command(self, event):
         spec = json.loads((ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
         return spec["hooks"][event][0]["hooks"][0]["command"]
 
-    def run_command(self, event, payload, path=None):
-        env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(ROOT)}
+    def run_command(self, event, payload, path=None, extra_env=None, raw=None):
+        env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(ROOT), "LOCALAPPDATA": ""}
         if path is not None:
             env["PATH"] = path
+        if extra_env:
+            env.update(extra_env)
+        if raw is None:
+            raw = json.dumps(payload).encode("utf-8")
         p = subprocess.run(
-            ["sh", "-c", self.command(event)], input=json.dumps(payload),
-            capture_output=True, text=True, check=False, env=env,
+            ["/bin/sh", "-c", self.command(event)], input=raw,
+            capture_output=True, check=False, env=env,
         )
-        self.assertEqual(p.returncode, 0, p.stderr)
-        return p.stdout.strip()
+        self.assertEqual(p.returncode, 0, p.stderr.decode("utf-8", "replace"))
+        return p.stdout.decode("utf-8").strip()
+
+    def test_both_events_use_the_same_launcher(self):
+        post = self.command("PostToolUse").replace("validate_antipatterns.py", "SCRIPT")
+        start = self.command("SessionStart").replace("session_orientation.py", "SCRIPT")
+        self.assertEqual(post, start)
+        self.assertIn("hooks/python_hook.sh", post)
 
     def test_post_tool_use_flags_through_the_finder(self):
-        out = self.run_command("PostToolUse", {
-            "tool_name": "Write", "tool_input": {"file_path": "app.py", "content": "x: pxt.Required[pxt.String]\n"},
-        })
+        with tempfile.TemporaryDirectory() as d:
+            out = self.run_command("PostToolUse", {
+                "tool_name": "Write",
+                "tool_input": {"file_path": "app.py", "content": "x: pxt.Required[pxt.String]\n"},
+            }, extra_env={"LOCALAPPDATA": d})
         self.assertIn("Required", context(out))
 
     def test_session_start_runs_through_the_finder(self):
@@ -196,8 +257,69 @@ class HooksJsonCommand(unittest.TestCase):
             self.assertIn("Required", context(out))
 
     def test_silent_exit_when_no_interpreter(self):
+        self.assertEqual("", self.run_command("PostToolUse", {
+            "tool_name": "Write",
+            "tool_input": {"file_path": "app.py", "content": "x: pxt.Required[pxt.String]\n"},
+        }, path="/bin"))
+
+    def test_skips_interpreter_that_cannot_see_the_script(self):
         with tempfile.TemporaryDirectory() as d:
-            self.assertEqual("", self.run_command("PostToolUse", {"tool_name": "Write"}, path=d + os.pathsep + "/usr/bin:/bin"))
+            root = Path(d)
+            blind = root / "blind"
+            good = root / "good"
+            blind.mkdir()
+            good.mkdir()
+            write_blind_interpreter(blind / "python")
+            os.symlink(sys.executable, good / "python3")
+            path = os.pathsep.join((str(blind), str(good), "/bin"))
+            out = self.run_command("PostToolUse", {
+                "tool_name": "Write",
+                "tool_input": {"file_path": "app.py", "content": "x: pxt.Required[pxt.String]\n"},
+            }, path=path)
+        self.assertIn("Required", context(out))
+
+    def test_uses_install_manager_launcher_when_path_cannot_see_the_script(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            local = root / "Local AppData"
+            bindir = local / "Python" / "bin"
+            bindir.mkdir(parents=True)
+            os.symlink(sys.executable, bindir / "python.exe")
+            blind = root / "blind"
+            blind.mkdir()
+            write_blind_interpreter(blind / "python")
+            write_blind_interpreter(blind / "python3")
+            out = self.run_command("PostToolUse", {
+                "tool_name": "Write",
+                "tool_input": {"file_path": "app.py", "content": "x: pxt.Required[pxt.String]\n"},
+            }, path=str(blind) + os.pathsep + "/bin", extra_env={"LOCALAPPDATA": str(local)})
+        self.assertIn("Required", context(out))
+
+    def test_raw_windows_path_separator(self):
+        """A PATH joined with ';' must not be split on the drive-letter colon."""
+        with tempfile.TemporaryDirectory() as d:
+            os.symlink(sys.executable, Path(d) / "python.exe")
+            # Leading /bin lets the outer `sh` start. A colon-split then glues the
+            # python.exe directory to the drive letter, so only a ';'-split finds it.
+            out = self.run_command("PostToolUse", {
+                "tool_name": "Write",
+                "tool_input": {"file_path": "app.py", "content": "x: pxt.Required[pxt.String]\n"},
+            }, path="/bin:/dummy;C:\\missing;" + d)
+        self.assertIn("Required", context(out))
+
+    def test_finder_passes_utf8_stdin(self):
+        payload = json.dumps({
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "app.py",
+                "content": f"x: pxt.Required[pxt.String]  # {CP1252_UNMAPPED}\n",
+            },
+        }, ensure_ascii=False).encode("utf-8")
+        out = self.run_command(
+            "PostToolUse", None, raw=payload,
+            extra_env={"PYTHONUTF8": "0", "PYTHONIOENCODING": "cp1252"},
+        )
+        self.assertIn("Required", context(out))
 
 
 class SessionOrientation(unittest.TestCase):
@@ -220,6 +342,17 @@ class SessionOrientation(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             (Path(d) / "requirements.txt").write_text("flask\nrequests\n")
             self.assertEqual("", run(ORIENT, {"cwd": d}))
+
+    def test_utf8_stdin_survives_cp1252_text_mode(self):
+        with tempfile.TemporaryDirectory() as project, tempfile.TemporaryDirectory() as empty:
+            (Path(project) / "pixeltable.toml").write_text("[pixeltable]\n")
+            payload = json.dumps(
+                {"cwd": project, "note": CP1252_UNMAPPED}, ensure_ascii=False,
+            ).encode("utf-8")
+            self.assertIn(b"\x90", payload)
+            p = run_cp1252(ORIENT, payload, cwd=empty)
+            self.assertEqual(p.returncode, 0, p.stderr)
+            self.assertIn("Pixeltable", p.stdout.decode("utf-8"))
 
 
 if __name__ == "__main__":

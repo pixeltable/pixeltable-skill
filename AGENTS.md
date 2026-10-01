@@ -25,7 +25,7 @@ Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin
 ## Rules
 
 - Single skill. Do not split it.
-- Hooks are pure Python. No Node/Bun/TypeScript. `hooks.json` finds the interpreter itself (`python`, then `python3`, then `py -3`): a python.org install on Windows has no `python3.exe` (#23).
+- Hooks are pure Python. No Node/Bun/TypeScript. `hooks/python_hook.sh` finds a 3.9+ interpreter that can read the hook file: `%LOCALAPPDATA%\Python\bin\python.exe` when that launcher exists, then each `python` / `python3` on `PATH`, then `py -3`. An interpreter that cannot see the script is skipped, so a Store Claude Desktop app-execution alias exits 0 instead of blocking the edit (#23, #30).
 - SKILL.md teaches the application file first. Notebook SDK is an appendix.
 - Start from `pxt init` then `pxt service example --out app.py` (or `pxt schema example --brief`). Then `pxt schema update app.py my_app`. No template zoo. No starter kit.
 - `if_exists='ignore'` on notebook `create_*` / `add_*`.

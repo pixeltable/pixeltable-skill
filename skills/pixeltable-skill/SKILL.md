@@ -217,5 +217,5 @@ Always `if_exists='ignore'` on notebook `create_*` / `add_*`. Failed cells: `t.r
 - [Quickstart](https://docs.pixeltable.com/overview/quick-start)
 - [CLI](https://docs.pixeltable.com/platform/cli)
 - [Developer MCP](https://github.com/pixeltable/mcp-server-pixeltable-developer)
-- [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) (optional, read-only; see [cli.md](references/cli.md))
+- [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) (optional; reads Cloud and runs previewed operations, see [cli.md](references/cli.md))
 - [Docs](https://docs.pixeltable.com/llms-full.txt)

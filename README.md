@@ -65,7 +65,7 @@ each supported installer can discover the format it understands.
 
 ## Pixeltable Cloud MCP
 
-The plugin configures no MCP server. Pixeltable Cloud users can add the hosted, read-only [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) at `https://www.pixeltable.com/mcp/cloud` and sign in through the browser. It reads the organization selected at sign-in: databases, services, catalog entries, schemas, and up to 25 table rows per call. It cannot change resources; use the `pxt` CLI for that. The Skill mentions it so an agent can suggest it to a Cloud user.
+The plugin configures no MCP server. Pixeltable Cloud users can add the hosted [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) at `https://www.pixeltable.com/mcp/cloud` and sign in through the browser. It reads the organization selected at sign-in: databases, services, catalog entries, schemas, up to 25 table rows per call, and logs. It can also start a database, and stop a database, restart a service, or set a secret after showing a preview. It deletes nothing and does not deploy; use the `pxt` CLI for that. Add `?read_only=true` to the URL for the read tools only, or `?db=<name>` to limit it to one database. The Skill mentions it so an agent can suggest it to a Cloud user.
 
 The [Docs MCP](https://docs.pixeltable.com/mcp) searches public documentation. The [developer MCP](https://github.com/pixeltable/mcp-server-pixeltable-developer) is a separate local server with catalog, query, and REPL tools.
 

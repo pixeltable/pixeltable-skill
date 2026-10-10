@@ -8,6 +8,7 @@ Checks:
   4. Listed command/agent files in .claude-plugin/plugin.json exist.
   5-9. Versions agree, doc code blocks pass the hook's error checks, documented modules exist,
      SKILL.md stays under 500 lines, and shell blocks pass -f to `pxt service update`.
+  10. plugins/pixeltable-cloud carries the shared skill, icon, and version unchanged.
 
 Exit non-zero if any check fails. Intended for CI / pre-commit.
 """
@@ -228,6 +229,22 @@ def main():
                             re.search(r"\s-(?:f|n)\b|--force\b|--dry-run\b", command) is not None,
                             f"{md.relative_to(ROOT)}: `pxt service update` without -f: {command.strip()!r}",
                         )
+
+    # 10. The Cloud plugin carries a copy of the shared files and the same version.
+    cloud = ROOT / "plugins" / "pixeltable-cloud"
+    cloud_manifest = load_json("plugins/pixeltable-cloud/.claude-plugin/plugin.json") or {}
+    check(
+        cloud_manifest.get("version") == claude.get("version"),
+        "plugins/pixeltable-cloud/.claude-plugin/plugin.json: version must match .claude-plugin/plugin.json",
+    )
+    for rel in ("skills/pixeltable-skill", "assets/icon.png"):
+        src = ROOT / rel
+        files = sorted(p.relative_to(ROOT) for p in ([src] if src.is_file() else src.rglob("*")) if p.is_file())
+        copies = sorted(
+            p.relative_to(cloud) for p in ([cloud / rel] if src.is_file() else (cloud / rel).rglob("*")) if p.is_file()
+        )
+        same = files == copies and all((ROOT / f).read_bytes() == (cloud / f).read_bytes() for f in files)
+        check(same, f"plugins/pixeltable-cloud/{rel} differs from {rel}: run python3 scripts/sync_cloud_plugin.py")
 
     if errors:
         print(f"FAIL ({len(errors)} of {checks} checks):", file=sys.stderr)

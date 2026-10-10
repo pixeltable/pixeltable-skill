@@ -1,0 +1,38 @@
+{
+  "name": "pixeltable-cloud",
+  "displayName": "Pixeltable Cloud (Managed MCP)",
+  "description": "The backend agents build with, hosted: build Pixeltable apps and operate them on Pixeltable Cloud. Sign in to inspect databases, services, tables, rows, and logs, start and stop databases, restart services, and set secrets. Requires a Pixeltable Cloud account (Limited Beta).",
+  "version": "2.12.0",
+  "author": {
+    "name": "Pixeltable",
+    "url": "https://github.com/pixeltable"
+  },
+  "homepage": "https://pixeltable.com/developers/mcp-cloud",
+  "repository": "https://github.com/pixeltable/pixeltable-skill",
+  "license": "Apache-2.0",
+  "keywords": [
+    "pixeltable",
+    "pixeltable-cloud",
+    "mcp",
+    "multimodal",
+    "database",
+    "vector-search",
+    "embeddings",
+    "rag",
+    "agents",
+    "orchestration",
+    "serving",
+    "backend"
+  ],
+  "icon": "./assets/icon.png",
+  "documentationUrl": "https://pixeltable.com/developers/mcp-cloud",
+  "supportUrl": "https://github.com/pixeltable/pixeltable-skill/issues",
+  "privacyPolicyUrl": "https://www.pixeltable.com/privacy",
+  "termsOfServiceUrl": "https://www.pixeltable.com/terms",
+  "mcpServers": {
+    "pixeltable-cloud": {
+      "type": "http",
+      "url": "https://www.pixeltable.com/mcp/cloud"
+    }
+  }
+}

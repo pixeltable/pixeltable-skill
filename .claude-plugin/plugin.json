@@ -1,6 +1,7 @@
 {
   "name": "pixeltable",
-  "description": "Build multimodal AI applications with Pixeltable: tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
+  "displayName": "Pixeltable",
+  "description": "The backend agents build with: multimodal database, orchestration, and serving in one file. Tables, computed columns, vector search, RAG, tool-calling agents, and video, audio, image, and document pipelines across 25+ AI providers.",
   "version": "2.12.0",
   "author": {
     "name": "Pixeltable",
@@ -9,6 +10,26 @@
   "homepage": "https://github.com/pixeltable/pixeltable-skill",
   "repository": "https://github.com/pixeltable/pixeltable-skill",
   "license": "Apache-2.0",
+  "keywords": [
+    "pixeltable",
+    "multimodal",
+    "database",
+    "vector-search",
+    "embeddings",
+    "rag",
+    "agents",
+    "orchestration",
+    "video",
+    "audio",
+    "images",
+    "documents",
+    "backend"
+  ],
+  "icon": "./assets/icon.png",
+  "documentationUrl": "https://docs.pixeltable.com/",
+  "supportUrl": "https://github.com/pixeltable/pixeltable-skill/issues",
+  "privacyPolicyUrl": "https://www.pixeltable.com/privacy",
+  "termsOfServiceUrl": "https://www.pixeltable.com/terms",
   "commands": [
     "./commands/scaffold.md",
     "./commands/add-provider.md"

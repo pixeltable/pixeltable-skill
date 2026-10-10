@@ -1,6 +1,8 @@
 # Pixeltable Skill
 
-Agent Skill that teaches AI coding assistants to write Pixeltable application files: `TableModel` in `app.py`, then `pxt schema update`, then `pxt service update`.
+The backend agents build with: multimodal database, orchestration, and serving in one file.
+
+This plugin teaches AI coding assistants to build Pixeltable applications: tables with computed columns, embedding indexes and vector search, RAG, tool-calling agents, and video, audio, image, and document pipelines across 25+ AI providers. The agent declares the schema as `TableModel` classes in `app.py`, creates the tables with `pxt schema update`, and serves HTTP routes with `pxt service update`.
 
 Verified against Pixeltable 0.7.11 on 2026-09-28: [docs/review-2.12.0.md](docs/review-2.12.0.md).
 
@@ -65,7 +67,7 @@ each supported installer can discover the format it understands.
 
 ## Pixeltable Cloud MCP
 
-The plugin configures no MCP server. Pixeltable Cloud users can add the hosted [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) at `https://www.pixeltable.com/mcp/cloud` and sign in through the browser. It reads the organization selected at sign-in: databases, services, catalog entries, schemas, up to 25 table rows per call, and logs. It also starts a database at once. Stopping a database, restarting a service, or setting a secret returns a preview first and runs only when called again with `confirm: true`. It deletes nothing and does not deploy; use the `pxt` CLI for that. Add `?read_only=true` to the URL for the read tools only, or `?db=<name>` to limit it to one database. The Skill mentions it so an agent can suggest it to a Cloud user.
+This plugin configures no MCP server. The `pixeltable-cloud` plugin in [plugins/pixeltable-cloud](plugins/pixeltable-cloud) is the same skill with the Cloud MCP configured; install one of the two, not both. Pixeltable Cloud users can also add the hosted [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) at `https://www.pixeltable.com/mcp/cloud` and sign in through the browser. It reads the organization selected at sign-in: databases, services, catalog entries, schemas, up to 25 table rows per call, and logs. It also starts a database at once. Stopping a database, restarting a service, or setting a secret returns a preview first and runs only when called again with `confirm: true`. It deletes nothing and does not deploy; use the `pxt` CLI for that. Add `?read_only=true` to the URL for the read tools only, or `?db=<name>` to limit it to one database. The Skill mentions it so an agent can suggest it to a Cloud user.
 
 The [Docs MCP](https://docs.pixeltable.com/mcp) searches public documentation. The [developer MCP](https://github.com/pixeltable/mcp-server-pixeltable-developer) is a separate local server with catalog, query, and REPL tools.
 

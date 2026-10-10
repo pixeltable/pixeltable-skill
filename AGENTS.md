@@ -18,13 +18,9 @@ commands/                 # /pixeltable:scaffold, add-provider
 agents/                   # pipeline-architect, debugger
 hooks/
 scripts/validate_plugin.py
-scripts/sync_cloud_plugin.py
-plugins/pixeltable-cloud/ # Claude directory listing: copy of the skill + Cloud MCP
 ```
 
-Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), `plugins/pixeltable-cloud/.claude-plugin/plugin.json`, and `package.json`. Keep name `pixeltable` and versions in sync (`2.12.0`).
-
-`plugins/pixeltable-cloud/` holds a copy of `skills/pixeltable-skill/` and `assets/icon.png`, because the Claude directory installs only the submitted folder and rejects symbolic links. After editing either, run `python3 scripts/sync_cloud_plugin.py`.
+Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), and `package.json`. Keep name `pixeltable` and versions in sync (`2.12.0`).
 
 ## Rules
 

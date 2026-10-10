@@ -5,13 +5,13 @@
     "url": "https://github.com/pixeltable"
   },
   "metadata": {
-    "description": "Build multimodal AI applications with Pixeltable: tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
+    "description": "The backend agents build with: multimodal database, orchestration, and serving in one file. Tables, computed columns, vector search, RAG, tool-calling agents, and video, audio, image, and document pipelines across 25+ AI providers.",
     "version": "2.12.0"
   },
   "plugins": [
     {
       "name": "pixeltable",
-      "description": "Build multimodal AI applications with Pixeltable: tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
+      "description": "The backend agents build with: multimodal database, orchestration, and serving in one file. Tables, computed columns, vector search, RAG, tool-calling agents, and video, audio, image, and document pipelines across 25+ AI providers.",
       "category": "database",
       "homepage": "https://github.com/pixeltable/pixeltable-skill",
       "source": "./",

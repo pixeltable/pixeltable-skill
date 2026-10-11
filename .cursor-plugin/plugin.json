@@ -1,7 +1,7 @@
 {
   "name": "pixeltable",
   "version": "2.12.0",
-  "description": "Build multimodal AI applications with Pixeltable: RAG, agents, and multimodal workflows.",
+  "description": "The backend agents build with: multimodal database, orchestration, and serving in one file. Tables, computed columns, vector search, RAG, tool-calling agents, and video, audio, image, and document pipelines across 25+ AI providers.",
   "author": {
     "name": "Pixeltable",
     "url": "https://github.com/pixeltable"
@@ -22,9 +22,13 @@
     "video",
     "audio",
     "images",
-    "documents"
+    "documents",
+    "database",
+    "orchestration",
+    "backend"
   ],
   "skills": "skills",
   "agents": "agents",
-  "commands": "commands"
+  "commands": "commands",
+  "logo": "assets/icon.png"
 }

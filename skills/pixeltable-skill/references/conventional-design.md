@@ -89,7 +89,7 @@ def add_reassembled(*, video_id: str) -> Added:
 - `return_scalar=True` returns the column's values as a list, so the aggregate is `clip[0]`. Only the
   `astype(pxt.Video)` column owns the file; a path inside Json is not media.
 - Nothing tracks the dependency across tables. After any change to a base row or its frames, recompute
-  the aggregate row: `reassembled.recompute_columns('clip', where=reassembled.video_id == vid)` (it cascades
-  to `video`).
+  the aggregate row: with `t = pxt.get_table('my_app/reassembled')`, run
+  `t.recompute_columns('clip', where=t.video_id == vid)`. It cascades to `video`.
 - The two inserts are not one transaction: a failed second insert leaves the first in place, and the
-  job reports the error.
+  job ends with status `error`.

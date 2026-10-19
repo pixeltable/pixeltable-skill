@@ -120,7 +120,7 @@ trips.insert([r for r in rows if r['trip_id'] not in existing])
 ```
 
 `batch_update(rows, if_not_exists='insert')` is an upsert, but it recomputes the dependent columns of
-every row it touches, even unchanged ones, so a column that calls a paid model runs again.
+every matched row, changed or not, so a column that calls a paid model runs again.
 
 ## 10. Creation time
 

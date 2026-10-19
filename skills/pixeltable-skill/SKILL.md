@@ -46,10 +46,12 @@ See [anti-patterns.md](references/anti-patterns.md) (6 macros).
    each have a Pixeltable equivalent: [conventional-design.md](references/conventional-design.md). Do
    not build them literally.
 2. **Design the schema.** Entities, primary keys, types, nullability, and what is stored, computed or
-   queried: [schema-design.md](references/schema-design.md). Keys and nullability cannot change later.
+   queried: [schema-design.md](references/schema-design.md). Keys cannot change later, and a column
+   can become nullable but not required.
 3. **Write derived values as expressions.** A UDF is for one step that has no expression form:
-   [expressions.md](references/expressions.md). An f-string, `str()` or `is None` on a column stores a
-   constant.
+   [expressions.md](references/expressions.md). Before writing one, run `pxt functions --search <task>`
+   and `pxt functions --on <Type>` to find what ships. An f-string, `str()` or `is None` on a column
+   stores a constant.
 4. **Treat the catalog as the user's data.** Show the plan and ask before you drop, revert, pass
    `--allow-destructive`, or add or recompute a paid model column on existing rows. Iterate in a
    scratch catalog directory: [safe-changes.md](references/safe-changes.md).
@@ -179,7 +181,7 @@ Add video, audio, agents, or a UI by editing `app.py`. A view is either a filter
 | `uuid.astype(pxt.String)` | `uuid.to_string()` (`from pixeltable.functions.uuid import to_string`). `astype` does not cast UUID to String |
 | `json_col.astype(pxt.String)` on a dict or list | Fails at insert: `Expected string, got dict`. Serialize with `pxtf.json.dumps(json_col)` |
 
-Extract the field (`.text`, `.choices[0].message.content`). The field is Json holding a string: `.astype(pxt.String)` it before concatenating or embedding.
+Extract the field (`.text`, `.choices[0].message.content`). The text of an Anthropic reply is already a String. For other providers the field is Json holding a string: `.astype(pxt.String)` it before concatenating or embedding.
 
 ## Notebook / REPL appendix
 

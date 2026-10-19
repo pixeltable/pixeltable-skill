@@ -75,22 +75,20 @@ class Trips(TableModel, name='trips'):
 - Video: `extract_frame(timestamp=...)`, `get_metadata()`, `get_duration()`, `clip`, `crop`,
   `resize`, `extract_audio`, `with_audio`, `overlay_text`, `concat_videos` and more in
   `pixeltable.functions.video`. Audio: `pixeltable.functions.audio`.
-- Before writing a UDF, list what ships: `[n for n in dir(pxtf.video) if not n.startswith('_')]`,
-  then `help(pxtf.video.crop)`. The same goes for `image`, `audio`, `string`, `json`, `timestamp`,
-  `vision` and each provider module.
+- Before writing a UDF, list what ships. `pxt functions --search crop` searches names and docstrings,
+  `pxt functions --on Video` lists the methods and properties of a Video column, and
+  `pxt functions video` lists a module, with the output columns of its iterators. Each line shows the
+  call with its defaults; `--json` gives the full docstrings. In Python: `pxt.list_functions(on=pxt.Video)`.
 
 ## Conditionals
 
-Pixeltable has no conditional, coalesce or lookup expression. Write the smallest UDF that does that
-one step, with nullable parameters where the inputs can be null, and keep everything around it in
-expressions:
+`pxtf.coalesce(a, b, ...)` returns its first argument that is not null, with the arguments' common
+type: `label = pxtf.coalesce(override, predicted, 'unknown')` is a String column.
+
+Pixeltable has no conditional or lookup expression. Write the smallest UDF that does that one step,
+with nullable parameters where the inputs can be null, and keep everything around it in expressions:
 
 ```python
-@pxt.udf
-def coalesce(override: str | None, fallback: str | None) -> str | None:
-    return override if override is not None else fallback
-
-
 @pxt.udf
 def delay_band(delay: float | None) -> str:
     if delay is None:
@@ -115,9 +113,10 @@ class Trips(TableModel, name='trips'):
   - reading another table: `pxt.get_table()` inside a UDF fails.
 - Put UDFs in a module file (`app.py` or `udfs.py`). Pixeltable refuses a UDF defined in the main
   module of a script.
-- A UDF that returns a Video, Audio or Document returns a file path. Pixeltable records that path and
-  does not copy the file unless the column has `destination=`, so a file in a temporary directory is
-  lost later. Prefer the shipped media functions, which manage their output files.
+- A UDF that returns a Video, Audio or Document returns a file path. Pixeltable copies a file in a
+  system temp directory (`tempfile.mkdtemp()`) into its media store, and records any other path
+  unchanged, so that file must stay in place. Prefer the shipped media functions, which manage their
+  output files.
 
 ## Trying an expression
 
@@ -131,5 +130,9 @@ t.select(t.trip_id, band=delay_band(t.stops[-1].delay)).limit(5).collect()
 Or bind the models and use the class: `import app; app.TableModel.bind_all('my_app')`, then
 `app.Trips.select(...).collect()`. Limit the rows when the expression calls a paid model.
 
-Calling a `@pxt.query` function from Python returns an expression, not rows. In a script, write the
-query against the bound model class instead, or call the route.
+Call one UDF on Python values, with no table: `pxt.call_udf(pxtf.image.resize, img, (64, 64))`, or
+`pxt.call_udf(pxtf.openai.chat_completions, messages=[...], model='gpt-4o-mini')` to try a prompt.
+Use it instead of the provider's own SDK. A media argument can be a PIL image, a file path or a URL.
+
+Calling a `@pxt.query` function from Python returns an expression, not rows. In a script, run it with
+`pxt.call_udf(app.late_trips, '12')` after `bind_all()`.

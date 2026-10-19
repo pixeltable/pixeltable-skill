@@ -126,7 +126,7 @@ t.add_computed_column(
 )
 ```
 
-Extract the field (`.text`, `.choices[0].message.content`). The field is Json holding a string: `.astype(pxt.String)` it before concatenating or embedding. A Json dict or list does not cast (`Expected string, got dict` at insert); serialize it with `pxtf.json.dumps(...)`.
+Extract the field (`.text`, `.choices[0].message.content`). The text of an Anthropic reply is already a String. For other providers the field is Json holding a string: `.astype(pxt.String)` it before concatenating or embedding. A Json dict or list does not cast (`Expected string, got dict` at insert); serialize it with `pxtf.json.dumps(...)`.
 
 ## Views
 

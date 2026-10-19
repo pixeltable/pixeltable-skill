@@ -1,7 +1,8 @@
 # Designing the schema
 
-Settle these points before the first `pxt schema update`. Keys, types and nullability cannot change
-in place later, and a wrong choice is fixed by migrating data, not by editing a line.
+Settle these points before the first `pxt schema update`. Keys and types cannot change in place
+later, and a column can become nullable but not required. A wrong choice is fixed by migrating data,
+not by editing a line.
 
 ## 1. One table per entity
 
@@ -39,8 +40,9 @@ in place later, and a wrong choice is fixed by migrating data, not by editing a 
 
 - `T` means every row has a value, and an insert without one fails. `T | None` means the value can be
   missing: an optional cover image, a sample that has not arrived yet.
-- Changing nullability later is UNSUPPORTED. A field that becomes "required from now on" on a table
-  with old rows is `T | None`, plus validation on new inserts.
+- A column can become nullable later: `pxt schema update` turns `T` into `T | None` in place, unless a
+  non-nullable computed column depends on it. The reverse is UNSUPPORTED: a field that becomes
+  "required from now on" on a table with old rows is `T | None`, plus validation on new inserts.
 - A non-nullable UDF parameter skips the call for a null argument, so a nullable column feeding it
   yields null without an error. Annotate the parameter `T | None` when the UDF should see the null.
 
@@ -111,16 +113,17 @@ Checking a key in another table needs a lookup, which a UDF cannot do: check it 
 
 ## 9. Loading data more than once
 
-The primary key makes a repeated load fail on the first duplicate. To load only the new rows, ask for
-the keys that already exist and insert the rest:
+The primary key makes a repeated load fail on the first duplicate. To load only the new rows, pass
+`if_exists='ignore'`: rows with a new key are inserted, and existing rows and their computed columns
+stay unchanged. The rows may contain media, as in `insert()`.
 
 ```python
-existing = set(trips.where(trips.trip_id.isin(ids)).select(trips.trip_id).collect()['trip_id'])
-trips.insert([r for r in rows if r['trip_id'] not in existing])
+trips.batch_update(rows, if_exists='ignore')
 ```
 
-`batch_update(rows, if_not_exists='insert')` is an upsert, but it recomputes the dependent columns of
-every row it touches, even unchanged ones, so a column that calls a paid model runs again.
+`if_exists='error'` refuses the whole batch if one key exists. `if_exists='update'` is an upsert, but it
+recomputes the dependent columns of every matched row, changed or not, so a column that calls a paid
+model runs again.
 
 ## 10. Creation time
 

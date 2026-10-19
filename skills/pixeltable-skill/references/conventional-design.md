@@ -20,7 +20,7 @@ piece before writing code, and tell the user which pieces you translated.
 | A vector database, an embedding job | `__indexes__ = [pxt.EmbeddingIndex(...)]` on the model. |
 | A history array or a log appended by code | An append-only events table ([schema-design.md](schema-design.md#7-history)). |
 | An endpoint that computes something from stored rows | `add_query_route` over a `@pxt.query`. A custom FastAPI handler only for what routes cannot express, and then a `def` handler, never `async def`. |
-| An upload handler that saves the file and inserts it | `add_insert_route(..., uploadfile_inputs=[...])`. Pixeltable stores a local file's path, not a copy, so a file saved to a temporary directory disappears from the table. A custom handler must save uploads to a permanent directory. |
+| An upload handler that saves the file and inserts it | `add_insert_route(..., uploadfile_inputs=[...])`. Pixeltable copies a file from a system temp directory into its media store, and stores any other local file by its path. A custom handler that saves uploads elsewhere must keep the files there. |
 | After processing, create rows in another table (extracted memories, assignments fanned out to stations) | No computed column writes to another table. Use a decorator route (`@router.insert_route(...)`): Pixeltable runs the insert, then calls your function with the new row's `outputs`, and the function inserts into the second table. With `background=True` both run in one job. Say in your report that this step is not declarative. |
 | Look up another table while computing a column | `pxt.get_table()` inside a UDF fails. Join at query time, or make the looked-up value an input column. |
 | Combine per-frame (or per-chunk) results into one per-video result | A base-table column cannot aggregate its own view. Keep the per-frame work in a view, and put the aggregate in a second table keyed like the base: [the aggregate-table pattern](#the-aggregate-table-pattern) below. Never write the aggregate back onto the base row with `update()`, and never fold the pipeline into one UDF that loops over frames. |
@@ -67,8 +67,7 @@ def reassemble(video_id: str) -> pxt.Query:
 
 class Reassembled(TableModel, name='reassembled'):
     video_id = pxt.Column(type=pxt.String, primary_key=True)
-    clip = reassemble(video_id)          # Json: a list with the one aggregated video
-    video = clip[0].astype(pxt.Video)    # a Video column; its file moves into the media store
+    video = reassemble(video_id)  # a Video column; its file goes into the media store
 
 
 class Added(pydantic.BaseModel):
@@ -86,10 +85,10 @@ def add_reassembled(*, video_id: str) -> Added:
     return Added(video_id=video_id)
 ```
 
-- `return_scalar=True` returns the column's values as a list, so the aggregate is `clip[0]`. Only the
-  `astype(pxt.Video)` column owns the file; a path inside Json is not media.
+- `return_scalar=True` on an aggregation without `group_by()` returns its one value, so `video` is a
+  Video column.
 - Nothing tracks the dependency across tables. After any change to a base row or its frames, recompute
-  the aggregate row: `reassembled.recompute_columns('clip', where=reassembled.video_id == vid)` (it cascades
-  to `video`).
+  the aggregate row: with `t = pxt.get_table('my_app/reassembled')`, run
+  `t.recompute_columns('video', where=t.video_id == vid)`.
 - The two inserts are not one transaction: a failed second insert leaves the first in place, and the
   job reports the error.

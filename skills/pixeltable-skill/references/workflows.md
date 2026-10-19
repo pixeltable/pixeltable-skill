@@ -65,7 +65,7 @@ curl -X POST "$URL/api/search" -H 'content-type: application/json' -d '{"query_t
 
 After apply: `t = pxt.get_table('my_app.docs')`.
 
-Already have FastAPI: after schema update, bind the catalog, then include the router. Call `pxt.get_table()` inside custom handlers, which must be `def`, not `async def`: an async handler that calls Pixeltable blocks the event loop. A provider function has no public imperative call from a handler; use the provider's own SDK there.
+Already have FastAPI: after schema update, bind the catalog, then include the router. Call `pxt.get_table()` inside custom handlers, which must be `def`, not `async def`: an async handler that calls Pixeltable blocks the event loop. To call a provider or other UDF from a handler, use `pxt.call_udf(fn, ...)`, not the provider's own SDK.
 
 ```python
 ingest.bind('my_app')

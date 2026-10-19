@@ -163,7 +163,7 @@ Reading a diff: `+` created / added, `-` dropped, `~` migrated, `=` already matc
 
 - **Safe `alter`**: a computed column whose value expression changed and whose type did not (Pixeltable 0.7.10+). `update` records the new expression and does **not** recompute existing rows; it prints the command that does, `pxt recompute my_app/docs summary -f`.
 - **DESTRUCTIVE** (dropping a column or index) needs `--allow-destructive`; exit `3` without it. Applying is **all-or-nothing** -- without the flag a destructive plan applies *nothing at all*, not the safe parts.
-- **UNSUPPORTED** cannot be applied by any flag: a kind or iterator mismatch, or a column whose type (including nullability) or properties such as `stored=` changed. One unsupported table aborts the whole update, including other models' pending additive changes. Rename the column, or drop it and re-add it in a second pass. See [core-api.md](core-api.md#tables).
+- **UNSUPPORTED** cannot be applied by any flag: a kind or iterator mismatch, or a column whose type or properties such as `stored=` changed. Making a column nullable is a safe alter (`~ column 'x' will become nullable  safe`), unless a non-nullable computed column depends on it. One unsupported table aborts the whole update, including other models' pending additive changes. Rename the column, or drop it and re-add it in a second pass. See [core-api.md](core-api.md#tables).
 
 The daemon imports the application file, so it must be readable there; the file's own directory joins `sys.path`, so it can import modules sitting next to it.
 

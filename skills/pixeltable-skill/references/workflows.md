@@ -4,6 +4,8 @@
 
 ```python
 # app.py
+# a model body names iterator columns, such as text, without defining them
+# ruff: noqa: F821
 import pixeltable as pxt
 import pixeltable.functions as pxtf
 from pixeltable.serving import FastAPIRouter
@@ -56,7 +58,7 @@ ingest.add_query_route(path='/search', query=search_docs, method='post')
 pxt init
 pxt schema update app.py my_app
 pxt service update app.py my_app -f
-URL=$(pxt service list my_app --json | jq -r '.[] | select(.name == "ingest") | .endpoint')
+URL=$(pxt service list my_app --json | python -c "import json, sys; print(next(s['endpoint'] for s in json.load(sys.stdin) if s['name'] == 'ingest'))")
 curl -X POST "$URL/api/upload" -F document=@paper.pdf -F timestamp=2026-09-28T08:00:00
 curl -X POST "$URL/api/search" -H 'content-type: application/json' -d '{"query_text": "results"}'
 ```
@@ -77,7 +79,7 @@ The other way round also works: define the `fastapi.FastAPI` object in `app.py` 
 - `add_update_route`: POST matches the row by primary key, so the request body carries the key (`id`) even though `inputs` does not list it. No `match_columns`
 - `add_query_route`: wraps `@pxt.query`. Default `{ "rows": [...] }`. `one_row=True` returns the object (0 rows is a 404, more than one is a 409). `return_fileresponse=True` returns the one media column as a file (implies one-row)
 - `add_delete_route`: POST delete by primary key, or by a nonempty `match_columns=` list
-- `@ingest.insert_route(...)`, `update_route`, `compute_route`: decorator forms taking the same table, `path`, `inputs` and `outputs`. The function takes each `outputs` column as a keyword-only, annotated parameter (media arrive as URL strings) and returns a `pydantic.BaseModel`, which becomes the response body. Reshape a response this way rather than in a hand-written endpoint.
+- `@ingest.insert_route(...)`, `update_route`, `compute_route`: decorator forms taking the same table, `path`, `inputs` and `outputs`. The function takes each `outputs` column as a keyword-only, annotated parameter (media arrive as URL strings) and returns a `pydantic.BaseModel`, which becomes the response body. Reshape a response this way rather than in a hand-written endpoint. The function may also write to other tables, for example inserting the new row's key into a second table ([conventional-design.md](conventional-design.md#the-aggregate-table-pattern)); with `background=True`, the insert and the function run in one job. Pass `inputs`/`outputs` as column-name strings to keep mypy quiet.
 - `export_sql=SqlExport(db_connect=..., table=...)` (`from pixeltable.serving import SqlExport`) on insert, update, and compute routes writes each response row to an existing SQL table after Pixeltable commits.
 - Indexes on the model (`__indexes__`)
 

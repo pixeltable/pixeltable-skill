@@ -267,12 +267,6 @@ Binding a nullable argument to a non-nullable parameter also widens the column's
 Load models at module scope, never in the UDF body: [anti-patterns.md](anti-patterns.md).
 
 ```python
-from pixeltable.func import Batch
-
-@pxt.udf(batch_size=32)
-def batch_process(texts: Batch[str]) -> Batch[list[float]]:
-    return model.encode(texts).tolist()
-
 lookup_fn = pxt.retrieval_udf(t, name='lookup_items', description='Look up items by name',
     parameters=['name'], limit=5)
 ```
@@ -368,7 +362,5 @@ class Assistant(TableModel, name='assistant'):
 ```
 
 `invoke_tools` belongs to the provider that made the call: `openai`, `anthropic`, `gemini`, `bedrock`, and `groq` each ship one. It returns a dict with one key per registered tool: a list of results when the model called it, `None` when it did not. That dict is Json, so it goes into the next prompt through `pxtf.json.dumps()`. When the model calls a tool, `message.content` is null: extract it with `.astype(pxt.String | None)`.
-
-On Pixeltable 0.7.11 a `tools=` column never reaches schema agreement (PXT-1429, open): the stored tool schema comes back with its keys reordered, so `pxt schema diff` always reports a safe alter, and each `pxt schema update` bumps the table version without changing a value. Serving requires agreement, so `pxt service update` refuses every service in that app file (exit 1), and `router.bind()` raises `SCHEMA_MISMATCH`. Insert and read from Python (`import app; app.TableModel.bind_all('my_app')`) instead. Do not run the `pxt recompute` the update suggests: it calls the model again on every row and leaves the diff pending.
 
 MCP: `pxt.mcp_udfs(url)` returns one UDF per remote tool over streamable HTTP; tools returning images or audio are not supported. Keys: env or [Configuration](https://docs.pixeltable.com/platform/configuration), not `api_key=` in calls.

@@ -59,7 +59,11 @@ skills/pixeltable-skill/
     ├── cli.md                  # pxt CLI
     ├── providers.md            # Import and output shape
     ├── workflows.md            # FastAPIRouter
-    └── anti-patterns.md        # Wrong/right stack
+    ├── anti-patterns.md        # Wrong/right stack
+    ├── conventional-design.md  # Workers, queues, status columns -> Pixeltable
+    ├── schema-design.md        # Keys, types, nullability, references, history
+    ├── expressions.md          # Expressions vs UDFs, silent constants
+    └── safe-changes.md         # Drops, recomputes, schema changes with data
 ```
 
 Client manifests and marketplace metadata live alongside the shared skill so

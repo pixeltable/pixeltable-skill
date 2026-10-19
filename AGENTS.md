@@ -12,7 +12,11 @@ skills/pixeltable-skill/
     ├── cli.md
     ├── providers.md
     ├── workflows.md
-    └── anti-patterns.md
+    ├── anti-patterns.md
+    ├── conventional-design.md
+    ├── schema-design.md
+    ├── expressions.md
+    └── safe-changes.md
 
 commands/                 # /pixeltable:scaffold, add-provider
 agents/                   # pipeline-architect, debugger

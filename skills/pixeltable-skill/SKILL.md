@@ -40,6 +40,20 @@ If you find yourself importing any of these, you are off-path:
 
 See [anti-patterns.md](references/anti-patterns.md) (6 macros).
 
+## Before you write app.py
+
+1. **Translate the spec.** Workers, job queues, status columns, retries, metrics tables and cron jobs
+   each have a Pixeltable equivalent: [conventional-design.md](references/conventional-design.md). Do
+   not build them literally.
+2. **Design the schema.** Entities, primary keys, types, nullability, and what is stored, computed or
+   queried: [schema-design.md](references/schema-design.md). Keys and nullability cannot change later.
+3. **Write derived values as expressions.** A UDF is for one step that has no expression form:
+   [expressions.md](references/expressions.md). An f-string, `str()` or `is None` on a column stores a
+   constant.
+4. **Treat the catalog as the user's data.** Show the plan and ask before you drop, revert, pass
+   `--allow-destructive`, or add or recompute a paid model column on existing rows. Iterate in a
+   scratch catalog directory: [safe-changes.md](references/safe-changes.md).
+
 ## What is Pixeltable?
 
 One application file (`app.py`) is the backend.
@@ -131,6 +145,10 @@ RAG, views, and search: [workflows.md](references/workflows.md). Do not add Hugg
 
 | Need | Open |
 |------|------|
+| Turn a spec's workers, queues and status columns into tables and columns | [conventional-design.md](references/conventional-design.md) |
+| Keys, types, nullability, references, history | [schema-design.md](references/schema-design.md) |
+| Json paths, string/time/media functions, when to write a UDF | [expressions.md](references/expressions.md) |
+| Drops, recomputes, schema changes on a project with data | [safe-changes.md](references/safe-changes.md) |
 | `pxt schema`, `pxt service`, inspect | [cli.md](references/cli.md) |
 | Types, views, UDFs, UDAs, tool calling | [core-api.md](references/core-api.md) |
 | Provider import, arguments, and output shape | [providers.md](references/providers.md) |

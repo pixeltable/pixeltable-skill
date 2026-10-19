@@ -165,8 +165,6 @@ Reading a diff: `+` created / added, `-` dropped, `~` migrated, `=` already matc
 - **DESTRUCTIVE** (dropping a column or index) needs `--allow-destructive`; exit `3` without it. Applying is **all-or-nothing** -- without the flag a destructive plan applies *nothing at all*, not the safe parts.
 - **UNSUPPORTED** cannot be applied by any flag: a kind or iterator mismatch, or a column whose type (including nullability) or properties such as `stored=` changed. One unsupported table aborts the whole update, including other models' pending additive changes. Rename the column, or drop it and re-add it in a second pass. See [core-api.md](core-api.md#tables).
 
-On 0.7.11, a column that passes a constant dict whose keys are not in length order (`tools=pxt.tools(...)`, or `model_kwargs={'max_tokens': 5, 'seed': 1}`) shows as a safe alter on every `diff` (PXT-1429), because the stored copy comes back with its keys reordered. Applying it changes no values but bumps the table version, the CI drift check below never exits `0`, and `pxt service update` refuses every service in the file (exit 1). Write such a dict in the stored order, at every nesting level: shorter keys first, keys of equal length alphabetically. `tools=` builds its dicts internally, so it has no workaround ([core-api.md](core-api.md#tools)).
-
 The daemon imports the application file, so it must be readable there; the file's own directory joins `sys.path`, so it can import modules sitting next to it.
 
 **Run `pxt schema check APP` before the first update.** It validates the file with no catalog access, confirms every udf a column calls resolves to a module path another process can import, and warns when a top-level name in the project is shadowed:
@@ -208,7 +206,7 @@ pxt schema update app.py my_app
 pxt service update app.py my_app -f
 pxt service list
 pxt service logs ingest                # local: exits 1 and prints the log file's path
-tail -50 "$(pxt service logs ingest 2>&1 | sed 's/.*the log is at //')"
+tail -50 "$(pxt service logs ingest 2>&1 | sed -n 's/.*writes its log to \(.*\.log\)\. .*/\1/p')"
 pxt service stop ingest
 ```
 
@@ -258,13 +256,15 @@ An org secret applies to every database in the org; a database secret wins on a 
 
 ## Scripting with `--json`
 
+`jq` may not be installed; `python -c` with `json.load(sys.stdin)` always works.
+
 ```bash
 pxt ls --json | jq '.entries[] | select(.kind == "table")'
 pxt get my_app/docs 42 --json | jq '.row'
 pxt count my_app/docs --json | jq '.count'
 pxt schema diff app.py my_app --json
 pxt service diff app.py my_app --json
-pxt service list my_app --json | jq -r '.[] | select(.name == "ingest") | .endpoint'
+pxt service list my_app --json | python -c "import json, sys; print(next(s['endpoint'] for s in json.load(sys.stdin) if s['name'] == 'ingest'))"
 pxt schema diff --json-schema        # the shape of that --json output, every field described
 ```
 

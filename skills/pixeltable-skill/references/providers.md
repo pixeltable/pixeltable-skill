@@ -9,7 +9,7 @@ Keys come from the environment or [config](https://docs.pixeltable.com/platform/
 | Provider | Module | Functions | Extract |
 |----------|--------|-----------|---------|
 | OpenAI | `openai` | `chat_completions`, `responses`, `embeddings`, `speech`, `transcriptions`, `translations`, `image_generations`, `image_edits`, `image_variations`, `moderations`, `invoke_tools` | chat: `.choices[0].message.content`; Responses: `.output_text` |
-| Anthropic | `anthropic` | `messages`, `invoke_tools` | `.content[0].text` |
+| Anthropic | `anthropic` | `messages`, `invoke_tools` | `.content.filter(lambda b: b.type == 'text')[0].text` (see Output below) |
 | Gemini | `gemini` | `generate_content`, `embed_content`, `generate_images`, `generate_videos`, `generate_speech`, `transcribe`, `invoke_tools` | content: Json; generation/transcription returns typed Image, Video, Audio, or String |
 | Bedrock | `bedrock` | `converse`, `invoke_model`, `embed`, `invoke_tools` | `.output.message.content[0].text` |
 | Groq | `groq` | `chat_completions`, `invoke_tools` | `.choices[0].message.content` |
@@ -22,7 +22,7 @@ Keys come from the environment or [config](https://docs.pixeltable.com/platform/
 | Fabric | `fabric` | `chat_completions`, `embeddings` | `.choices[0].message.content` |
 | Ollama (local) | `ollama` | `chat`, `generate`, `embed` | chat: `.message.content`; generate: `.response` |
 | llama.cpp (local) | `llama_cpp` | `create_chat_completion` | `.choices[0].message.content` |
-| vLLM (local) | `vllm` | `chat_completions`, `generate` | `.choices[0].message.content` |
+| vLLM (local) | `vllm` | `chat_completions`, `generate` | `.outputs[0].text` |
 | Hugging Face | `huggingface` | `sentence_transformer`, `clip`, `cross_encoder`, `detr_for_object_detection`, `sam3_for_segmentation`, `image_captioning`, `summarization`, `text_to_image`, ~15 more | index fn, or Json |
 | Whisper (local) | `whisper` | `transcribe` | `.text` |
 | WhisperX (local) | `whisperx` | `transcribe` | Json with `segments` |
@@ -54,7 +54,7 @@ embed_fn = embeddings.using(model='text-embedding-3-small')
 - **Other request parameters** go in one dict, never as top-level keywords: `model_kwargs={...}` on OpenAI, Anthropic, Groq, Together, Mistral, Nebius, Fireworks, DeepSeek, OpenRouter, Fabric, llama.cpp, and RunwayML (`temperature`, `response_format`, OpenAI's `max_tokens`). Gemini takes `config=`, Bedrock `converse` takes `inference_config=`, Ollama takes `options=`, vLLM takes `sampling_params=`. An unknown top-level keyword fails signature binding.
 - **Anthropic `messages` requires `max_tokens=`** as a top-level argument: `messages(messages=[...], model=..., max_tokens=1024)`.
 - **Images** go in an OpenAI message as `{'type': 'image_url', 'image_url': t.image}`: the image column itself, not the HTTP API's `{'url': ...}` wrapper. Pixeltable serializes it. `openai.vision` is deprecated.
-- **Output.** OpenAI-compatible chat completions return `.choices[0].message.content`; OpenAI `responses` exposes simple text as `.output_text`; Anthropic returns `.content[0].text`.
+- **Output.** OpenAI-compatible chat completions return `.choices[0].message.content`; OpenAI `responses` exposes simple text as `.output_text`; vLLM returns `.outputs[0].text`. Anthropic `messages` returns a list of content blocks, and current Claude models may put a `thinking` block first, so `.content[0].text` can be null. Select the text block: `reply.content.filter(lambda b: b.type == 'text')[0].text.astype(pxt.String)`.
 - **Tools** are per provider: pair `pxt.tools(...)` with that module's own `invoke_tools`. The full chain is in [core-api.md](core-api.md#tools).
 
 Rerankers (`voyageai.rerank`, `jina.rerank`, `huggingface.cross_encoder`) score query/document pairs; run one over the rows `.similarity()` returned rather than reaching for a framework.

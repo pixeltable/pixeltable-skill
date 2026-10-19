@@ -16,11 +16,18 @@ class Chunks(
     iterator=pxtf.document.document_splitter(Docs.document, separators='token_limit', limit=512),
 ):
     __indexes__ = [
-        pxt.EmbeddingIndex(text, embedding=embeddings.using(model='text-embedding-3-small'), name='chunks_embed')
-    ]  # type: ignore[name-defined]
+        pxt.EmbeddingIndex(
+            text,  # type: ignore[name-defined]
+            embedding=embeddings.using(model='text-embedding-3-small'),
+            name='chunks_embed',
+        )
+    ]
 ```
 
-Full pattern: [workflows.md](workflows.md).
+Full pattern: [workflows.md](workflows.md). Linting a model file: `text` is an iterator output column, named
+without a definition. Put `# ruff: noqa: F821` at the top of the file, enable Pixeltable's mypy plugin
+(`plugins = pixeltable.mypy.mypy_plugin` in the mypy config), and put `# type: ignore[name-defined]` on the
+line that uses the iterator column; on any other line it has no effect.
 
 Chunking is `document_splitter`. Search is `.similarity()`. Tools are `pxt.tools()` + `invoke_tools()`.
 

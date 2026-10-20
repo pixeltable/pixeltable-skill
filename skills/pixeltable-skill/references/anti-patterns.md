@@ -24,7 +24,7 @@ class Chunks(
     ]
 ```
 
-Full pattern: [workflows.md](workflows.md). Linting a model file: `text` is an iterator output column, named
+Full pattern: [workflows.md](workflows.md). Linting a model file: `text` is an iterator output column, used
 without a definition. Put `# ruff: noqa: F821` at the top of the file, enable Pixeltable's mypy plugin
 (`plugins = pixeltable.mypy.mypy_plugin` in the mypy config), and put `# type: ignore[name-defined]` on the
 line that uses the iterator column; on any other line it has no effect.

@@ -267,6 +267,12 @@ Binding a nullable argument to a non-nullable parameter also widens the column's
 Load models at module scope, never in the UDF body: [anti-patterns.md](anti-patterns.md).
 
 ```python
+from pixeltable.func import Batch
+
+@pxt.udf(batch_size=32)
+def batch_process(texts: Batch[str]) -> Batch[list[float]]:
+    return model.encode(texts).tolist()
+
 lookup_fn = pxt.retrieval_udf(t, name='lookup_items', description='Look up items by name',
     parameters=['name'], limit=5)
 ```

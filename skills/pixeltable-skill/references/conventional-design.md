@@ -91,4 +91,4 @@ def add_reassembled(*, video_id: str) -> Added:
   the aggregate row: with `t = pxt.get_table('my_app/reassembled')`, run
   `t.recompute_columns('video', where=t.video_id == vid)`.
 - The two inserts are not one transaction: a failed second insert leaves the first in place, and the
-  job reports the error.
+  job ends with status `error`.

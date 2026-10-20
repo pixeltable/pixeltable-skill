@@ -44,7 +44,9 @@ See [anti-patterns.md](references/anti-patterns.md) (6 macros).
 
 1. **Translate the spec.** Workers, job queues, status columns, retries, metrics tables and cron jobs
    each have a Pixeltable equivalent: [conventional-design.md](references/conventional-design.md). Do
-   not build them literally.
+   not build them literally. An aggregate per base row over a view, such as each video's mean frame
+   score, goes in a second table keyed like the base, with a `@pxt.query` column: the aggregate-table
+   pattern there.
 2. **Design the schema.** Entities, primary keys, types, nullability, and what is stored, computed or
    queried: [schema-design.md](references/schema-design.md). Keys cannot change later, and a column
    can become nullable but not required.
@@ -62,6 +64,7 @@ One application file (`app.py`) is the backend.
 
 - `pxt schema update`: creates tables from `TableModel` classes. Does not start HTTP.
 - Insert a sample, `.select()`, `pxt dashboard`, or `pxt schema diff`. Compute runs on insert. After `pxt service update`, curl POST.
+- `pxt.call_udf(fn, ...)` runs one UDF on Python values, with no table: try a prompt with `pxt.call_udf(pxtf.openai.chat_completions, messages=[...], model='gpt-4o-mini')`, or call a model from a custom handler. Use it instead of the provider's own SDK.
 - `pxt service update`: starts HTTP (local or `pxt://`). `pxt service list` prints the URL. This is the serving command; do not reach for `pxt service run`.
 
 First run: [Quickstart](https://docs.pixeltable.com/overview/quick-start). Why: [Why Pixeltable](https://docs.pixeltable.com/overview/pixeltable).
@@ -180,8 +183,9 @@ Add video, audio, agents, or a UI by editing `app.py`. A view is either a filter
 | `EmbeddingIndex(frame, image_embed=clip)` | `embedding=clip` (covers text and image). Or both `string_embed=` and `image_embed=`. `image_embed=` alone cannot answer `similarity(string=...)` |
 | `uuid.astype(pxt.String)` | `uuid.to_string()` (`from pixeltable.functions.uuid import to_string`). `astype` does not cast UUID to String |
 | `json_col.astype(pxt.String)` on a dict or list | Fails at insert: `Expected string, got dict`. Serialize with `pxtf.json.dumps(json_col)` |
+| `batch_update(rows, if_not_exists='insert')` to load a file again | Recomputes the computed columns of every matched row, paid model calls included. `batch_update(rows, if_exists='ignore')` inserts the rows with new keys and leaves existing rows unchanged |
 
-Extract the field (`.text`, `.choices[0].message.content`). The text of an Anthropic reply is already a String. For other providers the field is Json holding a string: `.astype(pxt.String)` it before concatenating or embedding.
+Extract the field (`.text`, `.choices[0].message.content`). The text of an Anthropic reply is already a String; with thinking enabled `content[0]` is the thinking block, so select the text block: `reply.content.filter(lambda b: b.type == 'text')[0].text`. For other providers the field is a string typed as Json: `.astype(pxt.String)` it before concatenating or embedding.
 
 ## Notebook / REPL appendix
 

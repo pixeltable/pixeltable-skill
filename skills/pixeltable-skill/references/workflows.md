@@ -75,7 +75,7 @@ app.include_router(ingest)
 The other way round also works: define the `fastapi.FastAPI` object in `app.py` and `include_router()` every router the file declares. `pxt service update` then serves that one application, named after the module, with the models bound at `TARGET` before it starts. Without a `FastAPI` object, each router is its own service on its own port.
 
 - `add_insert_route`: POST from model columns. `uploadfile_inputs` for files. Persists the row. A file column is `uploadfile_inputs` or `inputs`, not both.
-- `add_compute_route`: same request shape as insert, but `Table.compute()`: no row stored
+- `add_compute_route`: same request shape as insert, but `Table.compute()`: no row stored. The response fields are the `outputs` column names
 - `add_update_route`: POST matches the row by primary key, so the request body carries the key (`id`) even though `inputs` does not list it. No `match_columns`
 - `add_query_route`: wraps `@pxt.query`. Default `{ "rows": [...] }`. `one_row=True` returns the object (0 rows is a 404, more than one is a 409). `return_fileresponse=True` returns the one media column as a file (implies one-row)
 - `add_delete_route`: POST delete by primary key, or by a nonempty `match_columns=` list

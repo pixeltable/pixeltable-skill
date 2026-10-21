@@ -26,6 +26,8 @@ pixeltable-skill/
 ├── scripts/validate_plugin.py # Manifest + frontmatter validator
 ├── install.sh                 # Standalone skill installer
 ├── plugin.json                # Portable Agent Plugins manifest
+├── gemini-extension.json      # Gemini CLI extension + gallery listing
+├── GEMINI.md                  # Gemini CLI context (points at skills/)
 ├── .plugin/ .cursor-plugin/   # Vendor-neutral + Cursor manifests (npx plugins)
 ├── .claude-plugin/            # Claude Code plugin + marketplace metadata
 ├── .codex-plugin/             # Codex compatibility manifest
@@ -36,7 +38,7 @@ pixeltable-skill/
 Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claude Code + Cursor) or `npx skills add pixeltable/pixeltable-skill` (skill only, 40+ agents). Keep both working.
 
 ### Conventions
-- Plugin identity is `pixeltable` (commands render as `/pixeltable:<name>`); keep root `plugin.json` and all compatibility manifest versions in sync.
+- Plugin identity is `pixeltable` (commands render as `/pixeltable:<name>`); keep root `plugin.json`, `gemini-extension.json`, and all compatibility manifest versions in sync.
 - Hooks are **pure Python** (`hooks/*.py`, 3.9+), no Node/Bun/TypeScript. The `hooks.json` command tries `python`, `python3`, then `py -3`, because a python.org install on Windows ships no `python3.exe`.
 - Run `python3 scripts/validate_plugin.py` before submitting structural changes.
 

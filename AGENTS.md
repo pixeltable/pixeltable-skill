@@ -18,9 +18,11 @@ commands/                 # /pixeltable:scaffold, add-provider
 agents/                   # pipeline-architect, debugger
 hooks/
 scripts/validate_plugin.py
+gemini-extension.json     # Gemini CLI extension + gallery listing
+GEMINI.md                 # Gemini CLI context; points at skills/, does not copy them
 ```
 
-Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), and `package.json`. Keep name `pixeltable` and versions in sync (`2.12.0`).
+Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), `package.json`, and `gemini-extension.json`. Keep name `pixeltable` and versions in sync (`2.12.0`).
 
 ## Rules
 
@@ -31,7 +33,8 @@ Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin
 - `if_exists='ignore'` on notebook `create_*` / `add_*`.
 - No LangChain, pandas-as-store, or standalone vector DB patterns.
 - Keep SKILL.md under 500 lines (enforced by `validate_plugin.py`).
-- Fenced ```python blocks in `skills/`, `agents/` and `commands/` must pass the hook's own `error` checks -- the validator imports `CHECKS` and runs them. Quote a wrong form in prose or a traps table, never in a code block.
+- Fenced ```python blocks in `skills/`, `agents/`, `commands/`, and `GEMINI.md` must pass the hook's own `error` checks -- the validator imports `CHECKS` and runs them. Quote a wrong form in prose or a traps table, never in a code block.
+- `GEMINI.md` is Gemini CLI session context. Point it at `skills/pixeltable-skill/`; do not duplicate `SKILL.md`. Gemini loads `skills/*/SKILL.md` on its own.
 - Since Pixeltable 0.7.10, editing a computed column's expression in place is a safe `alter`: `pxt schema update` applies it and keeps the old values until `pxt recompute`. A type change, including `T` to `T | None`, is still `UNSUPPORTED`: rename the column, or drop and re-add it. `--allow-destructive` does not help.
 - Agent-facing `pxt service update` examples carry `-f`: an agent has no TTY, and without the flag a pending update exits 3.
 - Run `python3 scripts/validate_plugin.py`, `python3 tests/test_hooks.py` and `python3 tests/test_integrations.py` after any change.

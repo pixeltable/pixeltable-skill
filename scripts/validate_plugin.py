@@ -2,7 +2,7 @@
 """Validate the Pixeltable plugin layout. Pure stdlib; no third-party deps.
 
 Checks:
-  1. All JSON manifests parse.
+  1. All JSON manifests parse (including gemini-extension.json).
   2. Portable and compatibility manifests agree and component pointers resolve.
   3. Every skills/<name>/SKILL.md has `name` and `description` frontmatter.
   4. Listed command/agent files in .claude-plugin/plugin.json exist.
@@ -19,6 +19,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 errors = []
 checks = 0
+
+
+def iter_agent_docs():
+    """Markdown agents copy from: skill, agents, commands, and Gemini context."""
+    for root_name in ("skills", "agents", "commands"):
+        yield from sorted((ROOT / root_name).rglob("*.md"))
+    gemini_md = ROOT / "GEMINI.md"
+    if gemini_md.is_file():
+        yield gemini_md
 
 
 def check(cond, msg):
@@ -59,6 +68,7 @@ def main():
         ".codex-plugin/plugin.json",
         ".agents/plugins/marketplace.json",
         "package.json",
+        "gemini-extension.json",
     ]
     parsed = {m: load_json(m) for m in manifests}
 
@@ -75,6 +85,39 @@ def main():
         "plugin.json OpenAI interface must match .codex-plugin compatibility metadata",
     )
     check(codex.get("skills") == "./skills/", ".codex-plugin/plugin.json: skills must point to ./skills/")
+
+    gemini = parsed.get("gemini-extension.json") or {}
+    check(gemini.get("name") == "pixeltable", "gemini-extension.json: name must be 'pixeltable'")
+    check(
+        gemini.get("contextFileName") == "GEMINI.md",
+        "gemini-extension.json: contextFileName must be GEMINI.md",
+    )
+    check((ROOT / "GEMINI.md").is_file(), "missing GEMINI.md (Gemini CLI context file)")
+    mcp = gemini.get("mcpServers") or {}
+    cloud = mcp.get("pixeltable-cloud") or {}
+    local = mcp.get("pixeltable") or {}
+    check(
+        cloud.get("httpUrl") == "https://www.pixeltable.com/mcp/cloud",
+        "gemini-extension.json: pixeltable-cloud must use the hosted Cloud MCP httpUrl",
+    )
+    check(
+        "Authorization" not in (cloud.get("headers") or {}),
+        "gemini-extension.json: Cloud MCP OAuth is handled by Gemini CLI; no auth header",
+    )
+    check(local.get("command") == "uvx", "gemini-extension.json: pixeltable MCP must run via uvx")
+    check(
+        "mcp-server-pixeltable-developer" in (local.get("args") or []),
+        "gemini-extension.json: pixeltable MCP must invoke mcp-server-pixeltable-developer",
+    )
+    setting_vars = [s.get("envVar") for s in (gemini.get("settings") or []) if isinstance(s, dict)]
+    check(
+        "PIXELTABLE_HOME" in setting_vars,
+        "gemini-extension.json: settings must declare PIXELTABLE_HOME for the local MCP",
+    )
+    check(
+        not any(isinstance(v, str) and "API_KEY" in v for v in setting_vars),
+        "gemini-extension.json: do not declare an API key (Cloud OAuth is handled by Gemini CLI)",
+    )
 
     marketplace = parsed.get(".agents/plugins/marketplace.json") or {}
     entries = marketplace.get("plugins") or []
@@ -137,6 +180,7 @@ def main():
         ".claude-plugin/marketplace.json": lambda d: (d.get("metadata") or {}).get("version"),
         ".codex-plugin/plugin.json": lambda d: d.get("version"),
         "package.json": lambda d: d.get("version"),
+        "gemini-extension.json": lambda d: d.get("version"),
     }
     for rel, getter in version_getters.items():
         data = parsed.get(rel)
@@ -171,26 +215,24 @@ def main():
     except ImportError as e:  # pragma: no cover - the hook is part of the repo
         errors.append(f"cannot import hook checks: {e}")
         CHECKS = []
-    doc_roots = ["skills", "agents", "commands"]
     fence = re.compile(r"^```(?:python|py)\n(.*?)^```", re.DOTALL | re.MULTILINE)
-    for root_name in doc_roots:
-        for md in sorted((ROOT / root_name).rglob("*.md")):
-            body = md.read_text(encoding="utf-8", errors="ignore")
-            for block in fence.findall(body):
-                for entry in CHECKS:
-                    pattern, severity, message, gate = entry
-                    if severity != "error":
-                        continue
-                    if gate is not None and not gate.search(block):
-                        continue
-                    hit = pattern.search(block)
-                    check(
-                        hit is None,
-                        f"{md.relative_to(ROOT)}: a python block matches a hook 'error' check "
-                        f"({hit.group(0).strip()!r} -- {message.split('.')[0]})"
-                        if hit
-                        else "",
-                    )
+    for md in iter_agent_docs():
+        body = md.read_text(encoding="utf-8", errors="ignore")
+        for block in fence.findall(body):
+            for entry in CHECKS:
+                pattern, severity, message, gate = entry
+                if severity != "error":
+                    continue
+                if gate is not None and not gate.search(block):
+                    continue
+                hit = pattern.search(block)
+                check(
+                    hit is None,
+                    f"{md.relative_to(ROOT)}: a python block matches a hook 'error' check "
+                    f"({hit.group(0).strip()!r} -- {message.split('.')[0]})"
+                    if hit
+                    else "",
+                )
 
     # 7. Documented pixeltable modules must be real, and not the deprecated shim.
     KNOWN_MODULES = {
@@ -202,14 +244,13 @@ def main():
         "whisperx", "yolox",
     }
     mod_ref = re.compile(r"pixeltable\.functions\.(\w+)")
-    for root_name in doc_roots:
-        for md in sorted((ROOT / root_name).rglob("*.md")):
-            body = md.read_text(encoding="utf-8", errors="ignore")
-            for mod in sorted(set(mod_ref.findall(body))):
-                check(
-                    mod in KNOWN_MODULES,
-                    f"{md.relative_to(ROOT)}: unknown module pixeltable.functions.{mod}",
-                )
+    for md in iter_agent_docs():
+        body = md.read_text(encoding="utf-8", errors="ignore")
+        for mod in sorted(set(mod_ref.findall(body))):
+            check(
+                mod in KNOWN_MODULES,
+                f"{md.relative_to(ROOT)}: unknown module pixeltable.functions.{mod}",
+            )
 
     # 8. AGENTS.md caps SKILL.md length; nothing enforced it until now.
     for sf in skill_files:
@@ -218,16 +259,15 @@ def main():
 
     # 9. An agent has no TTY, and a pending `pxt service update` without -f exits 3 there.
     shell_fence = re.compile(r"^```(?:bash|sh|shell)\n(.*?)^```", re.DOTALL | re.MULTILINE)
-    for root_name in doc_roots:
-        for md in sorted((ROOT / root_name).rglob("*.md")):
-            for block in shell_fence.findall(md.read_text(encoding="utf-8", errors="ignore")):
-                for line in block.splitlines():
-                    command = line.split("#", 1)[0]
-                    if re.search(r"\bpxt service update\b", command):
-                        check(
-                            re.search(r"\s-(?:f|n)\b|--force\b|--dry-run\b", command) is not None,
-                            f"{md.relative_to(ROOT)}: `pxt service update` without -f: {command.strip()!r}",
-                        )
+    for md in iter_agent_docs():
+        for block in shell_fence.findall(md.read_text(encoding="utf-8", errors="ignore")):
+            for line in block.splitlines():
+                command = line.split("#", 1)[0]
+                if re.search(r"\bpxt service update\b", command):
+                    check(
+                        re.search(r"\s-(?:f|n)\b|--force\b|--dry-run\b", command) is not None,
+                        f"{md.relative_to(ROOT)}: `pxt service update` without -f: {command.strip()!r}",
+                    )
 
     if errors:
         print(f"FAIL ({len(errors)} of {checks} checks):", file=sys.stderr)

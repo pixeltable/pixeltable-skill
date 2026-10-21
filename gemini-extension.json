@@ -1,0 +1,29 @@
+{
+  "name": "pixeltable",
+  "version": "2.12.0",
+  "description": "Pixeltable for Gemini CLI: build multimodal AI apps with declarative tables, computed columns, embedding search, and services; inspect and operate Pixeltable Cloud through its hosted MCP.",
+  "contextFileName": "GEMINI.md",
+  "settings": [
+    {
+      "name": "Pixeltable home",
+      "description": "Catalog directory the local developer MCP may read and mutate (Pixeltable's default is ~/.pixeltable). Only used by the local 'pixeltable' MCP server.",
+      "envVar": "PIXELTABLE_HOME",
+      "sensitive": false
+    }
+  ],
+  "mcpServers": {
+    "pixeltable-cloud": {
+      "httpUrl": "https://www.pixeltable.com/mcp/cloud"
+    },
+    "pixeltable": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-pixeltable-developer"
+      ],
+      "env": {
+        "PIXELTABLE_MCP_PROJECT_ROOT": "${workspacePath}",
+        "PIXELTABLE_HOME": "${PIXELTABLE_HOME}"
+      }
+    }
+  }
+}

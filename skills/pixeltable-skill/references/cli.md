@@ -2,7 +2,7 @@
 
 Agent-focused map of the `pxt` CLI. Official source: [platform/cli.md](https://docs.pixeltable.com/platform/cli.md). Always run `pxt <command> --help` for version-specific flags -- never guess.
 
-Python 3.11+. There is no `pxt serve`, no `pxt deploy`, no `pxt app`, no `pxt db create` (`pxt db update` creates), and no `[tool.pixeltable.service]` TOML.
+Python 3.11+. There is no `pxt serve`, no `pxt deploy`, no `pxt app`, no `pxt db create` (`pxt db update` creates), and no `[tool.pixeltable.service]` TOML. Hosted service size is `[pixeltable.database.services.'<path>']`.
 
 ## Two surfaces
 
@@ -225,7 +225,7 @@ A service binds its tables when it starts. After `pxt schema update` changes one
 
 **Tracing.** `service diff`, `service update` and `service run` take `--otel`, which emits OpenTelemetry traces and needs `pip install 'pixeltable[otel]'` (`serve` and `otel` are the only two extras). The setting belongs to the running service, not to the file: a service already running without it restarts when `update` is given the flag, dropping the flag restarts it again, and `diff --otel` reports tracing that is off but was asked for as a pending change.
 
-Do **not** write `[tool.pixeltable.service]` TOML or call `pxt serve`.
+Do **not** write `[tool.pixeltable.service]` TOML or call `pxt serve`. Size a hosted service in `pixeltable.toml` with `[pixeltable.database.services.'<path>']` (`cpu`, `memory_mb`, `workers`, `file_cache_gb`; path is `'<directory>/<service name>'`, or the name alone at the database root). `pxt service update` applies it; a `workers` change needs no restart, and a setting left out keeps the current value.
 
 ## Cloud (`pxt login`, `pxt db`, `pxt org`, `pxt secret`, `pxt key`)
 
@@ -239,9 +239,9 @@ pxt org status pxt://myorg         # also: create, list
 pxt key create ci                  # a key that acts as you; its secret prints once
 ```
 
-`pxt db update pxt://org:db` selects `[[pixeltable.database]]` by `name = 'pxt://org:db'`. A URI with no matching entry is an error. First `update` creates the hosted database. `pxt db delete` is irreversible and takes the storage with it; without a TTY it exits 3 unless given `-f`.
+`pxt db update pxt://org:db` selects `[[pixeltable.database]]` by `name = 'pxt://org:db'`. A URI with no matching entry is an error; the error suggests `pxt db diff <uri> --add-config-entry`. Prefer that flag on `diff` or `update` over a hand-edited entry: it appends `name = '<uri>'` unless one already matches (a hand edit collides with the local entry or puts `name` on it). `diff --add-config-entry` previews a first deployment; `update --add-config-entry` creates it in one command. First `update` creates the hosted database. `pxt db delete` is irreversible and takes the storage with it; without a TTY it exits 3 unless given `-f`.
 
-Hosted order: `pxt db update pxt://org:db -f` uploads the project and sets image and workers, then `pxt schema update app.py pxt://org:db -f`, then `pxt service update app.py pxt://org:db -f`. Taking capacity away requires `--allow-destructive`. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
+Hosted order: `pxt db update pxt://org:db -f` uploads the project and sets image and workers, then `pxt schema update app.py pxt://org:db -f`, then `pxt service update app.py pxt://org:db -f`. Settings (`vars`, `db_*`, sections such as `[openai]`) reach a hosted database without an upload; `pxt db diff --json` reports those changes under target `config`. Taking capacity away requires `--allow-destructive`. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
 
 `pxt db update`, `start`, `stop`, `restart`, `retry`, `build-image` and `delete` wait until Cloud has applied the change, showing the step and what it waits for. Cloud carries on with an accepted change even if the command stops: Ctrl-C or a timed-out tool call stops only the waiting. An agent whose tool calls time out passes `--no-wait` and follows with `pxt db status pxt://org:db`. After three hours the command exits 2 with the change still under way. A failed update names its fix: `pxt db retry pxt://org:db` or `pxt service retry pxt://org:db/NAME` retries it unchanged, and rerunning the same `pxt db update` does too. An update refused because the database changed after its plan is run again as is. `CLIENT_OUTDATED` means the local Pixeltable predates this protocol: `pip install -U pixeltable`, then run the command again.
 
@@ -259,7 +259,7 @@ Optional Cloud MCP: when a Cloud user wants the agent to inspect or operate thei
 pxt secret set pxt://myorg OPENAI_API_KEY=<your-key>    # also: list, delete
 ```
 
-An org secret applies to every database in the org; a database secret wins on a key collision. The `PIXELTABLE_` prefix is reserved, so such a name is refused. Secrets are set with `pxt secret`, never in `pixeltable.toml`: a `[[pixeltable.database]]` entry with a `secrets` mapping fails to load. A process reads its secrets once, at startup, so a running one keeps the values it began with. After `pxt secret set` or `pxt secret delete`, run `pxt db restart pxt://org:db` for the database's tables and `pxt service restart pxt://org:db/NAME` for its services; both keep the old pods serving until the new ones are ready. Never ask the user to paste a secret's value into the chat: give them `pxt secret set pxt://org KEY=<value>` to run in their own terminal.
+An org secret applies to every database in the org; a database secret wins on a key collision. The `PIXELTABLE_` prefix is reserved, so such a name is refused. Secrets are set with `pxt secret`, never in `pixeltable.toml`: a `[[pixeltable.database]]` entry with a `secrets` mapping fails to load, and for a hosted database `pxt db update` also refuses a secret key such as `[openai] api_key`. A process reads its secrets once, at startup, so a running one keeps the values it began with. After `pxt secret set` or `pxt secret delete`, run `pxt db restart pxt://org:db` for the database's tables and `pxt service restart pxt://org:db/NAME` for its services; both keep the old pods serving until the new ones are ready. Never ask the user to paste a secret's value into the chat: give them `pxt secret set pxt://org KEY=<value>` to run in their own terminal.
 
 ## Scripting with `--json`
 

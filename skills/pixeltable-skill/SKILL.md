@@ -79,6 +79,8 @@ pxt service update app.py pxt://org:db -f
 
 Provider calls retry on their own (rate limits, 503s, timeouts, with backoff) and reach a proxy through `OPENAI_BASE_URL`: do not wrap a model call in your own retry loop or client ([providers.md](references/providers.md#retries-and-proxies)). Under a coding agent, ask the user to run `pxt login` in their own terminal, and never ask for a secret's value in the chat.
 
+Since Pixeltable 0.7.20, a command refused for want of `-f` or `--allow-destructive` exits 3 and ends with `next: <command>  # <what it does>`; `pxt errors` prints the same for each recomputable failed column (a snapshot column never changes, so it names no recompute). Run that command when it does what the user asked; ask first when it drops data, stops or restarts what others call, or recomputes rows the user did not mention. When Pixeltable cannot do what the task needs, or you work around it, show the user `pxt feedback --kind gap '<what was needed, what you tried, what happened>'`, which prints a preview and sends nothing; add `--send` only once they agree. Single quotes keep the shell from running anything in the text. Use placeholder data, never customer names, hosts, paths or secrets.
+
 Provider keys on Cloud: `pxt secret set pxt://org OPENAI_API_KEY=...`, never in `pixeltable.toml`. Cloud handle: `pxt.get_table('pxt://org:db/docs')`. Media goes to the database's managed home bucket unless a column sets `destination=`; share a file by link or `/sign` (`references/cli.md`, Cloud). Try the app with a dashboard insert plus `pxt schema diff`; read failures with `pxt service logs` / `pxt db logs`.
 
 ## The application file

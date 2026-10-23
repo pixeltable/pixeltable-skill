@@ -68,11 +68,11 @@ The last argument (`my_app`, or `pxt://org:db` on Cloud) is a catalog directory,
 
 Provider keys (`OPENAI_API_KEY`, ...) come from the environment or `~/.pixeltable/config.toml`, and the `pxt` daemon reads both once, at startup; local services get them from the daemon. After changing either, run `pxt daemon restart` (every command answers 409 until you do), then `pxt service restart my_app/ingest`.
 
-Same file on [Cloud](https://docs.pixeltable.com/howto/deployment/cloud): add `[[pixeltable.database]]` with `name = 'pxt://org:db'` to `pixeltable.toml`, then:
+Same file on [Cloud](https://docs.pixeltable.com/howto/deployment/cloud): prefer `--add-config-entry` over writing the hosted `[[pixeltable.database]]` entry by hand, then:
 
 ```bash
 pxt login                                  # browser sign-in; or export PIXELTABLE_API_KEY, which wins
-pxt db update pxt://org:db -f              # project files, image, workers; not secrets, rows, or HTTP
+pxt db update pxt://org:db --add-config-entry -f  # project files, image, workers; not secrets, rows, or HTTP
 pxt schema update app.py pxt://org:db -f
 pxt service update app.py pxt://org:db -f
 ```

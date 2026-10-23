@@ -25,6 +25,8 @@ pxt service update app.py my_app -f  # starts local HTTP; does NOT create tables
 
 Without a TTY, a pending `service update` exits 3 unless given `-f`, even a first start. An additive or no-op `schema update` does not prompt.
 
+Exit codes (0.7.20+): `0` done, `1` error (a usage error too, in `schema`, `service`, `db` and `init`), `2` changes pending (`diff`, `-n`) or a hosted change still under way after the three-hour wait, `3` refused for want of `-f` or `--allow-destructive`, or declined at the prompt. A failed request ends with its code, as in `[TABLE_NOT_FOUND]`, and with `--json` prints `{"error_code", "message", "retryable"}`, plus `retry_after` when Cloud gives a wait. A refusal only the user can lift (`PLAN_LIMIT`, `PAYMENT_REQUIRED`, `STORE_FULL`) prints Cloud's reason alone: tell the user rather than retrying. `next:` lines on stderr name the command that finishes the job.
+
 `my_app` is a catalog directory, not a folder on disk. After apply: `t = pxt.get_table('my_app.docs')`. Cloud: `t = pxt.get_table('pxt://org:db/docs')`. Tables live under `~/.pixeltable`, not in the repo. Directory names from the project root to `app.py` must be Python identifiers. Do not `python app.py` if the file only declares models and routers. After a schema change, run `pxt service update` again if routes exist.
 
 ## Daemon
@@ -54,10 +56,10 @@ The daemon reads `config.toml` and the environment once, at startup, and local s
 | Flag | Description |
 |------|-------------|
 | `-h`, `--help` | Every command |
-| `--json` | Machine-readable output on catalog commands, `init`, the `schema` / `service` verbs other than `example`, `login`, `whoami`, `db`, `org`, `secret`, `key`, `daemon status`. Not on `shell`, `dashboard`, `logout`, or `daemon start`/`stop`/`restart`. `health` is always JSON. |
+| `--json` | Machine-readable output on catalog commands, `init`, the `schema` / `service` verbs other than `example`, `login`, `whoami`, `db`, `org`, `secret`, `key`, `usage`, `feedback`, `daemon status`. Not on `shell`, `dashboard`, `logout`, or `daemon start`/`stop`/`restart`. `health` is always JSON. |
 | `--json-schema` | `schema diff`, `service diff`, `service list`, `db diff`, `db status`: print the JSON Schema of that command's `--json` output, every field and enum value described, and exit. Takes no other argument |
 | `-n`, `--dry-run` | Catalog mutations (`drop`, `drop-dir`, `rename`, `mv`, `recompute`, `revert`) plus `schema update`, `schema prune`, `service update`, `service prune`, and `db update` |
-| `-f`, `--force` | Skip `[y/N]` on `drop`, `drop-dir`, `recompute`, `revert`, schema/service update and prune, `db update`, and `db delete`. Use it in non-interactive runs when a pending plan can prompt. Additive or no-op schema updates do not prompt. Not on `rename`/`mv`. |
+| `-f`, `--force` | Skip `[y/N]` on `drop`, `drop-dir`, `recompute`, `revert`, schema/service update and prune, `db update`, and `db delete`. Use it in non-interactive runs when a pending plan can prompt. Additive or no-op schema updates do not prompt. Not on `rename`/`mv`. Without it and without a TTY, the command exits 3 and prints `next: <the same command with -f>  # <what it does>`; with `--json`, `{"error_code": "CONFIRMATION_REQUIRED", ..., "next": [{"command", "effect"}]}`, or the refused plan for `schema`, `service` and `db update`. |
 
 ## Agent workflows
 
@@ -78,6 +80,7 @@ The daemon reads `config.toml` and the environment once, at startup, and local s
 | Many commands in sequence | `pxt shell` | amortizes startup; errors don't kill session |
 | Visual inspection | `pxt dashboard` | read-only UI at daemon port |
 | Hosted database | `pxt db update` | `pxt db update pxt://myorg:mydb -f`, then schema, then service |
+| Report a gap or bug | `pxt feedback` (0.7.20+) | `pxt feedback --kind gap '...'` previews and sends nothing; add `--send` only after the user agrees. With `DO_NOT_TRACK` set, `--send` exits 3 |
 
 **SDK vs CLI:** Notebooks and one-off REPL use the Python SDK (`create_table`, `add_computed_column`). Apps use a `TableModel` file plus `pxt schema` / `pxt service`. Use CLI for inspect, debug, and CI drift checks.
 

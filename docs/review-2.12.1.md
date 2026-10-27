@@ -46,6 +46,15 @@ SDK facts confirmed in `v0.7.21` source:
 - `frame_iterator(..., fps=1.0)` emits `frame` and `frame_attrs`
 - `whisper.transcribe(audio=..., model='base.en')`
 
+## Validation
+
+- `python3 scripts/validate_plugin.py`: OK (9 skills)
+- `python3 tests/test_hooks.py` and `python3 tests/test_integrations.py`: OK
+- `npx skills add . --list`: 9 skills
+- `npx plugins discover .`: `pixeltable` with 9 skills
+- `npx skills-ref validate` on each discovery skill: valid
+- `npx skills-ref validate skills/pixeltable-skill`: **fails**, pre-existing: directory `pixeltable-skill` vs frontmatter name `pixeltable`. Not changed here (install paths and the skills.sh `@pixeltable` id depend on it)
+
 ## What was not done
 
 - No Tessl / Skillstore / agentskill.sh / hf-discover / ClawHub publish

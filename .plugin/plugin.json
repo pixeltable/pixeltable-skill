@@ -1,7 +1,7 @@
 {
   "name": "pixeltable",
-  "version": "2.12.0",
-  "description": "Build multimodal AI applications with Pixeltable: declarative tables, computed columns, embedding search, UDFs, tool-calling agents, and 25+ AI provider integrations.",
+  "version": "2.13.0",
+  "description": "Multimodal RAG, video search, image similarity search, agent memory, and embeddings stored with your data. Declarative tables, computed columns, embedding search, and HTTP.",
   "author": {
     "name": "Pixeltable",
     "url": "https://github.com/pixeltable"
@@ -14,9 +14,15 @@
     "multimodal",
     "ai",
     "rag",
+    "multimodal-rag",
+    "video-search",
+    "image-similarity-search",
+    "agent-memory",
     "embeddings",
     "computed-columns",
     "vector-search",
+    "audio-transcription",
+    "dataset-versioning",
     "agents",
     "udf",
     "video",

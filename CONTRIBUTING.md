@@ -13,14 +13,15 @@ Thanks for your interest in improving the Pixeltable Skill! This guide covers ho
 
 ## Repository Structure
 
-This repo is an agent **plugin**: one skill (the content core) wrapped with commands, agents, and optional hooks.
+This repo is an agent **plugin**: one canonical teaching skill, plus thin task-named catalog skills, wrapped with commands, agents, and optional hooks.
 
 ```
 pixeltable-skill/
-├── skills/pixeltable-skill/   # THE skill; do not split
+├── skills/pixeltable-skill/   # Canonical teaching skill (name: pixeltable)
 │   ├── SKILL.md               # Core instructions (<500 lines)
 │   └── references/            # Detailed reference (loaded on demand)
-├── commands/                  # Slash commands (Markdown): /pixeltable:scaffold, add-provider
+├── skills/<job>/SKILL.md      # Thin catalog skills that route to pixeltable
+├── commands/                  # Slash commands: /pixeltable:pixeltable-start, index-videos, ...; scaffold and add-provider kept
 ├── agents/                    # Specialist subagents (Markdown): pipeline-architect, debugger
 ├── hooks/                     # Optional pure-Python hooks + hooks.json (Claude Code)
 ├── scripts/validate_plugin.py # Manifest + frontmatter validator
@@ -48,7 +49,11 @@ Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claud
 - Add missing patterns for common use cases
 - Update provider examples for new Pixeltable releases
 - Keep `SKILL.md` concise: detailed content goes in `references/`
-- `SKILL.md` should stay under 500 lines
+- `skills/pixeltable-skill/SKILL.md` should stay under 500 lines
+- Catalog skills under `skills/<job>/` stay under 100 lines, use searcher-language descriptions
+  (Agent Skills spec: name matches the folder, description <= 1024 chars), include a correct
+  Pixeltable snippet, and point at the canonical `pixeltable` skill. Do not duplicate teaching
+  content.
 
 ## Guidelines
 
@@ -79,7 +84,7 @@ Before submitting, verify:
 5. The install script works for `claude-code`, `cursor-skill`, `codex-skill`, and `antigravity`
 6. Plugin layout validates: `python3 scripts/validate_plugin.py`
 7. Discovery resolves: `npx plugins discover .` and `npx skills add . --list`
-8. Cursor install (from repo): `npx plugins add . -y --target cursor` then restart Agent; verify `/pixeltable:scaffold` and 5 files under `~/.cursor/skills/pixeltable-skill/references/` (or plugin cache)
+8. Cursor install (from repo): `npx plugins add . -y --target cursor` then restart Agent; verify `/pixeltable:pixeltable-start` (and `/pixeltable:scaffold`) and 5 files under `~/.cursor/skills/pixeltable-skill/references/` (or plugin cache)
 9. Codex marketplace install resolves in an isolated `CODEX_HOME`; start a new conversation after installing
 
 ### No XML Tags

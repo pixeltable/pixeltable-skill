@@ -1,10 +1,12 @@
 # Pixeltable Skill
 
-The backend agents build with: multimodal database, orchestration, and serving in one file.
+Multimodal RAG, video search, image similarity search, agent memory, and embeddings stored with your data.
 
 This plugin teaches AI coding assistants to build Pixeltable applications: tables with computed columns, embedding indexes and vector search, RAG, tool-calling agents, and video, audio, image, and document pipelines across 25+ AI providers. The agent declares the schema as `TableModel` classes in `app.py`, creates the tables with `pxt schema update`, and serves HTTP routes with `pxt service update`.
 
-Verified against Pixeltable 0.7.11 on 2026-09-28: [docs/review-2.12.0.md](docs/review-2.12.0.md).
+Catalog skills (thin routers into the canonical `pixeltable` skill) are named for the jobs people search: `multimodal-rag`, `video-search`, `image-similarity-search`, `audio-transcription-search`, `agent-memory`, `vector-database-alternative`, `incremental-ml-pipeline`, `dataset-versioning`.
+
+Verified against Pixeltable 0.7.11 on 2026-09-28: [docs/review-2.12.0.md](docs/review-2.12.0.md). Catalog snippets re-checked against Pixeltable 0.7.21 docs on 2026-10-27: [docs/review-2.13.0.md](docs/review-2.13.0.md).
 
 ## Install
 
@@ -16,8 +18,10 @@ Install the portable skill with [npx skills](https://github.com/vercel-labs/skil
 npx skills add pixeltable/pixeltable-skill
 ```
 
-This installs `SKILL.md` and its references for supported coding assistants,
-including Cursor, Copilot, Windsurf, and the Codex IDE extension.
+This installs every `skills/*/SKILL.md` (the canonical `pixeltable` skill plus
+the task-named catalog skills) and the canonical skill's references for
+supported coding assistants, including Cursor, Copilot, Windsurf, and the
+Codex IDE extension.
 
 With only Python, `pxt skills install` (Pixeltable 0.7.17 or later) writes the
 same skill into the current project's `.claude/skills/pixeltable` and
@@ -71,7 +75,7 @@ are team-distribution sources; they do not publish to a public directory.
 ## What's Inside
 
 ```
-skills/pixeltable-skill/
+skills/pixeltable-skill/        # Canonical teaching skill (name: pixeltable)
 ├── SKILL.md                    # Contract: app.py, schema update, service update
 └── references/
     ├── core-api.md             # Tables, querying, views, UDFs, config
@@ -79,7 +83,15 @@ skills/pixeltable-skill/
     ├── providers.md            # Import and output shape
     ├── workflows.md            # FastAPIRouter
     └── anti-patterns.md        # Wrong/right stack
+skills/<job>/SKILL.md           # Catalog skills: multimodal-rag, video-search, ...
+commands/                       # /pixeltable:pixeltable-start, index-videos, ...
 ```
+
+Job-named commands (Claude `/pixeltable:<name>`, Cursor `/<name>`):
+`pixeltable-start`, `index-videos`, `search-images`, `rag-over-docs`,
+`add-agent-memory`, `transcribe-and-search-audio`, `store-embeddings`,
+`incremental-pipeline`, `version-dataset`. Original `scaffold` and
+`add-provider` still work.
 
 Client manifests and marketplace metadata live alongside the shared skill so
 each supported installer can discover the format it understands. Gemini CLI

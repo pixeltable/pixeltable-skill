@@ -79,6 +79,18 @@ install_skill() {
     cp "$script_dir/skills/pixeltable-skill/SKILL.md" "$skill_dest/"
     cp "$script_dir/skills/pixeltable-skill/references/"*.md "$skill_dest/references/"
     cp "$script_dir/skills/pixeltable-skill/agents/openai.yaml" "$skill_dest/agents/"
+    local catalog_parent skill_src skill_name
+    catalog_parent="$(dirname "$skill_dest")"
+    for skill_src in "$script_dir"/skills/*/; do
+      skill_name="$(basename "$skill_src")"
+      if [[ "$skill_name" == "pixeltable-skill" ]]; then
+        continue
+      fi
+      if [[ -f "$skill_src/SKILL.md" ]]; then
+        mkdir -p "$catalog_parent/$skill_name"
+        cp "$skill_src/SKILL.md" "$catalog_parent/$skill_name/"
+      fi
+    done
   else
     curl -fsSL "$REPO_URL/skills/pixeltable-skill/SKILL.md" -o "$skill_dest/SKILL.md"
     for ref_file in $REF_FILES; do
@@ -88,6 +100,7 @@ install_skill() {
   fi
 
   echo "  Installed: $skill_dest/SKILL.md + references/ (5 files) + agents/openai.yaml"
+  echo "  Catalog skills (if this was a git checkout) land next to that directory."
 }
 
 # Direct mode

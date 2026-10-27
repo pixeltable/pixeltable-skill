@@ -13,13 +13,15 @@ Thanks for your interest in improving the Pixeltable Skill! This guide covers ho
 
 ## Repository Structure
 
-This repo is an agent **plugin**: one skill (the content core) wrapped with commands, agents, and optional hooks.
+This repo is an agent **plugin**: one teaching skill (the content core) plus
+thin task-named discovery skills, wrapped with commands, agents, and optional hooks.
 
 ```
 pixeltable-skill/
-├── skills/pixeltable-skill/   # THE skill; do not split
+├── skills/pixeltable-skill/   # Teaching skill (name: pixeltable)
 │   ├── SKILL.md               # Core instructions (<500 lines)
 │   └── references/            # Detailed reference (loaded on demand)
+├── skills/<task>/             # Catalog pointers (kebab-case name = folder)
 ├── commands/                  # Slash commands (Markdown): /pixeltable:scaffold, add-provider
 ├── agents/                    # Specialist subagents (Markdown): pipeline-architect, debugger
 ├── hooks/                     # Optional pure-Python hooks + hooks.json (Claude Code)
@@ -39,6 +41,7 @@ Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claud
 
 ### Conventions
 - Plugin identity is `pixeltable` (commands render as `/pixeltable:<name>`); keep root `plugin.json`, `gemini-extension.json`, and all compatibility manifest versions in sync.
+- Discovery skills stay short: when-to-use, one verified snippet, pointer to `pixeltable`. Do not copy `SKILL.md` or `references/` into them.
 - Hooks are **pure Python** (`hooks/*.py`, 3.9+), no Node/Bun/TypeScript. The `hooks.json` command tries `python`, `python3`, then `py -3`, because a python.org install on Windows ships no `python3.exe`.
 - Run `python3 scripts/validate_plugin.py` before submitting structural changes.
 

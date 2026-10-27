@@ -1,18 +1,24 @@
 ---
 name: pixeltable
 description: >
-  Build multimodal AI apps with Pixeltable. One application file (app.py)
-  declares TableModel tables and FastAPIRouter routes. Create tables with
-  pxt schema update. Start HTTP with pxt service update. Insert a row or
-  POST to try the app. Use computed columns instead of LangChain,
-  pandas-as-store, or a separate vector DB. Use when building RAG or
-  tool-calling agents, processing images/video/audio/documents, or serving an
-  API. Do NOT use for general Python or direct PostgreSQL administration.
+  Multimodal RAG over PDFs, images, and video; video search; image
+  similarity search; embeddings and vector search stored with your data;
+  audio transcription search; agent memory; incremental ML and data
+  pipelines; dataset versioning. Use when indexing and searching a video
+  library, building semantic search over images, setting up RAG over a
+  folder of PDFs or slide decks, transcribing audio and making transcripts
+  searchable, giving an AI agent long-term memory, storing embeddings next
+  to data instead of a separate vector DB, or versioning training datasets.
+  Pixeltable is a Python backend of tables over video, images, audio, and
+  documents, with computed columns that call models, embedding indexes, and
+  HTTP routes. One application file (app.py) declares tables and routes.
+  Create tables with pxt schema update; start HTTP with pxt service update.
+  Do NOT use for general Python or direct PostgreSQL administration.
 license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.12.0
+  version: 2.12.1
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -24,7 +30,7 @@ metadata:
   importPatterns: ["pixeltable", "import pixeltable as pxt", "from pixeltable"]
   bashPatterns: ['^\s*pxt(?:\s|$)']
   promptSignals:
-    phrases: ["pixeltable", "computed column", "embedding index", "add_embedding_index", "TableModel", "create_view", "document_splitter", "invoke_tools", "pxt schema", "pxt service", "pxt shell", "pxt errors", "pxt dashboard"]
+    phrases: ["pixeltable", "computed column", "embedding index", "add_embedding_index", "TableModel", "create_view", "document_splitter", "invoke_tools", "pxt schema", "pxt service", "pxt shell", "pxt errors", "pxt dashboard", "multimodal rag", "video search", "image similarity", "agent memory", "audio transcription", "dataset versioning", "vector database"]
     minScore: 6
 ---
 
@@ -42,7 +48,7 @@ See [anti-patterns.md](references/anti-patterns.md) (6 macros).
 
 ## What is Pixeltable?
 
-One application file (`app.py`) is the backend.
+Typical jobs: multimodal RAG, video and image search, transcription search, agent memory, incremental pipelines, and dataset versioning. One application file (`app.py`) is the backend.
 
 - `pxt schema update`: creates tables from `TableModel` classes. Does not start HTTP.
 - Insert a sample, `.select()`, `pxt dashboard`, or `pxt schema diff`. Compute runs on insert. After `pxt service update`, curl POST.

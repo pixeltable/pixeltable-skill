@@ -4,13 +4,15 @@
 Checks:
   1. All JSON manifests parse (including gemini-extension.json).
   2. Portable and compatibility manifests agree and component pointers resolve.
-  3. Every skills/<name>/SKILL.md has `name` and `description` frontmatter.
+  3. Every skills/<name>/SKILL.md has `name` and `description` (spec length, folder match);
+     discovery skills stay short and point at the teaching skill.
   4. Listed command/agent files in .claude-plugin/plugin.json exist.
-  5-9. Versions agree, doc code blocks pass the hook's error checks, documented modules exist,
+  5-9. Versions agree, doc code blocks parse and pass the hook's error checks, documented modules exist,
      SKILL.md stays under 500 lines, and shell blocks pass -f to `pxt service update`.
 
 Exit non-zero if any check fails. Intended for CI / pre-commit.
 """
+import ast
 import json
 import re
 import sys
@@ -19,6 +21,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 errors = []
 checks = 0
+
+# Catalog-facing task skills. The teaching skill stays in skills/pixeltable-skill
+# with frontmatter name `pixeltable` (installers already key on that id).
+TEACHING_SKILL_DIR = "pixeltable-skill"
+TEACHING_SKILL_NAME = "pixeltable"
+DISCOVERY_SKILL_NAMES = (
+    "agent-memory",
+    "audio-transcription-search",
+    "dataset-versioning",
+    "image-similarity-search",
+    "incremental-ml-pipeline",
+    "multimodal-rag",
+    "vector-database-alternative",
+    "video-search",
+)
+MAX_DESCRIPTION_LENGTH = 1024
+MAX_DISCOVERY_SKILL_LINES = 120
 
 
 def iter_agent_docs():
@@ -55,6 +74,50 @@ def frontmatter(md_path):
         return ""
     end = text.find("\n---", 3)
     return text[3:end] if end != -1 else ""
+
+
+def frontmatter_name(fm):
+    for line in fm.splitlines():
+        if line.startswith("name:"):
+            return line.split(":", 1)[1].strip().strip("\"'")
+    return None
+
+
+def frontmatter_description(fm):
+    """Unfold a `description:` scalar or `>` / `|` block without PyYAML."""
+    lines = fm.splitlines()
+    for i, line in enumerate(lines):
+        if not line.startswith("description:"):
+            continue
+        rest = line.split(":", 1)[1].strip()
+        folded = rest.startswith(">")
+        literal = rest.startswith("|")
+        if folded or literal:
+            block = []
+            for nxt in lines[i + 1 :]:
+                if nxt.startswith("  "):
+                    block.append(nxt[2:])
+                elif nxt.strip() == "":
+                    block.append("")
+                else:
+                    break
+            while block and block[-1] == "":
+                block.pop()
+            if literal:
+                return "\n".join(block)
+            paras, para = [], []
+            for item in block:
+                if item.strip() == "":
+                    if para:
+                        paras.append(" ".join(para))
+                        para = []
+                else:
+                    para.append(item.strip())
+            if para:
+                paras.append(" ".join(para))
+            return "\n\n".join(paras)
+        return rest.strip().strip("\"'")
+    return None
 
 
 def main():
@@ -141,14 +204,53 @@ def main():
             if key in data:
                 check((ROOT / data[key]).is_dir(), f"{m}: '{key}' dir not found: {data[key]}")
 
-    # 3. SKILL.md frontmatter
+    # 3. SKILL.md frontmatter (Agent Skills spec: name, description <= 1024)
     skill_files = list((ROOT / "skills").glob("*/SKILL.md"))
     check(len(skill_files) >= 1, "no skills/*/SKILL.md found")
+    found_dirs = {sf.parent.name for sf in skill_files}
+    check(
+        TEACHING_SKILL_DIR in found_dirs,
+        f"missing teaching skill directory skills/{TEACHING_SKILL_DIR}",
+    )
+    missing = [n for n in DISCOVERY_SKILL_NAMES if n not in found_dirs]
+    check(not missing, f"missing discovery skill directories: {', '.join(missing)}")
+    extra = sorted(found_dirs - {TEACHING_SKILL_DIR} - set(DISCOVERY_SKILL_NAMES))
+    check(not extra, f"unexpected skills/ directories: {', '.join(extra)}")
+    install_sh = (ROOT / "install.sh").read_text(encoding="utf-8", errors="ignore")
+    for name in DISCOVERY_SKILL_NAMES:
+        check(name in install_sh, f"install.sh: missing discovery skill {name}")
     for sf in skill_files:
         fm = frontmatter(sf)
         rel = sf.relative_to(ROOT)
+        folder = sf.parent.name
         check("name:" in fm, f"{rel}: missing 'name' in frontmatter")
         check("description:" in fm, f"{rel}: missing 'description' in frontmatter")
+        name = frontmatter_name(fm)
+        expected = TEACHING_SKILL_NAME if folder == TEACHING_SKILL_DIR else folder
+        check(name == expected, f"{rel}: frontmatter name {name!r} must be {expected!r}")
+        desc = frontmatter_description(fm) or ""
+        check(bool(desc.strip()), f"{rel}: empty description")
+        check(
+            len(desc) <= MAX_DESCRIPTION_LENGTH,
+            f"{rel}: description is {len(desc)} chars, spec max is {MAX_DESCRIPTION_LENGTH}",
+        )
+        if folder == TEACHING_SKILL_DIR:
+            continue
+        body = sf.read_text(encoding="utf-8", errors="ignore")
+        n = len(body.splitlines())
+        check(
+            n < MAX_DISCOVERY_SKILL_LINES,
+            f"{rel}: {n} lines, discovery skills must stay under {MAX_DISCOVERY_SKILL_LINES}",
+        )
+        check(
+            "npx skills add pixeltable/pixeltable-skill" in body,
+            f"{rel}: must point at `npx skills add pixeltable/pixeltable-skill`",
+        )
+        check(
+            "load the `pixeltable` skill" in body.lower()
+            or "Load the `pixeltable` skill" in body,
+            f"{rel}: must tell the agent to load the pixeltable skill",
+        )
 
     # 4a. Any command/agent files listed in .claude-plugin/plugin.json must exist
     claude = parsed.get(".claude-plugin/plugin.json") or {}
@@ -218,7 +320,14 @@ def main():
     fence = re.compile(r"^```(?:python|py)\n(.*?)^```", re.DOTALL | re.MULTILINE)
     for md in iter_agent_docs():
         body = md.read_text(encoding="utf-8", errors="ignore")
-        for block in fence.findall(body):
+        for i, block in enumerate(fence.findall(body), 1):
+            try:
+                ast.parse(block)
+            except SyntaxError as e:
+                check(
+                    False,
+                    f"{md.relative_to(ROOT)}: python block {i} does not parse: {e.msg}",
+                )
             for entry in CHECKS:
                 pattern, severity, message, gate = entry
                 if severity != "error":

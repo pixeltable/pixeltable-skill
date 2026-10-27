@@ -1,7 +1,7 @@
 {
   "name": "pixeltable",
-  "version": "2.12.0",
-  "description": "Build multimodal AI applications with Pixeltable.",
+  "version": "2.12.1",
+  "description": "Multimodal RAG, video search, image similarity search, embeddings stored with your data, audio transcription search, agent memory, incremental ML pipelines, and dataset versioning. Tables, computed columns, and HTTP services.",
   "author": {
     "name": "Pixeltable",
     "url": "https://github.com/pixeltable"
@@ -15,7 +15,14 @@
     "rag",
     "embeddings",
     "agents",
-    "computed-columns"
+    "computed-columns",
+    "video-search",
+    "image-similarity-search",
+    "agent-memory",
+    "audio-transcription",
+    "vector-search",
+    "dataset-versioning",
+    "incremental-pipeline"
   ],
   "skills": "./skills/",
   "interface": {
@@ -25,8 +32,8 @@
       "./assets/icon.png"
     ],
     "displayName": "Pixeltable",
-    "shortDescription": "Multimodal database, orchestration, and serving in one file",
-    "longDescription": "The backend agents build with: multimodal database, orchestration, and serving in one file. Build Pixeltable apps with declarative tables, computed columns, embeddings, retrieval, tool-calling agents, provider integrations, and the pxt CLI (schema, service, inspect).",
+    "shortDescription": "Multimodal RAG, video search, embeddings with your data, agent memory",
+    "longDescription": "Multimodal RAG over PDFs, images, and video; video search; image similarity search; embeddings stored with your data; audio transcription search; agent memory; incremental ML pipelines; and dataset versioning. One application file declares tables, computed columns, embedding indexes, tool-calling agents, and HTTP routes.",
     "developerName": "Pixeltable",
     "category": "Developer Tools",
     "capabilities": [
@@ -38,9 +45,9 @@
     "termsOfServiceURL": "https://github.com/pixeltable/pixeltable-skill/blob/main/LICENSE",
     "brandColor": "#2563EB",
     "defaultPrompt": [
-      "Start a Pixeltable project with pxt service example",
-      "Build a RAG pipeline with the pixeltable skill",
-      "Debug this Pixeltable workflow with pxt errors"
+      "Build multimodal RAG over our PDFs and images",
+      "Index and search a video library with Pixeltable",
+      "Give this agent long-term memory on a Pixeltable table"
     ]
   }
 }

@@ -9,6 +9,7 @@ set -euo pipefail
 
 REPO_URL="https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main"
 REF_FILES="core-api cli providers workflows anti-patterns"
+DISCOVERY_SKILLS="agent-memory audio-transcription-search dataset-versioning image-similarity-search incremental-ml-pipeline multimodal-rag vector-database-alternative video-search"
 
 TARGET_DIR=""
 PLATFORM=""
@@ -88,6 +89,20 @@ install_skill() {
   fi
 
   echo "  Installed: $skill_dest/SKILL.md + references/ (5 files) + agents/openai.yaml"
+
+  local parent_dir name
+  parent_dir="$(dirname "$skill_dest")"
+  for name in $DISCOVERY_SKILLS; do
+    mkdir -p "$parent_dir/$name/agents"
+    if [[ -f "$script_dir/skills/$name/SKILL.md" ]]; then
+      cp "$script_dir/skills/$name/SKILL.md" "$parent_dir/$name/"
+      cp "$script_dir/skills/$name/agents/openai.yaml" "$parent_dir/$name/agents/"
+    else
+      curl -fsSL "$REPO_URL/skills/$name/SKILL.md" -o "$parent_dir/$name/SKILL.md"
+      curl -fsSL "$REPO_URL/skills/$name/agents/openai.yaml" -o "$parent_dir/$name/agents/openai.yaml"
+    fi
+    echo "  Installed: $parent_dir/$name/SKILL.md"
+  done
 }
 
 # Direct mode

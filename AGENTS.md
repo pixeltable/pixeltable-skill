@@ -1,32 +1,35 @@
 # AGENTS.md
 
-This repo is the Pixeltable Agent Plugin: one skill plus agents, slash commands, and optional hooks. Install via `npx plugins add pixeltable/pixeltable-skill` or `npx skills add pixeltable/pixeltable-skill`.
+This repo is the Pixeltable Agent Plugin: one teaching skill plus thin
+task-named discovery skills, agents, slash commands, and optional hooks.
+Install via `npx plugins add pixeltable/pixeltable-skill` or
+`npx skills add pixeltable/pixeltable-skill`.
 
 ## Structure
 
 ```
-skills/pixeltable-skill/
-├── SKILL.md
-└── references/
-    ├── core-api.md
-    ├── cli.md
-    ├── providers.md
-    ├── workflows.md
-    └── anti-patterns.md
-
-commands/                 # /pixeltable:scaffold, add-provider
-agents/                   # pipeline-architect, debugger
+skills/pixeltable-skill/          # teaching skill (name: pixeltable)
+skills/multimodal-rag/            # catalog pointers; load pixeltable for the rest
+skills/video-search/
+skills/image-similarity-search/
+skills/audio-transcription-search/
+skills/agent-memory/
+skills/vector-database-alternative/
+skills/incremental-ml-pipeline/
+skills/dataset-versioning/
+commands/                         # /pixeltable:scaffold, add-provider
+agents/                           # pipeline-architect, debugger
 hooks/
 scripts/validate_plugin.py
-gemini-extension.json     # Gemini CLI extension + gallery listing
-GEMINI.md                 # Gemini CLI context; points at skills/, does not copy them
+gemini-extension.json             # Gemini CLI extension + gallery listing
+GEMINI.md                         # Gemini CLI context; points at skills/, does not copy them
 ```
 
-Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), `package.json`, and `gemini-extension.json`. Keep name `pixeltable` and versions in sync (`2.12.0`).
+Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), `package.json`, and `gemini-extension.json`. Keep plugin name `pixeltable` and versions in sync (`2.12.1`).
 
 ## Rules
 
-- Single skill. Do not split it.
+- One teaching skill (`pixeltable` in `skills/pixeltable-skill`). Thin task-named discovery skills under `skills/` are catalog pointers: short `SKILL.md`, keyword-rich description, one verified snippet, then load `pixeltable`. Do not duplicate the teaching skill's body.
 - Hooks are pure Python. No Node/Bun/TypeScript. `hooks.json` finds the interpreter itself (`python`, then `python3`, then `py -3`): a python.org install on Windows has no `python3.exe` (#23).
 - SKILL.md teaches the application file first. Notebook SDK is an appendix.
 - Start from `pxt init` then `pxt service example --out app.py` (or `pxt schema example --brief`). Then `pxt schema update app.py my_app`. No template zoo. No starter kit.

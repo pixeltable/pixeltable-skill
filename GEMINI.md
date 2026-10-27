@@ -10,9 +10,11 @@ HTTP routes. Create tables with `pxt schema update`. Serve with `pxt service upd
 
 ## Skill (authoritative)
 
-This extension bundles the Pixeltable skill at `skills/pixeltable-skill/SKILL.md` (and
-`skills/pixeltable-skill/references/`). Gemini CLI loads `skills/*/SKILL.md` automatically.
-Follow that skill for the application file, CLI, providers, serving, and anti-patterns.
+This extension bundles the Pixeltable teaching skill at `skills/pixeltable-skill/SKILL.md`
+(and `skills/pixeltable-skill/references/`). Gemini CLI loads `skills/*/SKILL.md`
+automatically, including thin task-named skills (`multimodal-rag`, `video-search`,
+and the others under `skills/`). Those are catalog pointers: follow `pixeltable`
+for the application file, CLI, providers, serving, and anti-patterns.
 Do not copy those files into this context, and do not invent a second apply path.
 
 Start from `pxt init` then `pxt service example --out app.py` (or `pxt schema example --brief`).

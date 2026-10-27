@@ -5,13 +5,13 @@
     "url": "https://github.com/pixeltable"
   },
   "metadata": {
-    "description": "The backend agents build with: multimodal database, orchestration, and serving in one file. Tables, computed columns, vector search, RAG, tool-calling agents, and video, audio, image, and document pipelines across 25+ AI providers.",
-    "version": "2.12.0"
+    "description": "Multimodal RAG, video search, image similarity search, embeddings stored with your data, audio transcription search, agent memory, incremental ML pipelines, and dataset versioning. Tables, computed columns, and HTTP services.",
+    "version": "2.12.1"
   },
   "plugins": [
     {
       "name": "pixeltable",
-      "description": "The backend agents build with: multimodal database, orchestration, and serving in one file. Tables, computed columns, vector search, RAG, tool-calling agents, and video, audio, image, and document pipelines across 25+ AI providers.",
+      "description": "Multimodal RAG, video search, image similarity search, embeddings stored with your data, audio transcription search, agent memory, incremental ML pipelines, and dataset versioning. Tables, computed columns, and HTTP services.",
       "category": "database",
       "homepage": "https://github.com/pixeltable/pixeltable-skill",
       "source": "./",

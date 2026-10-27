@@ -1,17 +1,23 @@
 {
   "name": "pixeltable-skill",
-  "version": "2.12.0",
-  "description": "Build multimodal AI applications with Pixeltable: declarative tables, computed columns, embedding search, UDFs, and 25+ AI provider integrations.",
+  "version": "2.12.1",
+  "description": "Multimodal RAG, video search, image similarity search, embeddings stored with your data, audio transcription search, agent memory, incremental ML pipelines, and dataset versioning. Tables, computed columns, and HTTP services.",
   "keywords": [
     "pi-package",
+    "agent-skill",
     "pixeltable",
     "multimodal",
-    "ai",
     "rag",
     "embeddings",
+    "agents",
     "computed-columns",
+    "video-search",
+    "image-similarity-search",
+    "agent-memory",
+    "audio-transcription",
     "vector-search",
-    "agent-skill"
+    "dataset-versioning",
+    "incremental-pipeline"
   ],
   "license": "Apache-2.0",
   "repository": {

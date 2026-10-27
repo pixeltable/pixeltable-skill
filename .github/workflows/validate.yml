@@ -34,6 +34,8 @@ jobs:
           HOME="$RUNNER_TEMP/pixeltable-home" ./install.sh --platform codex-skill
           test -f "$RUNNER_TEMP/pixeltable-home/.agents/skills/pixeltable/SKILL.md"
           test -f "$RUNNER_TEMP/pixeltable-home/.agents/skills/pixeltable/agents/openai.yaml"
+          test -f "$RUNNER_TEMP/pixeltable-home/.agents/skills/video-search/SKILL.md"
+          test -f "$RUNNER_TEMP/pixeltable-home/.agents/skills/multimodal-rag/agents/openai.yaml"
 
       - name: Lint hooks and scripts (ruff)
         run: |

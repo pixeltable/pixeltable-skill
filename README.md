@@ -2,9 +2,9 @@
 
 The backend agents build with: multimodal database, orchestration, and serving in one file.
 
-This plugin teaches AI coding assistants to build Pixeltable applications: tables with computed columns, embedding indexes and vector search, RAG, tool-calling agents, and video, audio, image, and document pipelines across 25+ AI providers. The agent declares the schema as `TableModel` classes in `app.py`, creates the tables with `pxt schema update`, and serves HTTP routes with `pxt service update`.
+This plugin teaches AI coding assistants to build Pixeltable applications: multimodal RAG, video and image search, audio transcription search, agent memory, embeddings stored with your data, incremental pipelines, and dataset versioning. The agent declares the schema as `TableModel` classes in `app.py`, creates the tables with `pxt schema update`, and serves HTTP routes with `pxt service update`.
 
-Verified against Pixeltable 0.7.11 on 2026-09-28: [docs/review-2.12.0.md](docs/review-2.12.0.md).
+Teaching skill verified against Pixeltable 0.7.11 on 2026-09-28: [docs/review-2.12.0.md](docs/review-2.12.0.md). Catalog discovery skills (2.12.1) checked against Pixeltable 0.7.21 docs and source: [docs/review-2.12.1.md](docs/review-2.12.1.md).
 
 ## Install
 
@@ -16,8 +16,9 @@ Install the portable skill with [npx skills](https://github.com/vercel-labs/skil
 npx skills add pixeltable/pixeltable-skill
 ```
 
-This installs `SKILL.md` and its references for supported coding assistants,
-including Cursor, Copilot, Windsurf, and the Codex IDE extension.
+This installs every `skills/*/SKILL.md` for supported coding assistants,
+including Cursor, Copilot, Windsurf, and the Codex IDE extension: the
+`pixeltable` teaching skill plus the task-named catalog skills below.
 
 With only Python, `pxt skills install` (Pixeltable 0.7.17 or later) writes the
 same skill into the current project's `.claude/skills/pixeltable` and
@@ -33,7 +34,7 @@ there with `./install.sh --platform antigravity`.
 gemini extensions install https://github.com/pixeltable/pixeltable-skill
 ```
 
-This loads `skills/pixeltable-skill/SKILL.md`, the hosted Cloud MCP
+This loads `skills/*/SKILL.md` (teaching skill plus task-named catalog skills), the hosted Cloud MCP
 (`pixeltable-cloud` at `https://www.pixeltable.com/mcp/cloud`), and the local
 developer MCP (`pixeltable` via `uvx mcp-server-pixeltable-developer`). Sign in
 to Cloud with `/mcp auth pixeltable-cloud` if those tools are not listed. The
@@ -71,15 +72,35 @@ are team-distribution sources; they do not publish to a public directory.
 ## What's Inside
 
 ```
-skills/pixeltable-skill/
-├── SKILL.md                    # Contract: app.py, schema update, service update
+skills/pixeltable-skill/                 # Teaching skill (name: pixeltable)
+├── SKILL.md                             # Contract: app.py, schema update, service update
 └── references/
-    ├── core-api.md             # Tables, querying, views, UDFs, config
-    ├── cli.md                  # pxt CLI
-    ├── providers.md            # Import and output shape
-    ├── workflows.md            # FastAPIRouter
-    └── anti-patterns.md        # Wrong/right stack
+    ├── core-api.md                      # Tables, querying, views, UDFs, config
+    ├── cli.md                           # pxt CLI
+    ├── providers.md                     # Import and output shape
+    ├── workflows.md                     # FastAPIRouter
+    └── anti-patterns.md                 # Wrong/right stack
+skills/multimodal-rag/                   # Catalog pointers; load pixeltable for the rest
+skills/video-search/
+skills/image-similarity-search/
+skills/audio-transcription-search/
+skills/agent-memory/
+skills/vector-database-alternative/
+skills/incremental-ml-pipeline/
+skills/dataset-versioning/
 ```
+
+| Skill | Job |
+|-------|-----|
+| `pixeltable` | Full backend: tables, computed columns, serving, anti-patterns |
+| `multimodal-rag` | RAG over PDFs, slide decks, images, and documents |
+| `video-search` | Search a video library by frames and embeddings |
+| `image-similarity-search` | CLIP image similarity and text-to-image search |
+| `audio-transcription-search` | Transcribe audio and search the transcripts |
+| `agent-memory` | Long-term agent memory across sessions |
+| `vector-database-alternative` | Store embeddings with your data, no separate vector DB |
+| `incremental-ml-pipeline` | Recompute only new or changed rows |
+| `dataset-versioning` | Table history, time travel, snapshots, revert |
 
 Client manifests and marketplace metadata live alongside the shared skill so
 each supported installer can discover the format it understands. Gemini CLI

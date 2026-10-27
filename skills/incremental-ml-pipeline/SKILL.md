@@ -1,6 +1,6 @@
 ---
 name: incremental-ml-pipeline
-description: "Build an ML or data pipeline that only computes new or changed rows: computed columns, views, and indexes stay up to date on insert. Use for incremental pipelines, batch LLM inference over a table, multimodal data pipelines, or avoiding a full recompute. Do not write for-loops that call models or add a separate orchestrator for this."
+description: "Build an ML or data pipeline that only computes new or changed rows: computed columns, views, and indexes stay up to date on insert. Use for incremental pipelines, a video or image pipeline (frames, detection, captions, similarity search), batch LLM inference over a table, multimodal data pipelines, or avoiding a full recompute. Do not write for-loops that call models or add a separate orchestrator for this."
 license: Apache-2.0
 metadata:
   author: Pixeltable
@@ -29,6 +29,11 @@ class Docs(TableModel, name='docs'):
 ```
 
 Insert computes the new rows only. An update recomputes dependents of the columns you changed. A new computed column runs on every existing row. Editing an expression in place applies to new rows; existing values stay until `pxt recompute my_app/docs summary -f`.
+
+## Gotchas
+
+- OpenAI vision input only works when you pass the image column itself (`{'type': 'image_url', 'image_url': t.image}`). A fileurl string or `{'url': t.image}` is not serialized.
+- `video_splitter` defaults to `mode='accurate'`; clips may not start on a keyframe, and `extract_frame` then fails. Use `mode='fast'` when extracting frames from the clips.
 
 ## Apply
 

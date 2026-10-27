@@ -1,6 +1,6 @@
 ---
 name: video-search
-description: "Index and semantically search a video library by what is in the videos: extract frames, embed them, search by text or image. Use for video search, video frame extraction, video analysis, or searching recordings by content. Pixeltable turns each video into searchable frame rows. Do not use a separate video index or vector DB."
+description: "Index and semantically search a video library by what is in the videos: extract frames, run detection, generate captions, embed them, similarity search by text or image. Use for a video pipeline, video search, video frame extraction, video analysis, or searching recordings by content. Pixeltable turns each video into searchable frame rows. Do not use a separate video index or vector DB."
 license: Apache-2.0
 metadata:
   author: Pixeltable
@@ -41,6 +41,11 @@ def search_videos(query_text: str):
 ```
 
 CLIP on an image column answers `similarity(string=...)` and `similarity(image=...)`. Do not pass only `image_embed=`. Frame metadata is `frame_attrs` (`.time`, `.index`).
+
+## Gotchas
+
+- `video_splitter` defaults to `mode='accurate'`, which can produce clips that do not start on a keyframe. `extract_frame` then fails on those clips. Use `mode='fast'` (splits only at keyframes) when you will extract frames from the clips.
+- OpenAI vision input only works when you pass the image column itself (`{'type': 'image_url', 'image_url': t.image}`). A fileurl string or `{'url': t.image}` is not serialized.
 
 ## Apply
 

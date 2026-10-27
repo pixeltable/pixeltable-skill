@@ -39,6 +39,22 @@ Checked against https://docs.pixeltable.com (llms.txt, 2026-10-27) and GitHub
 Pixeltable changelog latest listed: **0.7.21** (2026-10-26). No snippet here depends on an API
 removed between 0.7.11 and 0.7.21.
 
+## Gotchas verified against Pixeltable 0.7.21 / `master`
+
+Source-checked before writing. Dropped anything that did not match current code
+(including the unreproduced `@pxt.query` over a view / base-table index claim).
+
+| Claim | Source |
+|---|---|
+| `@pxt.udf` in a script's `__main__` / global namespace | `pixeltable/func/udf.py` `make_function`: `defined_in_script` raises; move to a named module. Notebooks get a session-only `__main__.` path. |
+| `@pxt.query` in `__main__` | `pixeltable/func/query_template_function.py`: `function_path` is set only when `py_fn.__module__ != '__main__'`. |
+| `order_by` on a Python UDF expression | `pixeltable/exec/sql_node.py` `_create_stmt`: `sql_elements.get(e).desc()` when `asc is False`; Python UDFs have `_to_sql` default `None` (`function.py` `__default_to_sql`). Descending is `None.desc()` (`AttributeError`); ascending passes `None` into `stmt.order_by` (no sort). Similarity expressions use `as_order_by_clause` and are fine. |
+| OpenAI vision needs the image column | `pixeltable/functions/openai.py` `chat_completions`: serializes only when `image_url` is a `PIL.Image`. A fileurl string or `{'url': t.image}` is skipped. |
+| `video_splitter` default `accurate` vs `extract_frame` | `pixeltable/functions/video/iterators.py` default `mode='accurate'`. `pixeltable/utils/av.py` `ffmpeg_segment_cmd` passes `-break_non_keyframes 1`. `extract_frame` seeks to the nearest keyframe; use `mode='fast'` (splits only at keyframes) when extracting frames from clips. |
+| After API keys change, `pxt daemon restart` | Already taught in SKILL.md / `references/cli.md`; repeated in Troubleshooting. |
+
+Document types for the RAG starter-menu phrasing (`pxt.Document`): HTML, MD, PDF, XML, TXT, PPTX, DOCX, XLSX (`type_system.py` `DocumentFormat`).
+
 ## What was not re-run
 
 The 2.12.0 isolated `pxt schema update` / `pxt service update` matrix, provider-mock RAG app, and

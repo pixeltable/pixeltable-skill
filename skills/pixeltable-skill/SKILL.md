@@ -1,6 +1,6 @@
 ---
 name: pixeltable
-description: "Multimodal RAG over PDFs, images, and video; video search; image similarity search; embeddings and vector search stored with your data; audio transcription search; agent memory; incremental ML and data pipelines; dataset versioning. One Python backend: tables, computed columns that call models, embedding indexes, incremental updates, versioning, and HTTP. Create tables with pxt schema update. Serve with pxt service update. Use instead of LangChain, pandas-as-store, or a separate vector DB. Use when building RAG or tool-calling agents, processing images/video/audio/documents, or serving an API. Do NOT use for general Python or direct PostgreSQL administration."
+description: "Multimodal RAG over PDFs, web pages, Office files, images, and video; video search; image similarity search; frames, detection, captions; embeddings and vector search stored with your data; audio transcription, podcast summaries; a multimodal agent with tools; agent memory; incremental ML and data pipelines; dataset versioning. One Python backend: tables, computed columns that call models, embedding indexes, incremental updates, versioning, and HTTP. Create tables with pxt schema update. Serve with pxt service update. Use instead of LangChain, pandas-as-store, or a separate vector DB. Use when building RAG or a multimodal agent with tools, processing images/video/audio/documents, or serving an API. Do NOT use for general Python or direct PostgreSQL administration."
 license: Apache-2.0
 allowed-tools: []
 metadata:
@@ -159,6 +159,12 @@ Add video, audio, agents, or a UI by editing `app.py`. A view is either a filter
 | `json_col.astype(pxt.String)` on a dict or list | Fails at insert: `Expected string, got dict`. Serialize with `pxtf.json.dumps(json_col)` |
 
 Extract the field (`.text`, `.choices[0].message.content`). The field is Json holding a string: `.astype(pxt.String)` it before concatenating or embedding.
+
+## Troubleshooting
+
+- After API keys change, run `pxt daemon restart`. The daemon reads the environment and `config.toml` once at startup; then `pxt service restart NAME` so running services pick it up.
+- Define `@pxt.udf` and `@pxt.query` in an importable module (the file `pxt schema update` loads), not a script run as `__main__`.
+- `order_by` on a Python UDF expression raises `AttributeError` when descending (`asc=False`) and does not sort when ascending. Order by a stored column instead.
 
 ## Notebook / REPL appendix
 

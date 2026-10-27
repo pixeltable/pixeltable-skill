@@ -1,6 +1,6 @@
 ---
 name: image-similarity-search
-description: "Semantic search over an image collection: CLIP embeddings, find similar images, and search images by text description. Use for image semantic search, image similarity search, visual search, or multimodal embeddings of text and images. Embeddings stay with the image rows. Do not install a separate vector DB."
+description: "Semantic search over an image collection: CLIP embeddings, find similar images, search images by text, plus an image pipeline with detection and captions. Use for image semantic search, image similarity search, visual search, object detection, captions, or multimodal embeddings of text and images. Embeddings stay with the image rows. Do not install a separate vector DB."
 license: Apache-2.0
 metadata:
   author: Pixeltable
@@ -33,6 +33,10 @@ def search_images(query_text: str):
 ```
 
 Query with an example image using `similarity(image=query_img)` instead of `string=`. `embedding=clip` covers both modalities. Do not pass only `image_embed=` if you will query with text.
+
+## Gotchas
+
+- OpenAI vision input only works when you pass the image column itself (`{'type': 'image_url', 'image_url': t.image}`). A fileurl string or `{'url': t.image}` is not serialized.
 
 ## Apply
 

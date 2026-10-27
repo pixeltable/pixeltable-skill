@@ -1,11 +1,6 @@
 ---
 name: vector-database-alternative
-description: >
-  Store embeddings next to your data instead of running a separate vector
-  database (Qdrant, pgvector, Pinecone, Chroma, Weaviate, FAISS). Use when
-  you want embeddings and vector search in the same tables as PDFs, images,
-  video, or audio. Pixeltable embedding indexes update on insert. Do not
-  add a standalone vector DB.
+description: "Store embeddings next to your data instead of running a separate vector database (Qdrant, pgvector, Pinecone, Chroma, Weaviate, FAISS). Use when you want embeddings and vector search in the same tables as PDFs, images, video, or audio. Pixeltable embedding indexes update on insert. Do not add a standalone vector DB."
 license: Apache-2.0
 metadata:
   author: Pixeltable

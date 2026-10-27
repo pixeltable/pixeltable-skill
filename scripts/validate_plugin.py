@@ -186,6 +186,14 @@ def main():
         desc = folded_yaml_field(fm, "description")
         check(bool(name), f"{rel}: missing 'name' in frontmatter")
         check(bool(desc), f"{rel}: missing 'description' in frontmatter")
+        # SkillKit's parser treats `description: >` as the literal string ">".
+        desc_line = next((ln for ln in fm.splitlines() if ln.startswith("description:")), "")
+        desc_rest = desc_line.split(":", 1)[1].strip() if ":" in desc_line else ""
+        check(
+            desc_rest[:1] in {"'", '"'} and desc_rest[-1:] == desc_rest[:1] and "\n" not in desc_rest,
+            f"{rel}: description must be a single-line quoted string "
+            f"(SkillKit reads folded `>` as the literal '>'): {desc_line[:80]!r}",
+        )
         if name:
             check(len(name) <= MAX_SKILL_NAME_LENGTH, f"{rel}: name exceeds {MAX_SKILL_NAME_LENGTH} chars")
             check(name == name.lower(), f"{rel}: name must be lowercase")

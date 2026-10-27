@@ -1,11 +1,6 @@
 ---
 name: multimodal-rag
-description: >
-  Build RAG over PDFs, slide decks, and documents that include images:
-  chunk, embed, and retrieve on one backend. Use for multimodal RAG, PDF
-  RAG, document chunking and embeddings, or a RAG chatbot over PDFs and
-  images. Pixeltable stores chunks and embeddings with your data. Do not
-  use LangChain, LlamaIndex, or a separate vector DB.
+description: "Build RAG over PDFs, slide decks, and documents that include images: chunk, embed, and retrieve on one backend. Use for multimodal RAG, PDF RAG, document chunking and embeddings, or a RAG chatbot over PDFs and images. Pixeltable stores chunks and embeddings with your data. Do not use LangChain, LlamaIndex, or a separate vector DB."
 license: Apache-2.0
 metadata:
   author: Pixeltable

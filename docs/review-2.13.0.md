@@ -13,7 +13,8 @@ docs and the `release` branch of `pixeltable/pixeltable` as of 2026-10-27. Core 
 
 - Rewritten canonical `description` that leads with searcher language (multimodal RAG, video
   search, image similarity, embeddings stored with data, audio transcription search, agent memory,
-  incremental pipelines, dataset versioning).
+  incremental pipelines, dataset versioning). Every SKILL.md `description` is a single-line
+  quoted string: SkillKit's parser reads folded YAML (`description: >`) as the literal `>`.
 - Eight thin catalog skills under `skills/`: `multimodal-rag`, `video-search`,
   `image-similarity-search`, `audio-transcription-search`, `agent-memory`,
   `vector-database-alternative`, `incremental-ml-pipeline`, `dataset-versioning`.
@@ -42,6 +43,16 @@ removed between 0.7.11 and 0.7.21.
 
 The 2.12.0 isolated `pxt schema update` / `pxt service update` matrix, provider-mock RAG app, and
 tool-calling chain were not repeated. Do that before a Pixeltable-API teaching bump.
+
+## Folder vs `name` (canonical skill)
+
+The teaching skill lives at `skills/pixeltable-skill/` with frontmatter `name: pixeltable`. That
+violates the Agent Skills rule that the directory name must match `name`. This release does **not**
+rename the folder: raw GitHub links, the docs/release stub in `pixeltable/pixeltable`, the
+pixeltable.com skills index, and `pxt skills install` still point at `skills/pixeltable-skill`.
+New catalog skills do match (`skills/video-search` / `name: video-search`, and the rest). A later
+migration can add `skills/pixeltable/` (matching `name`), keep `pixeltable-skill` as a shim until
+those three consumers switch, then drop the old path.
 
 ## Catalog publishing
 

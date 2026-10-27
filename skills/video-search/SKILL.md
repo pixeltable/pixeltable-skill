@@ -1,11 +1,6 @@
 ---
 name: video-search
-description: >
-  Index and semantically search a video library by what is in the videos:
-  extract frames, embed them, search by text or image. Use for video
-  search, video frame extraction, video analysis, or searching recordings
-  by content. Pixeltable turns each video into searchable frame rows. Do
-  not use a separate video index or vector DB.
+description: "Index and semantically search a video library by what is in the videos: extract frames, embed them, search by text or image. Use for video search, video frame extraction, video analysis, or searching recordings by content. Pixeltable turns each video into searchable frame rows. Do not use a separate video index or vector DB."
 license: Apache-2.0
 metadata:
   author: Pixeltable

@@ -51,9 +51,11 @@ Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claud
 - Keep `SKILL.md` concise: detailed content goes in `references/`
 - `skills/pixeltable-skill/SKILL.md` should stay under 500 lines
 - Catalog skills under `skills/<job>/` stay under 100 lines, use searcher-language descriptions
-  (Agent Skills spec: name matches the folder, description <= 1024 chars), include a correct
+  (Agent Skills spec: name matches the folder, description <= 1024 chars as a **single-line
+  quoted string**; SkillKit treats `description: >` as the literal `>`), include a correct
   Pixeltable snippet, and point at the canonical `pixeltable` skill. Do not duplicate teaching
-  content.
+  content. Do not rename `skills/pixeltable-skill` to match `name: pixeltable` without a
+  coordinated move of `pxt skills install`, the public skills index, and the docs/release stub.
 
 ## Guidelines
 

@@ -23,7 +23,8 @@ Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin
 
 ## Rules
 
-- One canonical teaching skill: `skills/pixeltable-skill` (frontmatter `name: pixeltable`). Thin task-named catalog skills under `skills/<job>/` are allowed; they route to it and must not duplicate teaching content.
+- One canonical teaching skill: `skills/pixeltable-skill` (frontmatter `name: pixeltable`). The folder name does not match `name` (Agent Skills spec); do not rename it until `pxt skills install`, the pixeltable.com skills index, and the docs/release stub can move together. Thin task-named catalog skills under `skills/<job>/` are allowed; folder name must match frontmatter `name`. They route to the canonical skill and must not duplicate teaching content.
+- SKILL.md `description` must be a single-line quoted string. SkillKit's parser reads folded YAML (`description: >`) as the literal string `>`.
 - Hooks are pure Python. No Node/Bun/TypeScript. `hooks.json` finds the interpreter itself (`python`, then `python3`, then `py -3`): a python.org install on Windows has no `python3.exe` (#23).
 - SKILL.md teaches the application file first. Notebook SDK is an appendix.
 - Start from `pxt init` then `pxt service example --out app.py` (or `pxt schema example --brief`). Then `pxt schema update app.py my_app`. No template zoo. No starter kit.

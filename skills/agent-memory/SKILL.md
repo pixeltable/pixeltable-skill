@@ -1,11 +1,6 @@
 ---
 name: agent-memory
-description: >
-  Give an AI agent long-term memory across sessions: store facts and
-  preferences, embed them, and recall by similarity. Use for agent memory,
-  long-term memory, chat memory, or recalling user context in later turns.
-  Pixeltable is a table with an embedding index, not Redis or a separate
-  vector DB.
+description: "Give an AI agent long-term memory across sessions: store facts and preferences, embed them, and recall by similarity. Use for agent memory, long-term memory, chat memory, or recalling user context in later turns. Pixeltable is a table with an embedding index, not Redis or a separate vector DB."
 license: Apache-2.0
 metadata:
   author: Pixeltable

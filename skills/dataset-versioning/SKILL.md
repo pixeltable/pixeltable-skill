@@ -1,11 +1,6 @@
 ---
 name: dataset-versioning
-description: >
-  Version training datasets like code: table history, time travel, revert,
-  and named snapshots. Use for data versioning, dataset versioning, dataset
-  curation snapshots, or reproducing the rows used for a training run.
-  Pixeltable versions every insert and schema change. Do not add a separate
-  dataset-versioning store for tables already in Pixeltable.
+description: "Version training datasets like code: table history, time travel, revert, and named snapshots. Use for data versioning, dataset versioning, dataset curation snapshots, or reproducing the rows used for a training run. Pixeltable versions every insert and schema change. Do not add a separate dataset-versioning store for tables already in Pixeltable."
 license: Apache-2.0
 metadata:
   author: Pixeltable

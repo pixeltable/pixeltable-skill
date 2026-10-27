@@ -1,11 +1,6 @@
 ---
 name: image-similarity-search
-description: >
-  Semantic search over an image collection: CLIP embeddings, find similar
-  images, and search images by text description. Use for image semantic
-  search, image similarity search, visual search, or multimodal embeddings
-  of text and images. Embeddings stay with the image rows. Do not install
-  a separate vector DB.
+description: "Semantic search over an image collection: CLIP embeddings, find similar images, and search images by text description. Use for image semantic search, image similarity search, visual search, or multimodal embeddings of text and images. Embeddings stay with the image rows. Do not install a separate vector DB."
 license: Apache-2.0
 metadata:
   author: Pixeltable

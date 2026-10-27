@@ -1,15 +1,6 @@
 ---
 name: pixeltable
-description: >
-  Multimodal RAG over PDFs, images, and video; video search; image similarity
-  search; embeddings and vector search stored with your data; audio
-  transcription search; agent memory; incremental ML and data pipelines;
-  dataset versioning. One Python backend: tables, computed columns that call
-  models, embedding indexes, incremental updates, versioning, and HTTP. Create
-  tables with pxt schema update. Serve with pxt service update. Use instead of
-  LangChain, pandas-as-store, or a separate vector DB. Use when building RAG or
-  tool-calling agents, processing images/video/audio/documents, or serving an
-  API. Do NOT use for general Python or direct PostgreSQL administration.
+description: "Multimodal RAG over PDFs, images, and video; video search; image similarity search; embeddings and vector search stored with your data; audio transcription search; agent memory; incremental ML and data pipelines; dataset versioning. One Python backend: tables, computed columns that call models, embedding indexes, incremental updates, versioning, and HTTP. Create tables with pxt schema update. Serve with pxt service update. Use instead of LangChain, pandas-as-store, or a separate vector DB. Use when building RAG or tool-calling agents, processing images/video/audio/documents, or serving an API. Do NOT use for general Python or direct PostgreSQL administration."
 license: Apache-2.0
 allowed-tools: []
 metadata:

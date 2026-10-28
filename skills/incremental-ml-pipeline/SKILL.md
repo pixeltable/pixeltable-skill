@@ -1,6 +1,6 @@
 ---
 name: incremental-ml-pipeline
-description: "Build an ML or data pipeline that only computes new or changed rows: computed columns, views, and indexes stay up to date on insert. Use for incremental pipelines, a video or image pipeline (frames, detection, captions, similarity search), batch LLM inference over a table, multimodal data pipelines, or avoiding a full recompute. Do not write for-loops that call models or add a separate orchestrator for this."
+description: "Build an ML or data pipeline that only computes new or changed rows: computed columns, views, and indexes stay up to date on insert. Use for incremental pipelines, batch LLM inference over a table, or avoiding a full recompute. Do not write for-loops that call models or add a separate orchestrator for this."
 license: Apache-2.0
 metadata:
   author: Pixeltable

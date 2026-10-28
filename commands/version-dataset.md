@@ -14,23 +14,8 @@ Steps:
 
 1. If there is no project yet, follow [pixeltable-start.md](pixeltable-start.md) and apply a table with `pxt schema update`.
 
-2. Inspect and snapshot. `revert` is irreversible: dry-run first.
+2. Show the history and create the snapshot as the `dataset-versioning` skill shows. Run `pxt history my_app/docs` to list versions. Do not revert in this step.
 
-```bash
-pxt history my_app/docs
-pxt revert my_app/docs -n
-pxt revert my_app/docs -f
-```
+3. Revert only when the user asks to undo a specific change. Dry-run with `pxt revert my_app/docs -n`, confirm with the user, then run `pxt revert my_app/docs -f`. Revert is irreversible. You cannot revert past version 0 or past a version a snapshot still references. Use snapshots for milestones (a training run, a curated set).
 
-```python
-import pixeltable as pxt
-
-t = pxt.get_table('my_app.docs')
-t.history()
-v1 = pxt.get_table('my_app.docs:1')  # read-only time travel
-baseline = pxt.create_snapshot('my_app.docs_baseline', t, if_exists='ignore')
-```
-
-3. You cannot revert past version 0 or past a version a snapshot still references. Use snapshots for milestones (a training run, a curated set). Use revert only to undo the latest mistake.
-
-4. Report the current version (`t.get_versions()[0]['version']` or `pxt history`) and any snapshot path you created.
+4. Report the current version (`pxt history`) and any snapshot path you created.

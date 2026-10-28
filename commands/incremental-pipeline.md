@@ -15,22 +15,7 @@ Steps:
 
 1. If there is no project yet, follow [pixeltable-start.md](pixeltable-start.md).
 
-2. Declare the transformation as a computed column:
-
-```python
-import pixeltable as pxt
-import pixeltable.functions as pxtf
-
-TableModel = pxt.model_base()
-
-
-class Docs(TableModel, name='docs'):
-    body: pxt.String
-    summary = pxtf.openai.chat_completions(
-        messages=[{'role': 'user', 'content': body}],
-        model='gpt-4o-mini',
-    ).choices[0].message.content
-```
+2. Declare the transformation as a computed column as the `incremental-ml-pipeline` skill shows.
 
 3. Apply with `pxt schema update app.py my_app`. Insert rows: only those rows are computed. An update recomputes dependents of the columns you changed. A new computed column runs on every existing row. After editing an expression, `pxt schema update` keeps old values until `pxt recompute my_app/docs summary -f`. Confirm the provider import in [providers.md](../skills/pixeltable-skill/references/providers.md).
 

@@ -14,34 +14,7 @@ Steps:
 
 1. If there is no project yet, follow [pixeltable-start.md](pixeltable-start.md).
 
-2. Declare a video table, a frame view, and a CLIP embedding index:
-
-```python
-import pixeltable as pxt
-import pixeltable.functions as pxtf
-
-TableModel = pxt.model_base()
-clip = pxtf.huggingface.clip.using(model_id='openai/clip-vit-base-patch32')
-
-
-class Videos(TableModel, name='videos'):
-    video: pxt.Video
-
-
-class Frames(
-    TableModel,
-    name='frames',
-    base=Videos,
-    iterator=pxtf.video.frame_iterator(Videos.video, fps=1.0),
-):
-    __indexes__ = [pxt.EmbeddingIndex(frame, embedding=clip, name='frames_clip')]  # type: ignore[name-defined]
-
-
-@pxt.query
-def search_videos(query_text: str):
-    sim = Frames.frame.similarity(string=query_text)
-    return Frames.order_by(sim, asc=False).select(Frames.frame, score=sim).limit(10)
-```
+2. Declare the video table, frame view, CLIP embedding index, and search query as the `video-search` skill shows.
 
 3. Apply with `pxt schema update app.py my_app`. Insert video paths or URLs into `videos`. Search with `similarity(string=query)` (or `image=`). Needs `torch` and `transformers`.
 

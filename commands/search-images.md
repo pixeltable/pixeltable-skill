@@ -14,26 +14,7 @@ Steps:
 
 1. If there is no project yet, follow [pixeltable-start.md](pixeltable-start.md).
 
-2. Declare an image table with a CLIP embedding index:
-
-```python
-import pixeltable as pxt
-import pixeltable.functions as pxtf
-
-TableModel = pxt.model_base()
-clip = pxtf.huggingface.clip.using(model_id='openai/clip-vit-base-patch32')
-
-
-class Images(TableModel, name='images'):
-    image: pxt.Image
-    __indexes__ = [pxt.EmbeddingIndex(image, embedding=clip, name='images_clip')]
-
-
-@pxt.query
-def search_images(query_text: str):
-    sim = Images.image.similarity(string=query_text)
-    return Images.order_by(sim, asc=False).select(Images.image, score=sim).limit(10)
-```
+2. Declare the image table and CLIP embedding index as the `image-similarity-search` skill shows.
 
 3. Apply with `pxt schema update app.py my_app`. Insert images. Query with `similarity(string=...)` or `similarity(image=...)`. Do not pass only `image_embed=` if you will query with text. Needs `torch` and `transformers`.
 

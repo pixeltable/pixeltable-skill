@@ -1,6 +1,6 @@
 ---
 name: audio-transcription-search
-description: "Transcribe a pile of audio or video files and make the transcripts searchable. Use for audio transcription, podcast summaries, speech-to-text then search, podcast indexing, or Whisper transcription plus embeddings. Pixeltable transcribes as a computed column and indexes the text. Do not write a transcribe-then-load-into-vector-DB pipeline."
+description: "Transcribe a pile of audio or video files and make the transcripts searchable. Use for audio transcription, speech-to-text then search, podcast indexing, or Whisper transcription plus embeddings. Pixeltable transcribes as a computed column and indexes the text. Do not write a transcribe-then-load-into-vector-DB pipeline."
 license: Apache-2.0
 metadata:
   author: Pixeltable

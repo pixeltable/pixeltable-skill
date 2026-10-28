@@ -23,9 +23,10 @@ the task-named catalog skills) and the canonical skill's references for
 supported coding assistants, including Cursor, Copilot, Windsurf, and the
 Codex IDE extension.
 
-With only Python, `pxt skills install` (Pixeltable 0.7.17 or later) writes the
-same skill into the current project's `.claude/skills/pixeltable` and
-`.agents/skills/pixeltable`; `pxt skills install -f` updates it.
+With only Python, `pxt skills install` (Pixeltable 0.7.21) copies only
+`skills/pixeltable-skill` into `.claude/skills/pixeltable` and
+`.agents/skills/pixeltable`. It does not install the catalog skills.
+`pxt skills install -f` updates that canonical copy.
 
 **Google Antigravity** is not one of them: it reads
 `~/.gemini/antigravity/skills`, which `npx skills` does not write to. Install

@@ -1,6 +1,6 @@
 {
   "name": "pixeltable",
-  "version": "2.12.1",
+  "version": "2.13.0",
   "description": "Pixeltable for Gemini CLI: multimodal RAG, video search, image similarity search, embeddings stored with your data, audio transcription search, agent memory, incremental pipelines, and dataset versioning; inspect Pixeltable Cloud through its hosted MCP.",
   "contextFileName": "GEMINI.md",
   "settings": [

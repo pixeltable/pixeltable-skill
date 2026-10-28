@@ -11,15 +11,16 @@ description: >
 license: Apache-2.0
 metadata:
   author: Pixeltable
-  version: 2.12.1
+  version: 2.13.0
 ---
 
 ## When to use
 
 Use this skill to transcribe audio (or the audio track of a video) and
 search by meaning, not only keywords. Whisper runs locally
-(`pip install openai-whisper`). OpenAI `transcriptions` is the hosted
-alternative.
+(`pip install openai-whisper`). The text index uses `sentence_transformer`
+(`pip install torch sentence-transformers`). OpenAI `transcriptions` is the
+hosted alternative.
 
 For long files, create a view with `audio_splitter` (for example
 `duration=30.0`) and transcribe `audio_segment`. Sentence splitting of
@@ -43,7 +44,7 @@ audio.add_computed_column(
     if_exists='ignore',
 )
 audio.add_computed_column(
-    text=audio.transcription.text.astype(pxt.String),
+    text=audio.transcription.text,
     if_exists='ignore',
 )
 audio.add_embedding_index(

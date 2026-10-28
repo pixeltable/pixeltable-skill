@@ -1,4 +1,4 @@
-# Pixeltable skill 2.12.1 review
+# Pixeltable skill 2.13.0 review
 
 Reviewed 2026-10-27. Scope is catalog discovery: a keyword-rich teaching-skill
 description, eight thin task-named skills under `skills/`, and matching

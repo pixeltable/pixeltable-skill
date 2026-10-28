@@ -12,7 +12,7 @@ description: >
 license: Apache-2.0
 metadata:
   author: Pixeltable
-  version: 2.12.1
+  version: 2.13.0
 ---
 
 ## When to use
@@ -44,8 +44,8 @@ ds_v0 = pxt.get_table('datasets/train:0')
 ```
 
 Notebook or REPL form (`if_exists='ignore'` so it is re-runnable). For an
-HTTP app, load the `pixeltable` skill and declare the same columns on a
-`TableModel` with indexes in `__indexes__`, then `pxt schema update`.
+HTTP app, load the `pixeltable` skill and declare these columns on a
+`TableModel`, then `pxt schema update`.
 
 ## Full guidance
 

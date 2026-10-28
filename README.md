@@ -4,7 +4,7 @@ The backend agents build with: multimodal database, orchestration, and serving i
 
 This plugin teaches AI coding assistants to build Pixeltable applications: multimodal RAG, video and image search, audio transcription search, agent memory, embeddings stored with your data, incremental pipelines, and dataset versioning. The agent declares the schema as `TableModel` classes in `app.py`, creates the tables with `pxt schema update`, and serves HTTP routes with `pxt service update`.
 
-Teaching skill verified against Pixeltable 0.7.11 on 2026-09-28: [docs/review-2.12.0.md](docs/review-2.12.0.md). Catalog discovery skills (2.12.1) checked against Pixeltable 0.7.21 docs and source: [docs/review-2.12.1.md](docs/review-2.12.1.md).
+Teaching skill verified against Pixeltable 0.7.11 on 2026-09-28: [docs/review-2.12.0.md](docs/review-2.12.0.md). Catalog discovery skills (2.13.0) checked against Pixeltable 0.7.21 docs and source: [docs/review-2.13.0.md](docs/review-2.13.0.md).
 
 ## Install
 
@@ -20,9 +20,10 @@ This installs every `skills/*/SKILL.md` for supported coding assistants,
 including Cursor, Copilot, Windsurf, and the Codex IDE extension: the
 `pixeltable` teaching skill plus the task-named catalog skills below.
 
-With only Python, `pxt skills install` (Pixeltable 0.7.17 or later) writes the
-same skill into the current project's `.claude/skills/pixeltable` and
-`.agents/skills/pixeltable`; `pxt skills install -f` updates it.
+With only Python, `pxt skills install` (Pixeltable 0.7.21) copies only
+`skills/pixeltable-skill` into `.claude/skills/pixeltable` and
+`.agents/skills/pixeltable`. It does not install the catalog skills.
+`pxt skills install -f` updates that canonical copy.
 
 **Google Antigravity** is not one of them: it reads
 `~/.gemini/antigravity/skills`, which `npx skills` does not write to. Install

@@ -10,7 +10,7 @@ description: >
 license: Apache-2.0
 metadata:
   author: Pixeltable
-  version: 2.12.1
+  version: 2.13.0
 ---
 
 ## When to use

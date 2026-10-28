@@ -90,9 +90,16 @@ install_skill() {
 
   echo "  Installed: $skill_dest/SKILL.md + references/ (5 files) + agents/openai.yaml"
 
-  local parent_dir name
+  local parent_dir name answer
   parent_dir="$(dirname "$skill_dest")"
   for name in $DISCOVERY_SKILLS; do
+    if [[ -f "$parent_dir/$name/SKILL.md" ]]; then
+      read -rp "  Replace $parent_dir/$name/SKILL.md? [y/N] " answer < /dev/tty || answer=""
+      if [[ ! "$answer" =~ ^[Yy] ]]; then
+        echo "  Skipped $parent_dir/$name/SKILL.md"
+        continue
+      fi
+    fi
     mkdir -p "$parent_dir/$name/agents"
     if [[ -f "$script_dir/skills/$name/SKILL.md" ]]; then
       cp "$script_dir/skills/$name/SKILL.md" "$parent_dir/$name/"

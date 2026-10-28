@@ -11,7 +11,7 @@ description: >
 license: Apache-2.0
 metadata:
   author: Pixeltable
-  version: 2.12.1
+  version: 2.13.0
 ---
 
 ## When to use
@@ -20,8 +20,9 @@ Use this skill when a pipeline should process only new or changed rows
 instead of rerunning the whole dataset. Each computed column records
 what it reads. An insert computes the new rows. An update recomputes
 dependents of the columns you changed. A changed expression applies to
-new rows; existing values stay until `t.recompute_columns(...)` or
-`pxt recompute`.
+new rows. In an app, `pxt schema update` keeps existing values until
+`pxt recompute`. In a notebook, `alter_computed_column()` recomputes existing
+rows by default; pass `recompute=False` to keep them.
 
 Wrap model calls in computed columns. Do not write `for row in ...:`
 loops that call models.
@@ -47,8 +48,8 @@ items.insert([{'content': 'a new document'}])
 ```
 
 Notebook or REPL form (`if_exists='ignore'` so it is re-runnable). For an
-HTTP app, load the `pixeltable` skill and declare the same columns on a
-`TableModel` with indexes in `__indexes__`, then `pxt schema update`.
+HTTP app, load the `pixeltable` skill and declare these columns on a
+`TableModel`, then `pxt schema update`.
 
 ## Full guidance
 

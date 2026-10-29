@@ -102,12 +102,17 @@ install_skill() {
         continue
       fi
     fi
-    mkdir -p "$(dirname "$catalog_file")"
+    mkdir -p "$(dirname "$catalog_file")/agents"
     # Catalog skills link to the canonical skill by folder name, which is "pixeltable" for Codex.
     if [[ -f "$script_dir/skills/$skill_name/SKILL.md" ]]; then
       sed "s#\.\./pixeltable-skill/#../$canonical_name/#" "$script_dir/skills/$skill_name/SKILL.md" > "$catalog_file"
     else
       curl -fsSL "$REPO_URL/skills/$skill_name/SKILL.md" | sed "s#\.\./pixeltable-skill/#../$canonical_name/#" > "$catalog_file"
+    fi
+    if [[ -f "$script_dir/skills/$skill_name/agents/openai.yaml" ]]; then
+      cp "$script_dir/skills/$skill_name/agents/openai.yaml" "$(dirname "$catalog_file")/agents/"
+    else
+      curl -fsSL "$REPO_URL/skills/$skill_name/agents/openai.yaml" -o "$(dirname "$catalog_file")/agents/openai.yaml"
     fi
     echo "  Installed: $catalog_file"
   done

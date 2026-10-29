@@ -4,13 +4,15 @@
 Checks:
   1. All JSON manifests parse (including gemini-extension.json).
   2. Portable and compatibility manifests agree and component pointers resolve.
-  3. Every skills/<name>/SKILL.md has `name` and `description` frontmatter.
-  4. Listed command/agent files in .claude-plugin/plugin.json exist.
+  3. Every skills/<name>/SKILL.md has `name` and `description` frontmatter (Agent Skills spec).
+  4. Listed command/agent files in .claude-plugin/plugin.json exist and cover commands/*.md.
   5-9. Versions agree, doc code blocks pass the hook's error checks, documented modules exist,
      SKILL.md stays under 500 lines, and shell blocks pass -f to `pxt service update`.
+  Catalog skills (everything except skills/pixeltable-skill) stay thin and route to `pixeltable`.
 
 Exit non-zero if any check fails. Intended for CI / pre-commit.
 """
+import ast
 import json
 import re
 import sys
@@ -49,12 +51,45 @@ def load_json(rel):
         return None
 
 
+CANONICAL_SKILL_DIR = "pixeltable-skill"
+CANONICAL_SKILL_NAME = "pixeltable"
+MAX_DESCRIPTION_LENGTH = 1024
+MAX_SKILL_NAME_LENGTH = 64
+MAX_CATALOG_SKILL_LINES = 100
+
+
 def frontmatter(md_path):
     text = md_path.read_text(encoding="utf-8", errors="ignore")
     if not text.startswith("---"):
         return ""
     end = text.find("\n---", 3)
     return text[3:end] if end != -1 else ""
+
+
+def folded_yaml_field(fm, key):
+    """Return a simple YAML scalar (plain, quoted, or `>` folded). Stdlib only."""
+    lines = fm.splitlines()
+    prefix = f"{key}:"
+    for i, line in enumerate(lines):
+        if not line.startswith(prefix):
+            continue
+        rest = line[len(prefix):].strip()
+        if rest in {">", ">-", "|", "|-"} or rest == "":
+            block = []
+            for cont in lines[i + 1:]:
+                if cont[:1] in {" ", "\t"}:
+                    block.append(cont.strip())
+                elif cont.strip() == "":
+                    block.append("")
+                else:
+                    break
+            while block and block[-1] == "":
+                block.pop()
+            if rest.startswith(">"):
+                return " ".join(part for part in block if part)
+            return "\n".join(block)
+        return rest.strip().strip("\"'")
+    return ""
 
 
 def main():
@@ -141,20 +176,62 @@ def main():
             if key in data:
                 check((ROOT / data[key]).is_dir(), f"{m}: '{key}' dir not found: {data[key]}")
 
-    # 3. SKILL.md frontmatter
+    # 3. SKILL.md frontmatter (Agent Skills spec: name, description <= 1024)
     skill_files = list((ROOT / "skills").glob("*/SKILL.md"))
     check(len(skill_files) >= 1, "no skills/*/SKILL.md found")
     for sf in skill_files:
         fm = frontmatter(sf)
         rel = sf.relative_to(ROOT)
-        check("name:" in fm, f"{rel}: missing 'name' in frontmatter")
-        check("description:" in fm, f"{rel}: missing 'description' in frontmatter")
+        name = folded_yaml_field(fm, "name")
+        desc = folded_yaml_field(fm, "description")
+        check(bool(name), f"{rel}: missing 'name' in frontmatter")
+        check(bool(desc), f"{rel}: missing 'description' in frontmatter")
+        # SkillKit's parser treats `description: >` as the literal string ">".
+        desc_line = next((ln for ln in fm.splitlines() if ln.startswith("description:")), "")
+        desc_rest = desc_line.split(":", 1)[1].strip() if ":" in desc_line else ""
+        check(
+            desc_rest[:1] in {"'", '"'} and desc_rest[-1:] == desc_rest[:1] and "\n" not in desc_rest,
+            f"{rel}: description must be a single-line quoted string "
+            f"(SkillKit reads folded `>` as the literal '>'): {desc_line[:80]!r}",
+        )
+        if name:
+            check(len(name) <= MAX_SKILL_NAME_LENGTH, f"{rel}: name exceeds {MAX_SKILL_NAME_LENGTH} chars")
+            check(name == name.lower(), f"{rel}: name must be lowercase")
+            check(not name.startswith("-") and not name.endswith("-"), f"{rel}: name cannot start or end with a hyphen")
+            check("--" not in name, f"{rel}: name cannot contain consecutive hyphens")
+            check(all(c.isalnum() or c == "-" for c in name), f"{rel}: name may only contain a-z, 0-9, hyphen")
+            expected = CANONICAL_SKILL_NAME if sf.parent.name == CANONICAL_SKILL_DIR else sf.parent.name
+            check(name == expected, f"{rel}: name {name!r} must match directory ({expected!r})")
+        if desc:
+            check(
+                len(desc) <= MAX_DESCRIPTION_LENGTH,
+                f"{rel}: description is {len(desc)} chars, max {MAX_DESCRIPTION_LENGTH}",
+            )
+        if sf.parent.name != CANONICAL_SKILL_DIR:
+            n_lines = len(sf.read_text(encoding="utf-8", errors="ignore").splitlines())
+            check(
+                n_lines < MAX_CATALOG_SKILL_LINES,
+                f"{rel}: catalog skill is {n_lines} lines, must stay under {MAX_CATALOG_SKILL_LINES}",
+            )
+            body = sf.read_text(encoding="utf-8", errors="ignore")
+            check(
+                "pixeltable-skill/SKILL.md" in body and "Load the `pixeltable` skill" in body,
+                f"{rel}: catalog skill must tell the agent to load the pixeltable skill",
+            )
 
-    # 4a. Any command/agent files listed in .claude-plugin/plugin.json must exist
+    # 4a. Command/agent files listed in .claude-plugin/plugin.json must exist,
+    #     and every commands/*.md must be listed so job-named commands install.
     claude = parsed.get(".claude-plugin/plugin.json") or {}
     for key in ("commands", "agents"):
         for rel in claude.get(key, []):
             check((ROOT / rel).is_file(), f".claude-plugin/plugin.json: {key} file not found: {rel}")
+    listed_cmds = set(claude.get("commands") or [])
+    disk_cmds = {f"./commands/{p.name}" for p in (ROOT / "commands").glob("*.md")}
+    check(
+        listed_cmds == disk_cmds,
+        ".claude-plugin/plugin.json commands must match commands/*.md: "
+        + f"missing={sorted(disk_cmds - listed_cmds)} extra={sorted(listed_cmds - disk_cmds)}",
+    )
 
     # 4b. Auto-discovered commands have a `description`; agents have `name` + `description`
     for cmd in (ROOT / "commands").glob("*.md"):
@@ -194,12 +271,13 @@ def main():
         m = re.search(r"^\s*version:\s*(.+?)\s*$", frontmatter(sf), re.MULTILINE)
         if m:
             versions[str(sf.relative_to(ROOT))] = m.group(1).strip().strip("\"'")
-        openai_yaml = sf.parent / "agents" / "openai.yaml"
-        check(openai_yaml.is_file(), f"{sf.parent.relative_to(ROOT)}: missing agents/openai.yaml")
-        if openai_yaml.is_file():
-            metadata = openai_yaml.read_text(encoding="utf-8", errors="ignore")
-            check("display_name:" in metadata, f"{openai_yaml.relative_to(ROOT)}: missing display_name")
-            check("short_description:" in metadata, f"{openai_yaml.relative_to(ROOT)}: missing short_description")
+        if sf.parent.name == CANONICAL_SKILL_DIR:
+            openai_yaml = sf.parent / "agents" / "openai.yaml"
+            check(openai_yaml.is_file(), f"{sf.parent.relative_to(ROOT)}: missing agents/openai.yaml")
+            if openai_yaml.is_file():
+                metadata = openai_yaml.read_text(encoding="utf-8", errors="ignore")
+                check("display_name:" in metadata, f"{openai_yaml.relative_to(ROOT)}: missing display_name")
+                check("short_description:" in metadata, f"{openai_yaml.relative_to(ROOT)}: missing short_description")
     check(
         len(set(versions.values())) <= 1,
         "version mismatch (all manifests + SKILL.md must match): "
@@ -219,6 +297,10 @@ def main():
     for md in iter_agent_docs():
         body = md.read_text(encoding="utf-8", errors="ignore")
         for block in fence.findall(body):
+            try:
+                ast.parse(block)
+            except SyntaxError as e:
+                errors.append(f"{md.relative_to(ROOT)}: python block syntax error: {e}")
             for entry in CHECKS:
                 pattern, severity, message, gate = entry
                 if severity != "error":

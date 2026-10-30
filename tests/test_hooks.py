@@ -109,6 +109,25 @@ class ValidateAntiPatterns(unittest.TestCase):
     def test_flags_pxt_required(self):
         self.assertIn("Required", context(self.write("x: pxt.Required[pxt.String]\n")))
 
+    def test_flags_add_query_route_one_row(self):
+        self.assertIn("one_row", context(self.write(
+            "import pixeltable as pxt\ningest.add_query_route(path='/x', query=q, one_row=True)\n"
+        )))
+
+    def test_flags_query_return_scalar(self):
+        self.assertIn("return_scalar", context(self.write(
+            "import pixeltable as pxt\n@pxt.query(return_scalar=True)\ndef q():\n    return t.select(t.n)\n"
+        )))
+
+    def test_silent_on_query_route_without_removed_kwargs(self):
+        self.assertEqual("", self.write(
+            "import pixeltable as pxt\n"
+            "@pxt.query\n"
+            "def q():\n"
+            "    return t.select(t.n).limit(1)\n"
+            "ingest.add_query_route(path='/x', query=q)\n"
+        ))
+
     def test_flags_any_deprecated_iterators_import(self):
         self.assertIn("deprecated shim", context(self.write(
             "from pixeltable.iterators import DocumentSplitter\n")))

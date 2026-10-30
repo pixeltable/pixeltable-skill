@@ -91,6 +91,25 @@ CHECKS = [
         PIXELTABLE_FILE,
     ),
     (
+        re.compile(r"\badd_query_route\s*\([^)]*\bone_row\s*="),
+        "error",
+        (
+            "`add_query_route(one_row=...)` was removed in Pixeltable 0.7.22. The route takes its "
+            "response shape from the query: a query that aggregates without `group_by()` or ends in "
+            "`limit(1)` is single-row (0 rows is a 404; 409 is gone). Put `limit(1)` on the query."
+        ),
+        PIXELTABLE_FILE,
+    ),
+    (
+        re.compile(r"@pxt\.query\s*\([^)]*\breturn_scalar\s*="),
+        "error",
+        (
+            "`@pxt.query(return_scalar=...)` was removed in Pixeltable 0.7.22. A query that selects "
+            "a single unnamed expression returns values instead of dicts; name the column to keep dicts."
+        ),
+        PIXELTABLE_FILE,
+    ),
+    (
         re.compile(r"@pxt\.query[\s\S]*?sim=sim"),
         "recommended",
         (

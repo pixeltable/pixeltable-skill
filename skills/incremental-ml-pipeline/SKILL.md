@@ -30,11 +30,6 @@ class Docs(TableModel, name='docs'):
 
 Insert computes the new rows only. An update recomputes dependents of the columns you changed. A new computed column runs on every existing row. Editing an expression in place applies to new rows; existing values stay until `pxt recompute my_app/docs summary -f`.
 
-## Gotchas
-
-- OpenAI vision input only works when you pass the image column itself (`{'type': 'image_url', 'image_url': t.image}`). A fileurl string or `{'url': t.image}` is not serialized.
-- `video_splitter` defaults to `mode='accurate'`; clips may not start on a keyframe, and `extract_frame` then fails. Use `mode='fast'` when extracting frames from the clips.
-
 ## Apply
 
 Start from `pxt init` then `pxt schema example --brief --out app.py`. Put the snippet in `app.py`, then `pxt schema update app.py my_app`. Insert rows. Needs `OPENAI_API_KEY` on the daemon. Do not wrap the model call in a `for` loop.

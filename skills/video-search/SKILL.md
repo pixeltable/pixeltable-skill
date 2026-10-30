@@ -42,11 +42,6 @@ def search_videos(query_text: str):
 
 CLIP on an image column answers `similarity(string=...)` and `similarity(image=...)`. Do not pass only `image_embed=`. Frame metadata is `frame_attrs` (`.time`, `.index`).
 
-## Gotchas
-
-- `video_splitter` defaults to `mode='accurate'`, which can produce clips that do not start on a keyframe. `extract_frame` then fails on those clips. Use `mode='fast'` (splits only at keyframes) when you will extract frames from the clips.
-- OpenAI vision input only works when you pass the image column itself (`{'type': 'image_url', 'image_url': t.image}`). A fileurl string or `{'url': t.image}` is not serialized.
-
 ## Apply
 
 Start from `pxt init` then `pxt schema example --brief --out app.py`. Put the snippet in `app.py`, then `pxt schema update app.py my_app`. Insert videos into `videos`. Needs `torch` and `transformers`.

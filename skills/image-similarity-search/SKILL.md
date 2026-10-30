@@ -34,10 +34,6 @@ def search_images(query_text: str):
 
 Query with an example image using `similarity(image=query_img)` instead of `string=`. `embedding=clip` covers both modalities. Do not pass only `image_embed=` if you will query with text.
 
-## Gotchas
-
-- OpenAI vision input only works when you pass the image column itself (`{'type': 'image_url', 'image_url': t.image}`). A fileurl string or `{'url': t.image}` is not serialized.
-
 ## Apply
 
 Start from `pxt init` then `pxt schema example --brief --out app.py`. Put the snippet in `app.py`, then `pxt schema update app.py my_app`. Insert images into `images`. Needs `torch` and `transformers`.

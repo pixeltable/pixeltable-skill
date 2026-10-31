@@ -1,8 +1,5 @@
 ---
-description: >
-  Add embeddings, transcription, vision, or an LLM call as a Pixeltable
-  computed column (correct import and output shape). Use when wiring
-  OpenAI, Whisper, CLIP, or another provider instead of a for-loop.
+description: "Add embeddings, transcription, vision, or an LLM call as a Pixeltable computed column (correct import and output shape). Use when wiring OpenAI, Whisper, CLIP, or another provider instead of a for-loop."
 argument-hint: "[provider] [task, e.g. summarize/classify/embed/transcribe]"
 ---
 

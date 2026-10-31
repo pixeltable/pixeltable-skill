@@ -133,7 +133,7 @@ pxt dashboard
 - **`pxt drop`**: tables/views; `--cascade` drops dependent views; use `pxt drop-dir` for directories
 - **`pxt schema prune`**: never force-drops, and drops a view before its base; a table something outside the pruned set depends on is left in place
 - **`pxt drop-dir`**: `-r` for recursive directory removal
-- **`pxt revert`**: irreversible -- run `pxt history` first
+- **`pxt revert`**: irreversible -- run `pxt history` first. It cannot pass version 0, or a version a snapshot still references ([core-api.md](core-api.md#versioning))
 - **`pxt recompute`**: `pxt recompute PATH COLUMN...`; `--errors-only` narrows it to the rows that failed and takes one column; `--no-cascade` leaves dependent columns alone; `-n` reports the row count without running. The CLI form of `t.recompute_columns()`
 
 Table paths accept `my_app/docs` or `my_app.docs`.

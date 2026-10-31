@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Multimodal RAG, video search, image similarity search, agent memory, and embeddings stored with your data. Tables, computed columns, vector search, and video, audio, image, and document pipelines.",
-    "version": "2.13.0"
+    "version": "2.14.0"
   },
   "plugins": [
     {

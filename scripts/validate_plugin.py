@@ -4,11 +4,12 @@
 Checks:
   1. All JSON manifests parse (including gemini-extension.json).
   2. Portable and compatibility manifests agree and component pointers resolve.
-  3. Every skills/<name>/SKILL.md has `name` and `description` frontmatter (Agent Skills spec).
+  3. The only skill is skills/pixeltable-skill/SKILL.md, with `name: pixeltable` and a
+     `description` (Agent Skills spec).
   4. Listed command/agent files in .claude-plugin/plugin.json exist and cover commands/*.md.
+     Skill and command descriptions are single-line quoted strings.
   5-9. Versions agree, doc code blocks pass the hook's error checks, documented modules exist,
      SKILL.md stays under 500 lines, and shell blocks pass -f to `pxt service update`.
-  Catalog skills (everything except skills/pixeltable-skill) stay thin and route to `pixeltable`.
 
 Exit non-zero if any check fails. Intended for CI / pre-commit.
 """
@@ -53,9 +54,19 @@ def load_json(rel):
 
 CANONICAL_SKILL_DIR = "pixeltable-skill"
 CANONICAL_SKILL_NAME = "pixeltable"
+CANONICAL_SKILL_REL = f"{CANONICAL_SKILL_DIR}/SKILL.md"
+
+
+def skill_markdown_files(skills_dir: Path) -> list[Path]:
+    """Every SKILL.md under skills/, including a nested folder.
+
+    `npx skills` discovers these and ships each one as its own skill.
+    """
+    return sorted(p for p in skills_dir.rglob("SKILL.md") if p.is_file())
+
+
 MAX_DESCRIPTION_LENGTH = 1024
 MAX_SKILL_NAME_LENGTH = 64
-MAX_CATALOG_SKILL_LINES = 100
 
 
 def frontmatter(md_path):
@@ -90,6 +101,17 @@ def folded_yaml_field(fm, key):
             return "\n".join(block)
         return rest.strip().strip("\"'")
     return ""
+
+
+def check_single_line_description(fm, rel):
+    # SkillKit's parser treats `description: >` as the literal string ">".
+    desc_line = next((ln for ln in fm.splitlines() if ln.startswith("description:")), "")
+    desc_rest = desc_line.split(":", 1)[1].strip() if ":" in desc_line else ""
+    check(
+        desc_rest[:1] in {"'", '"'} and desc_rest[-1:] == desc_rest[:1] and "\n" not in desc_rest,
+        f"{rel}: description must be a single-line quoted string "
+        f"(SkillKit reads folded `>` as the literal '>'): {desc_line[:80]!r}",
+    )
 
 
 def main():
@@ -176,9 +198,14 @@ def main():
             if key in data:
                 check((ROOT / data[key]).is_dir(), f"{m}: '{key}' dir not found: {data[key]}")
 
-    # 3. SKILL.md frontmatter (Agent Skills spec: name, description <= 1024)
-    skill_files = list((ROOT / "skills").glob("*/SKILL.md"))
-    check(len(skill_files) >= 1, "no skills/*/SKILL.md found")
+    # 3. SKILL.md frontmatter (Agent Skills spec: name, description <= 1024).
+    #    One skill: npx skills discovers every SKILL.md under skills/, including a nested folder.
+    skill_files = skill_markdown_files(ROOT / "skills")
+    found = [sf.relative_to(ROOT / "skills").as_posix() for sf in skill_files]
+    check(
+        found == [CANONICAL_SKILL_REL],
+        f"skills/ must hold only {CANONICAL_SKILL_REL}, found: " + ", ".join(found),
+    )
     for sf in skill_files:
         fm = frontmatter(sf)
         rel = sf.relative_to(ROOT)
@@ -186,41 +213,22 @@ def main():
         desc = folded_yaml_field(fm, "description")
         check(bool(name), f"{rel}: missing 'name' in frontmatter")
         check(bool(desc), f"{rel}: missing 'description' in frontmatter")
-        # SkillKit's parser treats `description: >` as the literal string ">".
-        desc_line = next((ln for ln in fm.splitlines() if ln.startswith("description:")), "")
-        desc_rest = desc_line.split(":", 1)[1].strip() if ":" in desc_line else ""
-        check(
-            desc_rest[:1] in {"'", '"'} and desc_rest[-1:] == desc_rest[:1] and "\n" not in desc_rest,
-            f"{rel}: description must be a single-line quoted string "
-            f"(SkillKit reads folded `>` as the literal '>'): {desc_line[:80]!r}",
-        )
+        check_single_line_description(fm, rel)
         if name:
             check(len(name) <= MAX_SKILL_NAME_LENGTH, f"{rel}: name exceeds {MAX_SKILL_NAME_LENGTH} chars")
             check(name == name.lower(), f"{rel}: name must be lowercase")
             check(not name.startswith("-") and not name.endswith("-"), f"{rel}: name cannot start or end with a hyphen")
             check("--" not in name, f"{rel}: name cannot contain consecutive hyphens")
             check(all(c.isalnum() or c == "-" for c in name), f"{rel}: name may only contain a-z, 0-9, hyphen")
-            expected = CANONICAL_SKILL_NAME if sf.parent.name == CANONICAL_SKILL_DIR else sf.parent.name
-            check(name == expected, f"{rel}: name {name!r} must match directory ({expected!r})")
+            check(name == CANONICAL_SKILL_NAME, f"{rel}: name {name!r} must be {CANONICAL_SKILL_NAME!r}")
         if desc:
             check(
                 len(desc) <= MAX_DESCRIPTION_LENGTH,
                 f"{rel}: description is {len(desc)} chars, max {MAX_DESCRIPTION_LENGTH}",
             )
-        if sf.parent.name != CANONICAL_SKILL_DIR:
-            n_lines = len(sf.read_text(encoding="utf-8", errors="ignore").splitlines())
-            check(
-                n_lines < MAX_CATALOG_SKILL_LINES,
-                f"{rel}: catalog skill is {n_lines} lines, must stay under {MAX_CATALOG_SKILL_LINES}",
-            )
-            body = sf.read_text(encoding="utf-8", errors="ignore")
-            check(
-                "pixeltable-skill/SKILL.md" in body and "Load the `pixeltable` skill" in body,
-                f"{rel}: catalog skill must tell the agent to load the pixeltable skill",
-            )
 
     # 4a. Command/agent files listed in .claude-plugin/plugin.json must exist,
-    #     and every commands/*.md must be listed so job-named commands install.
+    #     and every commands/*.md must be listed so every command installs.
     claude = parsed.get(".claude-plugin/plugin.json") or {}
     for key in ("commands", "agents"):
         for rel in claude.get(key, []):
@@ -236,6 +244,7 @@ def main():
     # 4b. Auto-discovered commands have a `description`; agents have `name` + `description`
     for cmd in (ROOT / "commands").glob("*.md"):
         check("description:" in frontmatter(cmd), f"commands/{cmd.name}: missing 'description'")
+        check_single_line_description(frontmatter(cmd), f"commands/{cmd.name}")
     agent_files = list((ROOT / "agents").glob("*.md"))
     for ag in agent_files:
         fm = frontmatter(ag)
@@ -271,13 +280,12 @@ def main():
         m = re.search(r"^\s*version:\s*(.+?)\s*$", frontmatter(sf), re.MULTILINE)
         if m:
             versions[str(sf.relative_to(ROOT))] = m.group(1).strip().strip("\"'")
-        if sf.parent.name == CANONICAL_SKILL_DIR:
-            openai_yaml = sf.parent / "agents" / "openai.yaml"
-            check(openai_yaml.is_file(), f"{sf.parent.relative_to(ROOT)}: missing agents/openai.yaml")
-            if openai_yaml.is_file():
-                metadata = openai_yaml.read_text(encoding="utf-8", errors="ignore")
-                check("display_name:" in metadata, f"{openai_yaml.relative_to(ROOT)}: missing display_name")
-                check("short_description:" in metadata, f"{openai_yaml.relative_to(ROOT)}: missing short_description")
+        openai_yaml = sf.parent / "agents" / "openai.yaml"
+        check(openai_yaml.is_file(), f"{sf.parent.relative_to(ROOT)}: missing agents/openai.yaml")
+        if openai_yaml.is_file():
+            metadata = openai_yaml.read_text(encoding="utf-8", errors="ignore")
+            check("display_name:" in metadata, f"{openai_yaml.relative_to(ROOT)}: missing display_name")
+            check("short_description:" in metadata, f"{openai_yaml.relative_to(ROOT)}: missing short_description")
     check(
         len(set(versions.values())) <= 1,
         "version mismatch (all manifests + SKILL.md must match): "

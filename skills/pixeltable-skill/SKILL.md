@@ -5,7 +5,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.13.0
+  version: 2.14.0
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -130,6 +130,7 @@ RAG, views, and search: [workflows.md](references/workflows.md). Do not add Hugg
 |------|------|
 | `pxt schema`, `pxt service`, inspect | [cli.md](references/cli.md) |
 | Types, views, UDFs, UDAs, tool calling | [core-api.md](references/core-api.md) |
+| Versions, snapshots, time travel | [core-api.md](references/core-api.md#versioning) |
 | Provider import, arguments, and output shape | [providers.md](references/providers.md) |
 | Serving, FastAPIRouter, routes | [workflows.md](references/workflows.md) |
 | Wrong stack | [anti-patterns.md](references/anti-patterns.md) |
@@ -223,5 +224,3 @@ Always `if_exists='ignore'` on notebook `create_*` / `add_*`. Failed cells: `t.r
 - [Developer MCP](https://github.com/pixeltable/mcp-server-pixeltable-developer)
 - [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) (optional; reads and operates Cloud, see [cli.md](references/cli.md))
 - [Docs](https://docs.pixeltable.com/llms-full.txt)
-
-Catalog pointers in this install (thin routers into this skill): `multimodal-rag`, `video-search`, `image-similarity-search`, `audio-transcription-search`, `agent-memory`, `vector-database-alternative`, `incremental-ml-pipeline`, `dataset-versioning`.

@@ -49,9 +49,9 @@ Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claud
 - Update provider examples for new Pixeltable releases
 - Keep `SKILL.md` concise: detailed content goes in `references/`
 - `skills/pixeltable-skill/SKILL.md` should stay under 500 lines
-- Do not add a second skill folder under `skills/`. Installers ship every `skills/*/SKILL.md`
-  as its own skill. Job names (video search, agent memory, ...) belong in the SKILL.md
-  `description` and the manifest keywords.
+- Do not add a second skill under `skills/`, including in a nested folder. `npx skills`
+  discovers every `SKILL.md` there and ships it as its own skill. Job names (video search,
+  agent memory, ...) belong in the SKILL.md `description` and the manifest keywords.
 - `description` in SKILL.md and `commands/*.md` is a **single-line quoted string**
   (<= 1024 chars); SkillKit treats `description: >` as the literal `>`.
 - Do not rename `skills/pixeltable-skill` to match `name: pixeltable` without a coordinated

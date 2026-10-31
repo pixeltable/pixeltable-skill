@@ -54,6 +54,17 @@ def load_json(rel):
 
 CANONICAL_SKILL_DIR = "pixeltable-skill"
 CANONICAL_SKILL_NAME = "pixeltable"
+CANONICAL_SKILL_REL = f"{CANONICAL_SKILL_DIR}/SKILL.md"
+
+
+def skill_markdown_files(skills_dir: Path) -> list[Path]:
+    """Every SKILL.md under skills/, including a nested folder.
+
+    `npx skills` discovers these and ships each one as its own skill.
+    """
+    return sorted(p for p in skills_dir.rglob("SKILL.md") if p.is_file())
+
+
 MAX_DESCRIPTION_LENGTH = 1024
 MAX_SKILL_NAME_LENGTH = 64
 
@@ -188,12 +199,12 @@ def main():
                 check((ROOT / data[key]).is_dir(), f"{m}: '{key}' dir not found: {data[key]}")
 
     # 3. SKILL.md frontmatter (Agent Skills spec: name, description <= 1024).
-    #    One skill: installers copy every skills/*/SKILL.md, so a second folder ships a second skill.
-    skill_files = list((ROOT / "skills").glob("*/SKILL.md"))
+    #    One skill: npx skills discovers every SKILL.md under skills/, including a nested folder.
+    skill_files = skill_markdown_files(ROOT / "skills")
+    found = [sf.relative_to(ROOT / "skills").as_posix() for sf in skill_files]
     check(
-        [sf.parent.name for sf in skill_files] == [CANONICAL_SKILL_DIR],
-        f"skills/ must hold only {CANONICAL_SKILL_DIR}/SKILL.md, found: "
-        + ", ".join(sorted(str(sf.relative_to(ROOT)) for sf in skill_files)),
+        found == [CANONICAL_SKILL_REL],
+        f"skills/ must hold only {CANONICAL_SKILL_REL}, found: " + ", ".join(found),
     )
     for sf in skill_files:
         fm = frontmatter(sf)

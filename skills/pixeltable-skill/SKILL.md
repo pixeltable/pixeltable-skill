@@ -130,6 +130,7 @@ RAG, views, and search: [workflows.md](references/workflows.md). Do not add Hugg
 |------|------|
 | `pxt schema`, `pxt service`, inspect | [cli.md](references/cli.md) |
 | Types, views, UDFs, UDAs, tool calling | [core-api.md](references/core-api.md) |
+| Versions, snapshots, time travel | [core-api.md](references/core-api.md#versioning) |
 | Provider import, arguments, and output shape | [providers.md](references/providers.md) |
 | Serving, FastAPIRouter, routes | [workflows.md](references/workflows.md) |
 | Wrong stack | [anti-patterns.md](references/anti-patterns.md) |

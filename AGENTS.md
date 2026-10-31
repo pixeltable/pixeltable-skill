@@ -26,7 +26,7 @@ Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin
 
 ## Rules
 
-- Single skill. Do not split it, and do not add task-named skills next to it: installers copy every `skills/*/SKILL.md`, so each folder ships as its own skill. Put job names in the `description` and manifest keywords instead. `validate_plugin.py` enforces this.
+- Single skill. Do not split it, and do not add a task-named skill under `skills/`, including in a nested folder: `npx skills` discovers every `SKILL.md` there, so each one ships as its own skill. Put job names in the `description` and manifest keywords instead. `validate_plugin.py` enforces this.
 - The folder `skills/pixeltable-skill` does not match `name: pixeltable` (Agent Skills spec). Do not rename it until `pxt skills install`, the pixeltable.com skills index, and the docs/release stub can move together.
 - `description` in SKILL.md and `commands/*.md` is a single-line quoted string. SkillKit's parser reads folded YAML (`description: >`) as the literal string `>`.
 - Hooks are pure Python. No Node/Bun/TypeScript. `hooks.json` finds the interpreter itself (`python`, then `python3`, then `py -3`): a python.org install on Windows has no `python3.exe` (#23).

@@ -110,6 +110,10 @@ t.group_by(t.region).select(t.region, total=t.amount.sum()).collect()
 
 Local handle: `pxt.get_table('my_app.docs')`. Cloud: `pxt.get_table('pxt://org:db/docs')`. Or bind the models themselves: `import app; app.TableModel.bind_all('my_app')`, after which `app.Docs.insert(...)`, `app.Docs.count()` and `app.Docs.select(...).collect()` work.
 
+## Versioning
+
+Every insert, update, delete, and schema change adds a version. `t.history()` lists them. `pxt.get_table('my_app.products:1')` is a read-only handle of that version. `pxt.create_snapshot('my_app.products_baseline', t, if_exists='ignore')` stores a named frozen copy; later inserts, updates, and deletes on `t` leave it unchanged. `t.revert()` and `pxt revert` permanently drop the latest version, so run `pxt history` first. Revert cannot pass version 0, and it refuses while a snapshot still references the current version. `is_snapshot=True` on `create_view` freezes a filtered view at creation; that is not a named snapshot.
+
 ## Computed columns
 
 Notebook: `t.add_computed_column(...)`. App: assignment on the model.

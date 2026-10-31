@@ -18,7 +18,11 @@ npx skills add pixeltable/pixeltable-skill
 
 This installs the `pixeltable` skill and its references for supported coding
 assistants, including Claude Code, Cursor, Copilot, Windsurf, and the Codex IDE
-extension.
+extension. A 2.13.0 install also keeps these folders beside it: `multimodal-rag`,
+`video-search`, `image-similarity-search`, `audio-transcription-search`,
+`agent-memory`, `vector-database-alternative`, `incremental-ml-pipeline`,
+`dataset-versioning`. Remove those directories. The `pixeltable` skill covers
+the jobs they and their slash commands named.
 
 With only Python, `pxt skills install` (Pixeltable 0.7.21) copies the same skill
 into `.claude/skills/pixeltable` and `.agents/skills/pixeltable`.

@@ -1,12 +1,9 @@
 ---
-description: >
-  Original /pixeltable:scaffold name. Start a Pixeltable project for
-  multimodal RAG, video search, image similarity search, agent memory, or
-  embeddings stored with your data. Alias of /pixeltable-start.
+description: "Start a Pixeltable project with pxt init and a CLI example file: multimodal RAG, video or image search, agent memory, or embeddings stored with your data."
 argument-hint: "[project-name]"
 ---
 
-This is the original `/pixeltable:scaffold` command, kept so existing users are not broken. Same onboarding as [pixeltable-start.md](pixeltable-start.md) (pxt init, example `app.py`, schema update, HTTP).
+Start a Pixeltable project with the CLI. Then edit `app.py`.
 
 Arguments: `$ARGUMENTS`
 

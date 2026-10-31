@@ -25,25 +25,18 @@ jobs:
       - name: Hook unit tests
         run: python3 tests/test_hooks.py
 
-      - name: Integration structure tests
-        run: python3 tests/test_integrations.py
-
       - name: Standalone Codex skill install
         run: |
           bash -n install.sh
           HOME="$RUNNER_TEMP/pixeltable-home" ./install.sh --platform codex-skill
           test -f "$RUNNER_TEMP/pixeltable-home/.agents/skills/pixeltable/SKILL.md"
           test -f "$RUNNER_TEMP/pixeltable-home/.agents/skills/pixeltable/agents/openai.yaml"
-          for skill in agent-memory audio-transcription-search dataset-versioning image-similarity-search incremental-ml-pipeline multimodal-rag vector-database-alternative video-search; do
-            test -f "$RUNNER_TEMP/pixeltable-home/.agents/skills/$skill/SKILL.md"
-            test -f "$RUNNER_TEMP/pixeltable-home/.agents/skills/$skill/agents/openai.yaml"
-            grep -qF '../pixeltable/SKILL.md' "$RUNNER_TEMP/pixeltable-home/.agents/skills/$skill/SKILL.md"
-          done
+          test "$(ls "$RUNNER_TEMP/pixeltable-home/.agents/skills")" = pixeltable
 
       - name: Lint hooks and scripts (ruff)
         run: |
           pip install 'ruff==0.16.8'
-          ruff check hooks/ scripts/ tests/ integrations/
+          ruff check hooks/ scripts/ tests/
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

@@ -2,7 +2,7 @@
   "name": "pixeltable",
   "displayName": "Pixeltable",
   "description": "Multimodal RAG, video search, image similarity search, agent memory, and embeddings stored with your data. Tables, computed columns, vector search, and video, audio, image, and document pipelines.",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "author": {
     "name": "Pixeltable",
     "url": "https://github.com/pixeltable"
@@ -37,15 +37,6 @@
   "privacyPolicyUrl": "https://www.pixeltable.com/privacy",
   "termsOfServiceUrl": "https://www.pixeltable.com/terms",
   "commands": [
-    "./commands/pixeltable-start.md",
-    "./commands/index-videos.md",
-    "./commands/search-images.md",
-    "./commands/rag-over-docs.md",
-    "./commands/add-agent-memory.md",
-    "./commands/transcribe-and-search-audio.md",
-    "./commands/store-embeddings.md",
-    "./commands/incremental-pipeline.md",
-    "./commands/version-dataset.md",
     "./commands/scaffold.md",
     "./commands/add-provider.md"
   ],

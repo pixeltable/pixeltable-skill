@@ -55,14 +55,18 @@ not by editing a line.
 | What depends on the current time, on other rows or on another table | queried (`@pxt.query`) |
 
 Overdue, age, "in the last 2 days", counts, rates, rankings and per-parent totals are queries. A
-stored copy goes stale the moment the clock or the other rows move. Pass "now" as a query parameter:
+stored copy goes stale the moment the clock or the other rows move. `pxtf.timestamp.now()` is
+evaluated when the query runs:
 
 ```python
 @pxt.query
-def overdue(now: datetime.datetime) -> pxt.Query:
-    late = now.posix_timestamp() - Assignments.received_at.posix_timestamp() > Assignments.target_hours * 3600
-    return Assignments.where((Assignments.status != 'done') & late).select(...)
+def overdue() -> pxt.Query:
+    age = pxtf.timestamp.now().posix_timestamp() - Assignments.received_at.posix_timestamp()
+    return Assignments.where((Assignments.status != 'done') & (age > Assignments.target_hours * 3600)).select(...)
 ```
+
+A per-row value that depends on the clock can also be a computed column with `stored=False`, which is
+evaluated whenever a query reads it: `past_due = pxt.Column(value=pxtf.timestamp.now() > due_at, stored=False)`.
 
 ## 6. References between tables
 
@@ -114,35 +118,29 @@ Checking a key in another table needs a lookup, which a UDF cannot do: check it 
 ## 9. Loading data more than once
 
 The primary key makes a repeated load fail on the first duplicate. To load only the new rows, pass
-`if_exists='ignore'`: rows with a new key are inserted, and existing rows and their computed columns
-stay unchanged. The rows may contain media, as in `insert()`.
+`if_exists='ignore'`: rows with a new key are inserted, and existing rows and their computed columns stay
+unchanged. The returned status counts the skipped rows in `row_count_stats.skipped_rows`; if a batch
+repeats a new key, the first row wins.
 
 ```python
-trips.batch_update(rows, if_exists='ignore')
+trips.insert(rows, if_exists='ignore')
 ```
 
-`if_exists='error'` refuses the whole batch if one key exists. `if_exists='update'` is an upsert, but it
-recomputes the dependent columns of every matched row, changed or not, so a column that calls a paid
-model runs again.
+`batch_update(rows, if_not_exists='insert')` is an upsert, but it recomputes the dependent columns of every
+matched row, changed or not, so a column that calls a paid model runs again.
 
 ## 10. Creation time
 
-There is no `now()` default. The client sends `created_at`, or a zero-argument UDF computes it at
-insert:
+A stored computed column records the time of the insert:
 
 ```python
-@pxt.udf
-def utc_now() -> pxt.Timestamp:
-    return datetime.datetime.now(datetime.timezone.utc)
-
-
 class Samples(TableModel, name='samples'):
     ...
-    created_at = pxt.Column(value=utc_now())
+    created_at = pxtf.timestamp.now()
 ```
 
 The column has no inputs, so updates never recompute it. An explicit `pxt recompute` of
-`created_at` would overwrite it.
+`created_at` overwrites it with the time of the recompute.
 
 ## 11. Indexes
 

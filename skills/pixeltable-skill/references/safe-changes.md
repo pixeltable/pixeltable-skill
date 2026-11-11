@@ -27,8 +27,8 @@ instructions.
 - Develop in a scratch catalog directory: `pxt schema update app.py my_app_dev`. The same application
   file can target several directories. Drop the scratch directory when you need a clean slate; never
   drop the user's.
-- Write seed scripts so they can run twice: `batch_update(rows, if_exists='ignore')` inserts only the
-  keys that are missing ([schema-design.md](schema-design.md#9-loading-data-more-than-once)).
+- Write seed scripts so they can run twice: `insert(rows, if_exists='ignore')` inserts only the keys that
+  are missing ([schema-design.md](schema-design.md#9-loading-data-more-than-once)).
 - Try a new expression with `select()` on existing rows before adding it as a column
   ([expressions.md](expressions.md#trying-an-expression)). Limit the rows when it calls a model.
 - Do not put test rows into the user's tables. If you must, delete exactly those rows afterwards and

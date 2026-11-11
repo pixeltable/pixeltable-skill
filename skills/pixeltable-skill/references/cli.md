@@ -2,7 +2,7 @@
 
 Agent-focused map of the `pxt` CLI. Official source: [platform/cli.md](https://docs.pixeltable.com/platform/cli.md). Always run `pxt <command> --help` for version-specific flags -- never guess.
 
-Python 3.11+. There is no `pxt serve`, no `pxt deploy`, no `pxt app`, no `pxt db create` (`pxt db update` creates), and no `[tool.pixeltable.service]` TOML.
+Python 3.11+. There is no `pxt serve`, no `pxt deploy`, no `pxt app`, no `pxt db create` (`pxt db update` creates), and no `[tool.pixeltable.service]` TOML. Hosted service size is `[pixeltable.database.services.'<path>']`.
 
 ## Two surfaces
 
@@ -15,7 +15,7 @@ Verify: `pxt --help` and `pxt health`.
 
 ## Project root
 
-`pxt init` marks this directory as a project root. Schema and service refuse an application file with no project root. Fresh dir: writes `pixeltable.toml`. Already configured: no-op. Existing `pyproject.toml`: appends `[[tool.pixeltable.database]]` (does not write `pixeltable.toml`). Nested under another root: refused (exit 3). Start from `pxt service example --out app.py` (models plus routes) or `pxt schema example --brief --out app.py` (models only).
+`pxt init` marks this directory as a project root. Schema and service refuse an application file with no project root. Fresh dir: writes `pixeltable.toml`. Already configured: no-op. Existing `pyproject.toml`: appends `[[tool.pixeltable.database]]` (does not write `pixeltable.toml`). Nested under another root: refused (exit 3). It also refuses (exit 3) the home directory, a directory above it, or the Pixeltable home (0.7.22+); `pxt db diff`/`update` refuse such a root too. Start from `pxt service example --out app.py` (models plus routes) or `pxt schema example --brief --out app.py` (models only).
 
 ```bash
 pxt init                             # project root; see cases above
@@ -167,7 +167,7 @@ Reading a diff: `+` created / added, `-` dropped, `~` migrated, `=` already matc
 
 The daemon imports the application file, so it must be readable there; the file's own directory joins `sys.path`, so it can import modules sitting next to it.
 
-**Run `pxt schema check APP` before the first update.** It validates the file with no catalog access, confirms every udf a column calls resolves to a module path another process can import, and warns when a top-level name in the project is shadowed:
+**Run `pxt schema check APP` before the first update.** It validates the file with no catalog access, confirms every udf a column calls resolves to a module path another process can import, and warns when a top-level name in the project is shadowed, or when a computed column references no column (Python code in the model body, such as `str(col)`, ran once and left a constant):
 
 ```
 app.py: an import of 'app' reads /.../site-packages/app/__init__.py, so this project
@@ -220,7 +220,7 @@ A service binds its tables when it starts. After `pxt schema update` changes one
 
 **Tracing.** `service diff`, `service update` and `service run` take `--otel`, which emits OpenTelemetry traces and needs `pip install 'pixeltable[otel]'` (`serve` and `otel` are the only two extras). The setting belongs to the running service, not to the file: a service already running without it restarts when `update` is given the flag, dropping the flag restarts it again, and `diff --otel` reports tracing that is off but was asked for as a pending change.
 
-Do **not** write `[tool.pixeltable.service]` TOML or call `pxt serve`.
+Do **not** write `[tool.pixeltable.service]` TOML or call `pxt serve`. Size a hosted service in `pixeltable.toml` with `[pixeltable.database.services.'<path>']` (`cpu`, `memory_mb`, `workers`, `file_cache_gb`; path is `'<directory>/<service name>'`, or the name alone at the database root). `pxt service update` applies it; a `workers` change needs no restart, and a setting left out keeps the current value.
 
 ## Cloud (`pxt login`, `pxt db`, `pxt org`, `pxt secret`, `pxt key`)
 
@@ -234,9 +234,9 @@ pxt org status pxt://myorg         # also: create, list
 pxt key create ci                  # a key that acts as you; its secret prints once
 ```
 
-`pxt db update pxt://org:db` selects `[[pixeltable.database]]` by `name = 'pxt://org:db'`. A URI with no matching entry is an error. First `update` creates the hosted database. `pxt db delete` is irreversible and takes the storage with it; without a TTY it exits 3 unless given `-f`.
+`pxt db update pxt://org:db` selects `[[pixeltable.database]]` by `name = 'pxt://org:db'`. A URI with no matching entry is an error; the error suggests `pxt db diff <uri> --add-config-entry`. Prefer that flag on `diff` or `update` over a hand-edited entry: it appends `name = '<uri>'` unless one already matches (a hand edit collides with the local entry or puts `name` on it). `diff --add-config-entry` previews a first deployment; `update --add-config-entry` creates it in one command. First `update` creates the hosted database. `pxt db delete` is irreversible and takes the storage with it; without a TTY it exits 3 unless given `-f`.
 
-Hosted order: `pxt db update pxt://org:db -f` uploads the project and sets image and workers, then `pxt schema update app.py pxt://org:db -f`, then `pxt service update app.py pxt://org:db -f`. Taking capacity away requires `--allow-destructive`. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
+Hosted order: `pxt db update pxt://org:db -f` uploads the project and sets image and workers, then `pxt schema update app.py pxt://org:db -f`, then `pxt service update app.py pxt://org:db -f`. Settings (`vars`, `db_*`, sections such as `[openai]`) reach a hosted database without an upload; `pxt db diff --json` reports those changes under target `config`. Taking capacity away requires `--allow-destructive`. If `pxt db diff` says the database project is behind the working copy, run `pxt db update` first.
 
 Every Cloud database stores inserted and computed media in its managed home bucket by default. Set a column `destination=` to send that output elsewhere, or set `db_input_media_dest` / `db_output_media_dest` on the database's `[[pixeltable.database]]` entry to change its defaults (`db_exporter_otlp_endpoint` / `db_exporter_otlp_protocol` set its trace exporter). `pxt db update` carries them to the pods, and `pxt service update` moves running services onto them.
 
@@ -252,7 +252,7 @@ Optional Cloud MCP: when a Cloud user wants the agent to inspect or operate thei
 pxt secret set pxt://myorg OPENAI_API_KEY=<your-key>    # also: list, delete
 ```
 
-An org secret applies to every database in the org; a database secret wins on a key collision. The `PIXELTABLE_` prefix is reserved, so such a name is refused. Secrets are set with `pxt secret`, never in `pixeltable.toml`: a `[[pixeltable.database]]` entry with a `secrets` mapping fails to load. A process reads its secrets once, at startup, so a running one keeps the values it began with. After `pxt secret set` or `pxt secret delete`, run `pxt db restart pxt://org:db` for the database's tables and `pxt service restart pxt://org:db/NAME` for its services.
+An org secret applies to every database in the org; a database secret wins on a key collision. The `PIXELTABLE_` prefix is reserved, so such a name is refused. Secrets are set with `pxt secret`, never in `pixeltable.toml`: a `[[pixeltable.database]]` entry with a `secrets` mapping fails to load, and for a hosted database `pxt db update` also refuses a secret key such as `[openai] api_key`. A process reads its secrets once, at startup, so a running one keeps the values it began with. After `pxt secret set` or `pxt secret delete`, run `pxt db restart pxt://org:db` for the database's tables and `pxt service restart pxt://org:db/NAME` for its services.
 
 ## Scripting with `--json`
 

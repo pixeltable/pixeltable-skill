@@ -60,7 +60,7 @@ class Frames(TableModel, name='frames', base=Videos, iterator=frame_iterator(Vid
     small = frame.resize((160, 90))  # type: ignore[name-defined]
 
 
-@pxt.query(return_scalar=True)
+@pxt.query
 def reassemble(video_id: str) -> pxt.Query:
     return Frames.where(Frames.video_id == video_id).select(make_video(Frames.pos, Frames.small, fps=2))
 
@@ -85,8 +85,8 @@ def add_reassembled(*, video_id: str) -> Added:
     return Added(video_id=video_id)
 ```
 
-- `return_scalar=True` on an aggregation without `group_by()` returns its one value, so `video` is a
-  Video column.
+- The query aggregates without `group_by()` and selects one unnamed expression, so a call returns that one
+  value, and `video` is a Video column.
 - Nothing tracks the dependency across tables. After any change to a base row or its frames, recompute
   the aggregate row: with `t = pxt.get_table('my_app/reassembled')`, run
   `t.recompute_columns('video', where=t.video_id == vid)`.

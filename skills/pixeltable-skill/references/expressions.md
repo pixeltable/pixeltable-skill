@@ -7,25 +7,30 @@ data. Write derived values as expressions; a UDF is for one step that has no exp
 
 ## Python that stores a constant
 
-These pass `pxt schema check`, raise nothing, and store the same value in every row:
+These raise nothing and store the same value in every row. `pxt schema check` warns about a computed
+column that references no column:
 
 | Wrong | Stores | Correct |
 |-------|--------|---------|
-| `f'Describe {product}'` | the text `Describe product` | `pxtf.string.format('Describe {}', product)` or `'Describe ' + product` |
-| `str(product)`, `'%s' % product`, `'{}'.format(product)` | the column's name | as above |
+| `str(product)`, `'%s' % product` | the column's name | `pxtf.string.format('Describe {}', product)` or `'Describe ' + product` |
 | `note is None`, `note is not None` | `False`, `True` | `note == None`, `note != None` |
 
 ## Python that raises
 
 `and`, `or`, `not`, `if ... else`, `min()`, `max()`, `len()` and `for` over a column raise. Use `&`,
-`|`, `~`, the functions below, and for a branch see [Conditionals](#conditionals).
+`|`, `~`, the functions below, and for a branch see [Conditionals](#conditionals). An f-string or
+`str.format()` on a column raises too: build the string with `'Describe ' + product` or
+`pxtf.string.format('Describe {}', product)`.
 
 ## Operators
 
 - Arithmetic `+ - * / // %` on numbers, `+` on strings, comparisons, `&`, `|`, `~`.
 - `x == None`, `x != None`, `x.isin(['12', '33'])`, `round(x, 1)`, `x.astype(pxt.Float)`.
+- A Bool cast to Int is 0 or 1, so `pxtf.sum((delay > 5.0).astype(pxt.Int))` in a query counts the
+  matching rows.
 - Timestamps take no `+` or `-`. For a duration, subtract `ts.posix_timestamp()` values (seconds as
-  Float); on Dates, `d.add_days(n)`.
+  Float); on Dates, `d.add_days(n)`. The current time is `pxtf.timestamp.now()`, today's date
+  `pxtf.date.today()`; [schema-design.md](schema-design.md) says where they belong.
 
 ## Json
 
@@ -59,14 +64,19 @@ class Trips(TableModel, name='trips'):
   `mean`, `count`, `flatten`, `concat`, `merge`, `is_empty`. `pxtf.json.dumps(x)` gives a String.
 - A Json field that contains a string becomes a String with `.astype(pxt.String)`, before string
   functions or `+`.
-- An untyped `pxt.Json` column returns untyped Json from every path. Model output (`chat_completions`,
-  `messages`) is untyped: extract the needed field once, then cast it.
+- An untyped `pxt.Json` column returns untyped Json from every path. The replies of
+  `openai.chat_completions`, `openai.responses` and `anthropic.messages` are typed, so their paths
+  return typed values; for other providers, extract the needed field once, then cast it.
 
 ## Strings, times and media
 
 - Strings: `pxtf.string.format('{} @ {}', a, b)`, `a + ' / ' + b`, `pxtf.string.join(', ', items)`,
   and methods such as `upper`, `lower`, `strip`, `replace`, `split`, `contains`, `startswith`, `len`,
   `wrap`. `note.split().len()` counts words.
+- Parsing: `received.astype(pxt.Timestamp)` and `astype(pxt.Date)` parse ISO 8601 strings;
+  `pxtf.timestamp.strptime(received, '%d/%m/%Y %H:%M')` and `pxtf.date.strptime()` take a format;
+  `pxtf.json.loads(payload)` parses a JSON string. A timestamp without a time zone is in the default
+  time zone.
 - Timestamps: `.year`, `.month`, `.day`, `.hour`, `.minute`, `.second` are properties, written without
   parentheses. Methods include `astimezone('America/Los_Angeles')`, `strftime(fmt)`, `isoformat()`,
   `weekday()` and `posix_timestamp()`. Local hour: `departs_at.astimezone(tz).hour`.
@@ -130,9 +140,9 @@ t.select(t.trip_id, band=delay_band(t.stops[-1].delay)).limit(5).collect()
 Or bind the models and use the class: `import app; app.TableModel.bind_all('my_app')`, then
 `app.Trips.select(...).collect()`. Limit the rows when the expression calls a paid model.
 
-Call one UDF on Python values, with no table: `pxt.call_udf(pxtf.image.resize, img, (64, 64))`, or
-`pxt.call_udf(pxtf.openai.chat_completions, messages=[...], model='gpt-4o-mini')` to try a prompt.
+Evaluate one UDF on Python values, with no table: `pxt.eval_udf(pxtf.image.resize, img, (64, 64))`, or
+`pxt.eval_udf(pxtf.openai.chat_completions, messages=[...], model='gpt-4o-mini')` to try a prompt.
 Use it instead of the provider's own SDK. A media argument can be a PIL image, a file path or a URL.
 
 Calling a `@pxt.query` function from Python returns an expression, not rows. In a script, run it with
-`pxt.call_udf(app.late_trips, '12')` after `bind_all()`.
+`pxt.eval_udf(app.late_trips, '12')` after `bind_all()`.

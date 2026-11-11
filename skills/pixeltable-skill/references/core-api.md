@@ -102,11 +102,11 @@ One `.where()` per query. Compose extra predicates with `&` / `|` (`t.where((t.n
 Aggregates run in queries, not computed columns:
 
 ```python
-t.select(t.amount.sum()).collect()
-t.group_by(t.region).select(t.region, total=t.amount.sum()).collect()
+t.select(pxtf.sum(t.amount)).collect()
+t.group_by(t.region).select(t.region, total=pxtf.sum(t.amount), large=pxtf.sum((t.amount > 100).astype(pxt.Int))).collect()
 ```
 
-`@pxt.query` compiles at decoration time: do not `.collect()` or `get_table()` a table that does not exist yet inside one.
+`@pxt.query` compiles at decoration time: do not `.collect()` or `get_table()` a table that does not exist yet inside one. Result shape (0.7.22+): a query that aggregates without `group_by()` or ends in a literal `limit(1)` is single-row and returns the row or `None` (`limit(n)` with a parameter is multi-row even when `n` is 1); a query selecting a single unnamed expression returns values instead of dicts. Name the column (`select(text=t.text)`) to keep dicts. `@pxt.query(return_scalar=...)` is gone. Stored query functions keep the shape they were created with.
 
 Local handle: `pxt.get_table('my_app.docs')`. Cloud: `pxt.get_table('pxt://org:db/docs')`. Or bind the models themselves: `import app; app.TableModel.bind_all('my_app')`, after which `app.Docs.insert(...)`, `app.Docs.count()` and `app.Docs.select(...).collect()` work.
 
@@ -126,7 +126,7 @@ t.add_computed_column(
 )
 ```
 
-Extract the field (`.text`, `.choices[0].message.content`). The text of an Anthropic reply is already a String. For other providers the field is Json holding a string: `.astype(pxt.String)` it before concatenating or embedding. A Json dict or list does not cast (`Expected string, got dict` at insert); serialize it with `pxtf.json.dumps(...)`.
+Extract the field (`.text`, `.choices[0].message.content`). The replies of `openai.chat_completions`, `openai.responses` and `anthropic.messages` are typed, so their text is already a String. For other providers the field is Json holding a string: `.astype(pxt.String)` it before concatenating or embedding. A Json dict or list does not cast (`Expected string, got dict` at insert); serialize it with `pxtf.json.dumps(...)`.
 
 ## Views
 
@@ -277,6 +277,8 @@ lookup_fn = pxt.retrieval_udf(t, name='lookup_items', description='Look up items
     parameters=['name'], limit=5)
 ```
 
+`retrieval_udf(..., limit=1)` returns a dict or `None` (0.7.22+); a larger `limit` still returns a list.
+
 ## UDAs
 
 `@pxt.uda` is many rows to one value. Use in `select()` / `group_by()`, not `add_computed_column`. Subclass `pxt.Aggregator`: `__init__`, `update`, `value`. `__init__` args must be constants.
@@ -300,7 +302,7 @@ t.select(avg_int(t.value)).collect()
 t.group_by(t.category).select(t.category, avg_val=avg_int(t.value)).collect()
 ```
 
-Built-ins: `make_video`, `concat_videos_agg` (`pixeltable.functions.video`), `make_list` (`json`), `stitch_tiles` (`image`), `mean_ap` (`vision`). Scalar `concat_videos` takes a **list** of videos.
+Built-ins: `pxtf.count`, `sum`, `mean`, `min`, `max`, and `make_video`, `concat_videos_agg` (`pixeltable.functions.video`), `make_list` (`json`), `stitch_tiles` (`image`), `mean_ap` (`vision`). Scalar `concat_videos` takes a **list** of videos.
 
 `requires_order_by` UDAs take the ordering expression as their **first positional argument**; passing `order_by=` raises. Built-ins include:
 
@@ -333,7 +335,7 @@ Do not hand-roll a reader or writer -- check `pxt.io.import_*` / `export_*` firs
 
 `from pixeltable.serving import FastAPIRouter`. Start from `pxt service example --out app.py`. `add_update_route` requires the target's primary key and matches rows by it: the request body carries the key even though `inputs` does not list it. `add_delete_route` uses the primary key by default and can instead take a nonempty `match_columns=` list.
 
-Routes: `add_insert_route` (stores the row), `add_compute_route` (same request shape, computes without storing), `add_update_route`, `add_delete_route`, `add_query_route` (wraps a `@pxt.query`).
+Routes: `add_insert_route` (stores the row), `add_compute_route` (same request shape, computes without storing), `add_update_route`, `add_delete_route`, `add_query_route` (wraps a `@pxt.query`; response shape follows the query, [workflows.md](workflows.md)).
 
 ```python
 ingest.add_update_route(Docs, path='/update', inputs=[Docs.title], outputs=[Docs.title])

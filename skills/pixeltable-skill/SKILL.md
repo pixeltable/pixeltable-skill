@@ -40,6 +40,29 @@ If you find yourself importing any of these, you are off-path:
 
 See [anti-patterns.md](references/anti-patterns.md) (6 macros).
 
+## What is Pixeltable?
+
+A database for multimodal AI applications: an app's tables, processing pipeline and API all live in it.
+
+- **A transactional database.** Many users and processes read and write at once; each insert, update
+  and delete is atomic; single-row operations are fast. Serve requests from the tables directly: no
+  cache, no second datastore, no locks in app code.
+- **Multimodal values are column types.** `Image`, `Video`, `Audio`, `Document` and `Array` columns take
+  files and arrays directly, and Pixeltable stores and fetches the files. Do not store paths as strings
+  or copy files yourself.
+- **Computed columns are the pipeline.** A computed column is evaluated when its row arrives, within the
+  same atomic operation, and stored. Model calls, parsing and scoring are columns, not workers, scripts or
+  loops over rows. A failed cell keeps its error; `pxt recompute --errors-only` reruns only those cells.
+- **Embedding indexes are declarative,** like a B-tree index: Pixeltable embeds new and changed rows and
+  keeps one model per index. No vector database, no embedding job.
+- **Iterator views** split each row into chunks, frames, segments or pages, and stay current as the base
+  table changes. No child table filled by code.
+
+Unlike a relational database, it has no foreign keys, CHECK constraints or multi-statement transactions,
+and no computed column writes to another table. A computed column is recomputed only when its row's inputs
+change, not when other rows or the clock change. [conventional-design.md](references/conventional-design.md)
+has the pattern for each of these.
+
 ## Before you write app.py
 
 1. **Translate the spec.** Workers, job queues, status columns, retries, metrics tables and cron jobs
@@ -52,24 +75,22 @@ See [anti-patterns.md](references/anti-patterns.md) (6 macros).
    can become nullable but not required.
 3. **Write derived values as expressions.** A UDF is for one step that has no expression form:
    [expressions.md](references/expressions.md). Before writing one, run `pxt functions --search <task>`
-   and `pxt functions --on <Type>` to find what ships. An f-string, `str()` or `is None` on a column
-   stores a constant.
+   and `pxt functions --on <Type>` to find what ships. An f-string on a column raises; `str()` or
+   `is None` on a column stores a constant, which `pxt schema check` reports.
 4. **Treat the catalog as the user's data.** Show the plan and ask before you drop, revert, pass
    `--allow-destructive`, or add or recompute a paid model column on existing rows. Iterate in a
    scratch catalog directory: [safe-changes.md](references/safe-changes.md).
 
-## What is Pixeltable?
+## Starting a new project
 
 One application file (`app.py`) is the backend.
 
 - `pxt schema update`: creates tables from `TableModel` classes. Does not start HTTP.
 - Insert a sample, `.select()`, `pxt dashboard`, or `pxt schema diff`. Compute runs on insert. After `pxt service update`, curl POST.
-- `pxt.call_udf(fn, ...)` runs one UDF on Python values, with no table: try a prompt with `pxt.call_udf(pxtf.openai.chat_completions, messages=[...], model='gpt-4o-mini')`, or call a model from a custom handler. Use it instead of the provider's own SDK.
+- `pxt.eval_udf(fn, ...)` evaluates one UDF on Python values, with no table: try a prompt with `pxt.eval_udf(pxtf.openai.chat_completions, messages=[...], model='gpt-4o-mini')`, or call a model from a custom handler. Use it instead of the provider's own SDK.
 - `pxt service update`: starts HTTP (local or `pxt://`). `pxt service list` prints the URL. This is the serving command; do not reach for `pxt service run`.
 
 First run: [Quickstart](https://docs.pixeltable.com/overview/quick-start). Why: [Why Pixeltable](https://docs.pixeltable.com/overview/pixeltable).
-
-## Starting a new project
 
 ```bash
 pip install 'pixeltable[serve]'   # Python 3.11+
@@ -87,11 +108,11 @@ The last argument (`my_app`, or `pxt://org:db` on Cloud) is a catalog directory,
 
 Provider keys (`OPENAI_API_KEY`, ...) come from the environment or `~/.pixeltable/config.toml`, and the `pxt` daemon reads both once, at startup; local services get them from the daemon. After changing either, run `pxt daemon restart` (every command answers 409 until you do), then `pxt service restart my_app/ingest`.
 
-Same file on [Cloud](https://docs.pixeltable.com/howto/deployment/cloud): add `[[pixeltable.database]]` with `name = 'pxt://org:db'` to `pixeltable.toml`, then:
+Same file on [Cloud](https://docs.pixeltable.com/howto/deployment/cloud): prefer `--add-config-entry` over writing the hosted `[[pixeltable.database]]` entry by hand, then:
 
 ```bash
 pxt login                                  # browser sign-in; or export PIXELTABLE_API_KEY, which wins
-pxt db update pxt://org:db -f              # project files, image, workers; not secrets, rows, or HTTP
+pxt db update pxt://org:db --add-config-entry -f  # project files, image, workers; not secrets, rows, or HTTP
 pxt schema update app.py pxt://org:db -f
 pxt service update app.py pxt://org:db -f
 ```
@@ -183,9 +204,13 @@ Add video, audio, agents, or a UI by editing `app.py`. A view is either a filter
 | `EmbeddingIndex(frame, image_embed=clip)` | `embedding=clip` (covers text and image). Or both `string_embed=` and `image_embed=`. `image_embed=` alone cannot answer `similarity(string=...)` |
 | `uuid.astype(pxt.String)` | `uuid.to_string()` (`from pixeltable.functions.uuid import to_string`). `astype` does not cast UUID to String |
 | `json_col.astype(pxt.String)` on a dict or list | Fails at insert: `Expected string, got dict`. Serialize with `pxtf.json.dumps(json_col)` |
-| `batch_update(rows, if_not_exists='insert')` to load a file again | Recomputes the computed columns of every matched row, paid model calls included. `batch_update(rows, if_exists='ignore')` inserts the rows with new keys and leaves existing rows unchanged |
+| A UDA that counts the rows matching a condition | `pxtf.sum((delay > 5.0).astype(pxt.Int))`: a Bool cast to Int is 0 or 1 |
+| A UDF that parses a date or a JSON string | `s.astype(pxt.Timestamp)` or `s.astype(pxt.Date)` for ISO 8601, `pxtf.timestamp.strptime(s, '%d/%m/%Y %H:%M')` or `pxtf.date.strptime(s, fmt)` for other formats, `pxtf.json.loads(s)` for JSON |
+| A UDF that returns the current time | `pxtf.timestamp.now()` or `pxtf.date.today()`; where to use them: [schema-design.md](references/schema-design.md) |
+| `batch_update(rows, if_not_exists='insert')` to load a file again | Recomputes the computed columns of every matched row, paid model calls included. `insert(rows, if_exists='ignore')` inserts the rows with new keys and leaves existing rows unchanged |
+| `add_query_route(..., one_row=True)` / `@pxt.query(return_scalar=...)` | Gone (0.7.22+). Shape follows the query: ungrouped aggregate or literal `limit(1)` is single-row (0 rows is a 404). A single unnamed expression returns values |
 
-Extract the field (`.text`, `.choices[0].message.content`). The text of an Anthropic reply is already a String; with thinking enabled `content[0]` is the thinking block, so select the text block: `reply.content.filter(lambda b: b.type == 'text')[0].text`. For other providers the field is a string typed as Json: `.astype(pxt.String)` it before concatenating or embedding.
+Extract the field (`.text`, `.choices[0].message.content`). The replies of `openai.chat_completions`, `openai.responses` and `anthropic.messages` are typed, so the text is already a String: `.choices[0].message.content` for chat completions, `.output_text` for responses, and `reply.content.filter(lambda b: b.type == 'text')[0].text` for Anthropic (with thinking enabled, `content[0]` is the thinking block). For other providers the field is a string typed as Json: `.astype(pxt.String)` it before concatenating or embedding.
 
 ## Notebook / REPL appendix
 

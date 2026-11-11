@@ -36,15 +36,19 @@ instructions.
 
 ## Changes that need a manual step
 
-| Change | What Pixeltable does | Do |
-|--------|---------------------|----|
-| Edit a UDF's body | `pxt schema diff` shows nothing; stored values keep the old logic | `pxt recompute PATH COL...` for the columns that call it. Ask first if they, or their dependents, call a paid model |
-| Edit a computed column's expression, same type | A safe alter; existing rows keep the old values | `schema update` prints the `pxt recompute` command. Ask before running it on a paid column |
-| Make a column nullable (`T` to `T \| None`) | A safe alter, unless a non-nullable computed column depends on it: then UNSUPPORTED | Nothing, for the safe alter |
-| Change a column's type, make it required, or change `stored=` | UNSUPPORTED: the whole update applies nothing | Stop and give the user the options. Renaming drops the old values, and a computed column under the new name recomputes. A new column can live next to the old one |
-| Change a view's iterator | Cannot be migrated in place | A new view under a new name. The old view stays until the user agrees to drop it |
-| Add a primary key | Impossible on an existing table | Design it in from the start ([schema-design.md](schema-design.md#2-a-primary-key-at-creation)) |
-| Any schema change while a service runs | Its routes answer 409 | `pxt service update app.py TARGET -f` |
+`pxt schema diff` classifies each change as additive, destructive or unsupported; `pxt guide tables` says
+which changes fall in which class. These need a step from you:
+
+- **A UDF's body changed.** `pxt schema diff` shows nothing, and stored values keep the old logic.
+  Recompute the columns that call it; ask first if they, or their dependents, call a paid model.
+- **A computed column's expression changed.** Recompute the existing rows if they should change. That
+  calls the expression once per row, so ask first if it calls a paid model.
+- **`pxt schema update` refuses a change.** Stop and give the user the options: a new column next to the
+  old one, or a rename, which drops a stored column's values and recomputes a computed one.
+- **A view's iterator changed.** Create a new view under a new name. The old view stays until the user
+  agrees to drop it.
+- **The table needs a primary key.** It cannot be added to an existing table: design it in from the
+  start ([schema-design.md](schema-design.md#2-a-primary-key-at-creation)).
 
 ## Report what changed
 

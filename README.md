@@ -55,10 +55,6 @@ are team-distribution sources; they do not publish to a public directory.
 skills/pixeltable-skill/
 ├── SKILL.md                    # Contract: app.py, schema update, service update
 └── references/
-    ├── core-api.md             # Tables, querying, views, UDFs, config
-    ├── cli.md                  # pxt CLI
-    ├── providers.md            # Import and output shape
-    ├── workflows.md            # FastAPIRouter
     ├── anti-patterns.md        # Wrong/right stack
     ├── conventional-design.md  # Workers, queues, status columns -> Pixeltable
     ├── schema-design.md        # Keys, types, nullability, references, history

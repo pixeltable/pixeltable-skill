@@ -8,11 +8,11 @@ piece before writing code, and tell the user which pieces you translated.
 
 | The spec asks for | Build |
 |-------------------|-------|
-| A worker or job queue that processes each upload, and a status to poll | An insert route with `background=True`. It returns `{"id", "job_url"}`; `job_url` reports `pending`, `done` or `error`. The computed columns are the pipeline. No jobs table, no status column, no thread. |
+| A worker or job queue that processes each upload, and a status to poll | An insert route with `background=True`: the request returns at once, with a job to poll (`pxt guide serving`). The computed columns are the pipeline. No jobs table, no status column, no thread. |
 | A status such as `uploaded -> processing -> done / failed` | Derive it: the row exists, its stored computed columns have values, or `col.errortype != None`. Serve it from a `@pxt.query` through `add_query_route`. |
 | Retry failed items, N times | `insert(..., on_error='ignore')` keeps the row and records the error in `col.errortype` / `col.errormsg`. `pxt recompute PATH COL --errors-only` reruns only the failed cells and their dependents; cells that succeeded are never redone. |
 | A transform step that writes a cleaned table | Computed columns on the same table. |
-| Split each item into chunks, frames, pages or segments, written to a child table | An iterator view: `document_splitter`, `audio_splitter`, `frame_iterator`, `video_splitter`, `string_splitter`, `list_iterator`, `tile_iterator`. |
+| Split each item into chunks, frames, pages or segments, written to a child table | An iterator view (`pxt guide views` lists the iterators). |
 | A metrics, stats or summary table refreshed by a job | A `@pxt.query` with `group_by` and aggregates, served by `add_query_route`. Regenerating the report means running the query. |
 | A per-parent total written back onto the parent row | A query that groups the view by the parent's key; join it to the parent in the query. |
 | Cron, nightly, "after each export" | Pixeltable has no scheduler. The system scheduler (cron, CI) runs a script that inserts the new data or calls a route, and the columns do the rest. Never a sleep loop or a thread in the service. |
@@ -20,9 +20,9 @@ piece before writing code, and tell the user which pieces you translated.
 | A vector database, an embedding job | `__indexes__ = [pxt.EmbeddingIndex(...)]` on the model. |
 | A history array or a log appended by code | An append-only events table ([schema-design.md](schema-design.md#7-history)). |
 | An endpoint that computes something from stored rows | `add_query_route` over a `@pxt.query`. A custom FastAPI handler only for what routes cannot express, and then a `def` handler, never `async def`. |
-| An upload handler that saves the file and inserts it | `add_insert_route(..., uploadfile_inputs=[...])`. Pixeltable copies a file from a system temp directory into its media store, and stores any other local file by its path. A custom handler that saves uploads elsewhere must keep the files there. |
+| An upload handler that saves the file and inserts it | `add_insert_route(..., uploadfile_inputs=[...])`, which puts the upload in Pixeltable's media store. |
 | After processing, create rows in another table (extracted memories, assignments fanned out to stations) | No computed column writes to another table. Use a decorator route (`@router.insert_route(...)`): Pixeltable runs the insert, then calls your function with the new row's `outputs`, and the function inserts into the second table. With `background=True` both run in one job. Say in your report that this step is not declarative. |
-| Look up another table while computing a column | `pxt.get_table()` inside a UDF fails. Join at query time, or make the looked-up value an input column. |
+| Look up another table while computing a column | Join at query time, or make the looked-up value an input column. A column whose UDF reads another table goes stale: nothing recomputes it when that table changes. |
 | Combine per-frame (or per-chunk) results into one per-video result | A base-table column cannot aggregate its own view. Keep the per-frame work in a view, and put the aggregate in a second table keyed like the base: [the aggregate-table pattern](#the-aggregate-table-pattern) below. Never write the aggregate back onto the base row with `update()`, and never fold the pipeline into one UDF that loops over frames. |
 
 ## Signs that the design is still conventional
@@ -85,10 +85,8 @@ def add_reassembled(*, video_id: str) -> Added:
     return Added(video_id=video_id)
 ```
 
-- The query aggregates without `group_by()` and selects one unnamed expression, so a call returns that one
-  value, and `video` is a Video column.
+- `video` is a Video column, because `reassemble()` returns one value per call (`pxt guide queries`).
 - Nothing tracks the dependency across tables. After any change to a base row or its frames, recompute
   the aggregate row: with `t = pxt.get_table('my_app/reassembled')`, run
   `t.recompute_columns('video', where=t.video_id == vid)`.
-- The two inserts are not one transaction: a failed second insert leaves the first in place, and the
-  job ends with status `error`.
+- The two inserts are not one transaction: a failed second insert leaves the first in place.

@@ -71,12 +71,12 @@ has the pattern for each of these.
    score, goes in a second table keyed like the base, with a `@pxt.query` column: the aggregate-table
    pattern there.
 2. **Design the schema.** Entities, primary keys, types, nullability, and what is stored, computed or
-   queried: [schema-design.md](references/schema-design.md). Keys cannot change later, and a column
-   can become nullable but not required.
+   queried: [schema-design.md](references/schema-design.md). Keys, types and nullability are hard to
+   change once a table has rows.
 3. **Write derived values as expressions.** A UDF is for one step that has no expression form:
    [expressions.md](references/expressions.md). Before writing one, run `pxt functions --search <task>`
-   and `pxt functions --on <Type>` to find what ships. An f-string on a column raises; `str()` or
-   `is None` on a column stores a constant, which `pxt schema check` reports.
+   and `pxt functions --on <Type>` to find what ships. Python's own operations do not work on a column:
+   no f-strings, `str()`, `is None`, `and`, `or` or `not`.
 4. **Treat the catalog as the user's data.** Show the plan and ask before you drop, revert, pass
    `--allow-destructive`, or add or recompute a paid model column on existing rows. Iterate in a
    scratch catalog directory: [safe-changes.md](references/safe-changes.md).
@@ -85,43 +85,32 @@ has the pattern for each of these.
 
 One application file (`app.py`) is the backend.
 
-- `pxt schema update`: creates tables from `TableModel` classes. Does not start HTTP.
-- Insert a sample, `.select()`, `pxt dashboard`, or `pxt schema diff`. Compute runs on insert. After `pxt service update`, curl POST.
-- `pxt.eval_udf(fn, ...)` evaluates one UDF on Python values, with no table: try a prompt with `pxt.eval_udf(pxtf.openai.chat_completions, messages=[...], model='gpt-4o-mini')`, or call a model from a custom handler. Use it instead of the provider's own SDK.
-- `pxt service update`: starts HTTP (local or `pxt://`). `pxt service list` prints the URL. This is the serving command; do not reach for `pxt service run`.
-
-First run: [Quickstart](https://docs.pixeltable.com/overview/quick-start). Why: [Why Pixeltable](https://docs.pixeltable.com/overview/pixeltable).
-
 ```bash
 pip install 'pixeltable[serve]'   # Python 3.11+
 pxt init
 pxt service example --out app.py
-pxt schema check app.py           # validates the file; warns if 'app' is shadowed
+pxt schema check app.py
 pxt schema update app.py my_app
-pxt service update app.py my_app -f   # no TTY: without -f a pending start exits 3
-pxt service list                  # assigned port; do not hard-code :8000
+pxt service update app.py my_app -f   # -f: an agent has no TTY to answer the prompt
+pxt service list                      # the URL of each service
 ```
 
-`pxt service example` writes models plus a `FastAPIRouter`. Schema only (no HTTP): `pxt schema example --brief --out app.py`. Then edit `app.py` and run `pxt schema update` again. After a schema change, run `pxt service update ... -f` again if routes exist; until then they answer 409. Do not `python app.py`. Full flags: [cli.md](references/cli.md).
+- `pxt schema update` creates and changes the tables declared in `app.py`. It does not start HTTP.
+- `pxt service update` starts the HTTP services. Run it again after each schema change.
+- The last argument (`my_app`) is a directory in the catalog, not a folder on disk.
+- Try the pipeline before the routes: insert a sample row and select it, or open `pxt dashboard`.
+  Computed columns run on insert.
+- `pxt schema example --brief --out app.py` writes the models without routes.
+- Do not run `python app.py`; the `pxt` commands load it.
 
-The last argument (`my_app`, or `pxt://org:db` on Cloud) is a catalog directory, not a folder on disk. `pxt init` marks the project root. Local handle: `pxt.get_table('my_app.docs')`, or bind the models: `import app; app.TableModel.bind_all('my_app')`, then `app.Docs.insert(...)` / `app.Docs.select(...).collect()`. Inspect: `pxt ls -l`, `pxt errors my_app/docs`, `pxt dashboard`.
+The same file deploys to Pixeltable Cloud, with `pxt://org:db` as the last argument: `pxt guide cloud`.
+Flags, prompts, provider keys and the daemon: `pxt guide cli`, `pxt guide providers` and `pxt COMMAND --help`.
 
-Provider keys (`OPENAI_API_KEY`, ...) come from the environment or `~/.pixeltable/config.toml`, and the `pxt` daemon reads both once, at startup; local services get them from the daemon. After changing either, run `pxt daemon restart` (every command answers 409 until you do), then `pxt service restart my_app/ingest`.
-
-Same file on [Cloud](https://docs.pixeltable.com/howto/deployment/cloud): prefer `--add-config-entry` over writing the hosted `[[pixeltable.database]]` entry by hand, then:
-
-```bash
-pxt login                                  # browser sign-in; or export PIXELTABLE_API_KEY, which wins
-pxt db update pxt://org:db --add-config-entry -f  # project files, image, workers; not secrets, rows, or HTTP
-pxt schema update app.py pxt://org:db -f
-pxt service update app.py pxt://org:db -f
-```
-
-Provider keys on Cloud: `pxt secret set pxt://org OPENAI_API_KEY=...`, never in `pixeltable.toml`. Cloud handle: `pxt.get_table('pxt://org:db/docs')`. Media goes to the database's managed home bucket unless a column sets `destination=`; share a file by link or `/sign` (`references/cli.md`, Cloud). Try the app with a dashboard insert plus `pxt schema diff`; read failures with `pxt service logs` / `pxt db logs`.
+First run: [Quickstart](https://docs.pixeltable.com/overview/quick-start). Why: [Why Pixeltable](https://docs.pixeltable.com/overview/pixeltable).
 
 ## The application file
 
-`pxt service example --out app.py` writes this shape. Edit it. Then `pxt schema update app.py my_app`.
+`pxt service example --out app.py` writes this shape. Edit it, then run `pxt schema update app.py my_app`.
 
 ```python
 import pixeltable as pxt
@@ -149,122 +138,42 @@ ingest.add_insert_route(
     Docs, path='/docs', inputs=[Docs.title, Docs.body],
     outputs=[Docs.id, Docs.title_upper, Docs.summary],
 )
-ingest.add_update_route(
-    Docs, path='/docs/update', inputs=[Docs.title],
-    outputs=[Docs.id, Docs.title_upper],
-)
-ingest.add_compute_route(Docs, path='/titles', inputs=[Docs.title], outputs=[Docs.title_upper])
 ```
 
-Annotation is a stored column. Assignment is a computed column. Optional is `T | None`. Primary key is `pxt.Column(..., primary_key=True)`; `add_update_route` matches rows by it, so the request body carries `id` even though `inputs` does not list it. Indexes on the model: `__indexes__ = [pxt.EmbeddingIndex(...)]`.
-
-Already have FastAPI: after schema update, `ingest.bind('my_app')` then `app.include_router(ingest)`. Or define the `fastapi.FastAPI` object in `app.py` and `include_router()` each router there; `pxt service update` then serves that one application. Call `pxt.get_table()` inside custom handlers. [workflows.md](references/workflows.md).
-
-RAG, views, and search: [workflows.md](references/workflows.md). Do not add Hugging Face or spaCy unless the user asked.
+An annotation is a stored column, an assignment a computed column, and `T | None` a nullable column.
+Indexes go in `__indexes__` on the model. Add video, audio, agents or a UI by editing `app.py`, and
+change the catalog only with `pxt schema update`: `app.py` creates no tables when imported. Do not add
+Hugging Face or spaCy unless the user asked.
 
 ## Apps vs notebooks
 
 - **Apps:** `app.py` + `pxt schema update` + `pxt service update`. Indexes on the model.
-- **Notebooks / REPL:** `pxt.create_table()`, `add_computed_column()`, `add_embedding_index()`. The appendix below uses that form.
+- **Notebooks / REPL:** `pxt.create_table()`, `add_computed_column()`, `add_embedding_index()`.
+  `pxt guide tables` shows both forms.
 
 ## Where to look
+
+Read the guide of an area before writing code in it. The guides ship with the installed Pixeltable and
+state how that release behaves: what its APIs do, their defaults, errors and known issues. Where this
+skill and a guide disagree, the guide is right.
 
 | Need | Open |
 |------|------|
 | Turn a spec's workers, queues and status columns into tables and columns | [conventional-design.md](references/conventional-design.md) |
 | Keys, types, nullability, references, history | [schema-design.md](references/schema-design.md) |
-| Json paths, string/time/media functions, when to write a UDF | [expressions.md](references/expressions.md) |
+| Expressions, and when to write a UDF | [expressions.md](references/expressions.md) |
 | Drops, recomputes, schema changes on a project with data | [safe-changes.md](references/safe-changes.md) |
-| `pxt schema`, `pxt service`, inspect | [cli.md](references/cli.md) |
-| Types, views, UDFs, UDAs, tool calling | [core-api.md](references/core-api.md) |
-| Provider import, arguments, and output shape | [providers.md](references/providers.md) |
-| Serving, FastAPIRouter, routes | [workflows.md](references/workflows.md) |
 | Wrong stack | [anti-patterns.md](references/anti-patterns.md) |
+| How this release behaves in one area | `pxt guide` lists the areas; `pxt guide tables` prints one |
+| What a function or a command takes | `pxt functions --search <text>`, `pxt functions --on <Type>`, `pxt COMMAND --help` |
 
-Add video, audio, agents, or a UI by editing `app.py`. A view is either a filter (`base=Docs.where(...)`) or an iterator (`frame_iterator`, `audio_splitter`, `document_splitter`, `video_splitter`, `string_splitter`, `list_iterator`, `tile_iterator`). Check `pixeltable.functions` before writing a UDF. Start from `pxt service example` or `pxt schema example`. Do not invent a second `pxt schema update` path.
-
-## API traps
-
-| Wrong | Correct |
-|-------|---------|
-| `openai.vision(...)` | Deprecated (the only deprecated function in `pixeltable.functions`). Use `chat_completions` with `image_url`, or `responses` |
-| `from pixeltable.iterators import ...` | The whole `pixeltable.iterators` package is a deprecated shim (`FrameIterator`, `VideoSplitter`, `DocumentSplitter`, `StringSplitter`, `AudioSplitter`, `TileIterator`). Import the function from `pixeltable.functions.*` -- e.g. `from pixeltable.functions.video import frame_iterator` |
-| `similarity(query)` | `similarity(string=query)`. Also `image=` / `audio=` / `video=` / `document=` / `vector=`; `idx=` picks among several indexes on one column |
-| Re-run with `if_exists='ignore'` to fix logic | App: edit the expression, `pxt schema update`, then `pxt recompute my_app/docs summary -f`: the update keeps the old values. Notebook: `t.alter_computed_column(summary=...)`, which recomputes it and its dependents |
-| Change a column's type in place (`T` to `T \| None`, stored to computed, `stored=`) | `UNSUPPORTED`: the whole update applies nothing, and `--allow-destructive` does not help. A computed column: rename it (one `--allow-destructive -f` pass). A stored column: renaming drops its data, so declare `T \| None` up front |
-| `t.summary_errortype` | `t.summary.errortype` / `t.summary.errormsg`, on stored computed or media columns. `t.<col>.fileurl` / `.localpath` for media |
-| `pxt.Required[pxt.String]` | Non-nullable by default. Optional: `T \| None` |
-| `@pxt.udf def f(x: str)` fed a nullable column | A non-nullable parameter that receives `None` **skips the call**: the cell is `None` and `errormsg` is empty. Annotate `x: str \| None` and handle `None` in the body |
-| `whisper.load_model(...)` inside a UDF body | Weights reload on every row. Use the shipped wrapper (`pxtf.whisper.transcribe`, `clip.using(...)`), or a module-scope cached loader |
-| `recompute_columns(columns=['summary'])` | `t.recompute_columns('summary', errors_only=True)` |
-| TOML routes or a retired serve CLI | `FastAPIRouter` + `pxt schema update` + `pxt service update` |
-| `add_embedding_index()` in `app.py` | `__indexes__` on the TableModel. Note the DSL names an index `name=`, the SDK `idx_name=` |
-| `make_video(order_by=...)` / `stitch_tiles(order_by=...)` | Both are `requires_order_by` UDAs: the ordering expression is the **first positional** argument -- `make_video(t.pos, t.frame, fps=25)`. `order_by=` raises |
-| `pxt.create_table()` / `get_table()` at import in `app.py` | `TableModel` + `pxt schema update`. Import must not mutate the catalog |
-| `EmbeddingIndex(frame, image_embed=clip)` | `embedding=clip` (covers text and image). Or both `string_embed=` and `image_embed=`. `image_embed=` alone cannot answer `similarity(string=...)` |
-| `uuid.astype(pxt.String)` | `uuid.to_string()` (`from pixeltable.functions.uuid import to_string`). `astype` does not cast UUID to String |
-| `json_col.astype(pxt.String)` on a dict or list | Fails at insert: `Expected string, got dict`. Serialize with `pxtf.json.dumps(json_col)` |
-| A UDA that counts the rows matching a condition | `pxtf.sum((delay > 5.0).astype(pxt.Int))`: a Bool cast to Int is 0 or 1 |
-| A UDF that parses a date or a JSON string | `s.astype(pxt.Timestamp)` or `s.astype(pxt.Date)` for ISO 8601, `pxtf.timestamp.strptime(s, '%d/%m/%Y %H:%M')` or `pxtf.date.strptime(s, fmt)` for other formats, `pxtf.json.loads(s)` for JSON |
-| A UDF that returns the current time | `pxtf.timestamp.now()` or `pxtf.date.today()`; where to use them: [schema-design.md](references/schema-design.md) |
-| `batch_update(rows, if_not_exists='insert')` to load a file again | Recomputes the computed columns of every matched row, paid model calls included. `insert(rows, if_exists='ignore')` inserts the rows with new keys and leaves existing rows unchanged |
-| `add_query_route(..., one_row=True)` / `@pxt.query(return_scalar=...)` | Gone (0.7.22+). Shape follows the query: ungrouped aggregate or literal `limit(1)` is single-row (0 rows is a 404). A single unnamed expression returns values |
-
-Extract the field (`.text`, `.choices[0].message.content`). The replies of `openai.chat_completions`, `openai.responses` and `anthropic.messages` are typed, so the text is already a String: `.choices[0].message.content` for chat completions, `.output_text` for responses, and `reply.content.filter(lambda b: b.type == 'text')[0].text` for Anthropic (with thinking enabled, `content[0]` is the thinking block). For other providers the field is a string typed as Json: `.astype(pxt.String)` it before concatenating or embedding.
-
-## Notebook / REPL appendix
-
-```python
-import pixeltable as pxt
-
-pxt.create_dir('my_project', if_exists='ignore')
-t = pxt.create_table('my_project.documents', {
-    'title': pxt.String,
-    'content': pxt.String,
-    'image': pxt.Image,
-    'video': pxt.Video,
-    'audio': pxt.Audio,
-    'doc': pxt.Document,
-}, if_exists='ignore')
-```
-
-Types are non-nullable by default. Optional is `T | None`. Do not use `pxt.Required`.
-
-```python
-from pixeltable.functions.uuid import uuid7
-
-t = pxt.create_table('my_project.items', {
-    'content': pxt.String,
-    'uuid': uuid7(),
-}, primary_key=['uuid'], if_exists='ignore')
-```
-
-Insert: `t.insert([{...}])`. Computed column:
-
-```python
-from pixeltable.functions.openai import chat_completions
-
-t.add_computed_column(
-    summary=chat_completions(
-        messages=[{'role': 'user', 'content': t.content}],
-        model='gpt-4o-mini',
-    ).choices[0].message.content,
-    if_exists='ignore',
-)
-```
-
-Views: `document_splitter`, `frame_iterator` (from `pixeltable.functions.video`), `string_splitter`, `audio_splitter`. Notebook indexes: `t.add_embedding_index('content', embedding=embed_fn, if_exists='ignore')`.
-
-Query: `t.where(...).select(...).collect()`. Similarity: `t.content.similarity(string=query)`. In `@pxt.query`, alias as `score=sim`.
-
-UDFs are recorded as a module path relative to the project root (`app.excerpt`).
-
-Always `if_exists='ignore'` on notebook `create_*` / `add_*`. Failed cells: `t.recompute_columns('summary', errors_only=True)`, or `pxt recompute my_project/documents summary --errors-only -f`. `string_splitter` / `document_splitter(..., separators='sentence')` need spaCy. Embedding indexes need `.using(...)` to bind model arguments.
+The areas: tables, expressions, queries, views, indexes, udfs, json, providers, serving, cli, cloud.
+`pxt skills install` also copies the guides into `guides/` next to this file.
 
 ## Resources
 
 - [Quickstart](https://docs.pixeltable.com/overview/quick-start)
 - [CLI](https://docs.pixeltable.com/platform/cli)
 - [Developer MCP](https://github.com/pixeltable/mcp-server-pixeltable-developer)
-- [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) (optional; reads and operates Cloud, see [cli.md](references/cli.md))
+- [Cloud MCP](https://pixeltable.com/developers/mcp-cloud) (optional; reads and operates Cloud)
 - [Docs](https://docs.pixeltable.com/llms-full.txt)

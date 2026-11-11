@@ -24,10 +24,8 @@ class Chunks(
     ]
 ```
 
-Full pattern: [workflows.md](workflows.md). Linting a model file: `text` is an iterator output column, used
-without a definition. Put `# ruff: noqa: F821` at the top of the file, enable Pixeltable's mypy plugin
-(`plugins = pixeltable.mypy.mypy_plugin` in the mypy config), and put `# type: ignore[name-defined]` on the
-line that uses the iterator column; on any other line it has no effect.
+`text` is an output column of the iterator. The full pattern, and how to lint a model that uses such a
+column: `pxt guide views` and `pxt guide indexes`.
 
 Chunking is `document_splitter`. Search is `.similarity()`. Tools are `pxt.tools()` + `invoke_tools()`.
 
@@ -65,7 +63,7 @@ Chunking is `document_splitter`. Search is `.similarity()`. Tools are `pxt.tools
 transcript = pxtf.whisper.transcribe(audio, model='tiny.en').text
 ```
 
-Embeddings the same way: `clip.using(model_id=...)`, `sentence_transformer.using(model_id=...)`. [providers.md](providers.md) lists the wrappers.
+Embeddings the same way: `clip.using(model_id=...)`, `sentence_transformer.using(model_id=...)`. `pxt guide providers` lists the wrappers.
 
 If nothing ships for your model, load it once at module scope and cache the handle:
 

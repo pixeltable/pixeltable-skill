@@ -5,98 +5,31 @@ column, not a value, and each assignment builds an expression that Pixeltable ev
 row, now and on every future insert. Python code that runs on the spot sees the reference, not the
 data. Write derived values as expressions; a UDF is for one step that has no expression form.
 
-## Python that stores a constant
+## Python that does not work on a column
 
-These raise nothing and store the same value in every row. `pxt schema check` warns about a computed
-column that references no column:
+Python evaluates these on the reference, not on each row's value. Some raise; others store the same
+value in every row. `pxt schema check` reports a computed column that references no column.
 
-| Wrong | Stores | Correct |
-|-------|--------|---------|
-| `str(product)`, `'%s' % product` | the column's name | `pxtf.string.format('Describe {}', product)` or `'Describe ' + product` |
-| `note is None`, `note is not None` | `False`, `True` | `note == None`, `note != None` |
+| Wrong | Correct |
+|-------|---------|
+| An f-string, `str(product)`, `'%s' % product`, `str.format()` | `'Describe ' + product`, or `pxtf.string.format('Describe {}', product)` |
+| `note is None`, `note is not None` | `note == None`, `note != None` |
+| `and`, `or`, `not` | `&`, `\|`, `~` |
+| `if ... else`, a lookup in a dict | A UDF for that one step ([Conditionals](#conditionals)) |
+| `len()`, `min()`, `max()`, `for` over a column | The type's methods (`pxt functions --on <Type>`), or an iterator view for a loop |
 
-## Python that raises
+## Finding what ships
 
-`and`, `or`, `not`, `if ... else`, `min()`, `max()`, `len()` and `for` over a column raise. Use `&`,
-`|`, `~`, the functions below, and for a branch see [Conditionals](#conditionals). An f-string or
-`str.format()` on a column raises too: build the string with `'Describe ' + product` or
-`pxtf.string.format('Describe {}', product)`.
-
-## Operators
-
-- Arithmetic `+ - * / // %` on numbers, `+` on strings, comparisons, `&`, `|`, `~`.
-- `x == None`, `x != None`, `x.isin(['12', '33'])`, `round(x, 1)`, `x.astype(pxt.Float)`.
-- A Bool cast to Int is 0 or 1, so `pxtf.sum((delay > 5.0).astype(pxt.Int))` in a query counts the
-  matching rows.
-- Timestamps take no `+` or `-`. For a duration, subtract `ts.posix_timestamp()` values (seconds as
-  Float); on Dates, `d.add_days(n)`. The current time is `pxtf.timestamp.now()`, today's date
-  `pxtf.date.today()`; [schema-design.md](schema-design.md) says where they belong.
-
-## Json
-
-Type a Json column with a TypedDict and its paths return typed values:
-
-```python
-class Stop(TypedDict):
-    name: str
-    delay: float
-
-
-class Trips(TableModel, name='trips'):
-    trip_id = pxt.Column(type=pxt.String, primary_key=True)
-    stops: pxt.Json[list[Stop]]
-    tags: pxt.Json[list[str]]
-    first_stop = stops[0].name                              # String
-    last_delay = stops[-1].delay                            # Float
-    all_delays = stops['*'].delay                           # list of Float
-    late_stops = stops.filter(lambda s: s.delay > 5.0)      # list of Stop
-    n_late = stops.filter(lambda s: s.delay > 5.0).len()    # Int
-    worst_stop = stops.sort(lambda s: s.delay, asc=False)[0].name
-    max_delay = stops.map(lambda s: s.delay).max()
-    on_time = (stops[-1].delay >= -1.0) & (stops[-1].delay <= 5.0)
-    rush = tags.contains('rush')
-```
-
-- Paths: `.field`, `['key']`, `[0]`, `[-1]`, slices, `['*']` for every element.
-- `map`, `filter` and `sort` take a lambda over one element. Inside the lambda the same rules apply,
-  so combine conditions with `&` and `|`.
-- Methods: `len`, `get(key, default)`, `contains`, `keys`, `values`, `items`, `sum`, `min`, `max`,
-  `mean`, `count`, `flatten`, `concat`, `merge`, `is_empty`. `pxtf.json.dumps(x)` gives a String.
-- A Json field that contains a string becomes a String with `.astype(pxt.String)`, before string
-  functions or `+`.
-- An untyped `pxt.Json` column returns untyped Json from every path. The replies of
-  `openai.chat_completions`, `openai.responses` and `anthropic.messages` are typed, so their paths
-  return typed values; for other providers, extract the needed field once, then cast it.
-
-## Strings, times and media
-
-- Strings: `pxtf.string.format('{} @ {}', a, b)`, `a + ' / ' + b`, `pxtf.string.join(', ', items)`,
-  and methods such as `upper`, `lower`, `strip`, `replace`, `split`, `contains`, `startswith`, `len`,
-  `wrap`. `note.split().len()` counts words.
-- Parsing: `received.astype(pxt.Timestamp)` and `astype(pxt.Date)` parse ISO 8601 strings;
-  `pxtf.timestamp.strptime(received, '%d/%m/%Y %H:%M')` and `pxtf.date.strptime()` take a format;
-  `pxtf.json.loads(payload)` parses a JSON string. A timestamp without a time zone is in the default
-  time zone.
-- Timestamps: `.year`, `.month`, `.day`, `.hour`, `.minute`, `.second` are properties, written without
-  parentheses. Methods include `astimezone('America/Los_Angeles')`, `strftime(fmt)`, `isoformat()`,
-  `weekday()` and `posix_timestamp()`. Local hour: `departs_at.astimezone(tz).hour`.
-- Images: `.width`, `.height`, `.size`, `.mode` are properties. Methods include `resize((w, h))`,
-  `thumbnail((w, h))`, `rotate(deg)`, `convert('L')`, `crop(box)` and `get_metadata()`.
-- Video: `extract_frame(timestamp=...)`, `get_metadata()`, `get_duration()`, `clip`, `crop`,
-  `resize`, `extract_audio`, `with_audio`, `overlay_text`, `concat_videos` and more in
-  `pixeltable.functions.video`. Audio: `pixeltable.functions.audio`.
-- Before writing a UDF, list what ships. `pxt functions --search crop` searches names and docstrings,
-  `pxt functions --on Video` lists the methods and properties of a Video column, and
-  `pxt functions video` lists a module, with the output columns of its iterators. Each line shows the
-  call with its defaults; `--json` gives the full docstrings. In Python: `pxt.list_functions(on=pxt.Video)`.
+Before writing a UDF, list what ships: `pxt functions --search crop` searches names and docstrings,
+`pxt functions --on Video` lists the methods and properties of a Video column, and `pxt functions video`
+lists a module. `pxt guide expressions` covers operators, casts, nulls and time, and `pxt guide json` covers Json
+paths and lambdas over Json lists.
 
 ## Conditionals
 
-`pxtf.coalesce(a, b, ...)` returns its first argument that is not null, with the arguments' common
-type: `label = pxtf.coalesce(override, predicted, 'unknown')` is a String column.
-
-Pixeltable has no conditional or lookup expression. Write the smallest UDF that does that one step,
-with nullable parameters where the inputs can be null, and keep everything around it in expressions:
+Pixeltable has no conditional or lookup expression; `pxtf.coalesce()` picks the first of its arguments
+that is not null. For anything else, write the smallest UDF that does that one step, with nullable
+parameters where the inputs can be null, and keep everything around it in expressions:
 
 ```python
 @pxt.udf
@@ -108,7 +41,8 @@ def delay_band(delay: float | None) -> str:
 
 class Trips(TableModel, name='trips'):
     ...
-    band = delay_band(stops[-1].delay)      # not a UDF that also extracts the field
+    delay: pxt.Float | None
+    band = delay_band(delay)
 ```
 
 ## When a UDF is the right tool
@@ -120,13 +54,10 @@ class Trips(TableModel, name='trips'):
   - field extraction, arithmetic, formatting or list filtering;
   - a loop over frames, chunks or pages, which is an iterator view;
   - loading a model that has a shipped wrapper (`pxtf.huggingface`, `pxtf.whisper`, ...);
-  - reading another table: `pxt.get_table()` inside a UDF fails.
-- Put UDFs in a module file (`app.py` or `udfs.py`). Pixeltable refuses a UDF defined in the main
-  module of a script.
-- A UDF that returns a Video, Audio or Document returns a file path. Pixeltable copies a file in a
-  system temp directory (`tempfile.mkdtemp()`) into its media store, and records any other path
-  unchanged, so that file must stay in place. Prefer the shipped media functions, which manage their
-  output files.
+  - reading another table: nothing recomputes the column when that table changes. Join at query time.
+- Put UDFs in a module file (`app.py` or `udfs.py`), not in the script you run.
+- Prefer the shipped media functions to a UDF that writes media files: `pxt guide udfs` says what
+  Pixeltable does with a media file returned by a UDF.
 
 ## Trying an expression
 
@@ -134,15 +65,11 @@ Evaluate a candidate on existing rows before adding it as a column; nothing is s
 
 ```python
 t = pxt.get_table('my_app/trips')
-t.select(t.trip_id, band=delay_band(t.stops[-1].delay)).limit(5).collect()
+t.select(t.trip_id, band=delay_band(t.delay)).limit(5).collect()
 ```
 
 Or bind the models and use the class: `import app; app.TableModel.bind_all('my_app')`, then
 `app.Trips.select(...).collect()`. Limit the rows when the expression calls a paid model.
 
-Evaluate one UDF on Python values, with no table: `pxt.eval_udf(pxtf.image.resize, img, (64, 64))`, or
-`pxt.eval_udf(pxtf.openai.chat_completions, messages=[...], model='gpt-4o-mini')` to try a prompt.
-Use it instead of the provider's own SDK. A media argument can be a PIL image, a file path or a URL.
-
-Calling a `@pxt.query` function from Python returns an expression, not rows. In a script, run it with
-`pxt.eval_udf(app.late_trips, '12')` after `bind_all()`.
+`pxt.eval_udf()` calls one UDF on Python values, with no table. Try a prompt for a provider that way,
+not with the provider's own SDK.

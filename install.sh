@@ -8,7 +8,7 @@ set -euo pipefail
 #   Direct:       ./install.sh --help
 
 REPO_URL="https://raw.githubusercontent.com/pixeltable/pixeltable-skill/main"
-REF_FILES="core-api cli providers workflows anti-patterns"
+REF_FILES="anti-patterns conventional-design expressions safe-changes schema-design"
 
 TARGET_DIR=""
 PLATFORM=""

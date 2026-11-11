@@ -1,8 +1,7 @@
 # Designing the schema
 
-Settle these points before the first `pxt schema update`. Keys and types cannot change in place
-later, and a column can become nullable but not required. A wrong choice is fixed by migrating data,
-not by editing a line.
+Settle these points before the first `pxt schema update`. Keys, types and nullability are hard to
+change once a table has rows: a wrong choice is fixed by migrating data, not by editing a line.
 
 ## 1. One table per entity
 
@@ -20,16 +19,15 @@ not by editing a line.
 - Otherwise use a surrogate: `id = pxt.Column(value=pxtf.uuid.uuid7(), primary_key=True)`. The insert
   route's `outputs` (or `insert(..., return_rows=True)`) return the new id. Do not add a second
   "token" column to find the row again.
-- A primary key cannot be added to an existing table. Without one there are no update or delete
-  routes, no `batch_update`, and no `pxt get` or `pxt errors`.
+- A primary key cannot be added to an existing table, and updating or looking up a row by key needs
+  one.
 - Inserting a duplicate key raises.
 
 ## 3. Types
 
 - Every value used for filtering, grouping, sorting or joining is its own typed column, not a field
   inside Json.
-- Timestamps are `pxt.Timestamp`; ISO strings with an offset are accepted at insert. Store UTC and
-  convert when reading: `departs_at.astimezone(tz).hour`. Calendar dates are `pxt.Date`. Never store
+- Timestamps are `pxt.Timestamp`. Store UTC and convert when reading: `departs_at.astimezone(tz).hour`. Calendar dates are `pxt.Date`. Never store
   either as a String: strings sort and compare as text.
 - Lists are `pxt.Json[list[str]]`, parsed once at insert, not comma- or pipe-separated strings that
   every UDF splits again.
@@ -40,9 +38,9 @@ not by editing a line.
 
 - `T` means every row has a value, and an insert without one fails. `T | None` means the value can be
   missing: an optional cover image, a sample that has not arrived yet.
-- A column can become nullable later: `pxt schema update` turns `T` into `T | None` in place, unless a
-  non-nullable computed column depends on it. The reverse is UNSUPPORTED: a field that becomes
-  "required from now on" on a table with old rows is `T | None`, plus validation on new inserts.
+- Decide nullability before the table has rows; `pxt guide tables` says whether `pxt schema update`
+  can change a column's nullability in place. A field that becomes "required from now on" on a table with
+  old rows is `T | None`, plus validation on new inserts.
 - A non-nullable UDF parameter skips the call for a null argument, so a nullable column feeding it
   yields null without an error. Annotate the parameter `T | None` when the UDF should see the null.
 
@@ -117,17 +115,10 @@ Checking a key in another table needs a lookup, which a UDF cannot do: check it 
 
 ## 9. Loading data more than once
 
-The primary key makes a repeated load fail on the first duplicate. To load only the new rows, pass
-`if_exists='ignore'`: rows with a new key are inserted, and existing rows and their computed columns stay
-unchanged. The returned status counts the skipped rows in `row_count_stats.skipped_rows`; if a batch
-repeats a new key, the first row wins.
-
-```python
-trips.insert(rows, if_exists='ignore')
-```
-
-`batch_update(rows, if_not_exists='insert')` is an upsert, but it recomputes the dependent columns of every
-matched row, changed or not, so a column that calls a paid model runs again.
+The primary key makes a repeated load fail on the first duplicate. Load only the rows with new keys:
+`insert(rows, if_exists='ignore')` leaves existing rows and their computed columns alone. An
+upsert of rows that did not change can still recompute their computed columns, paid model calls
+included: `pxt guide tables` says what each write recomputes.
 
 ## 10. Creation time
 
@@ -149,8 +140,8 @@ The column has no inputs, so updates never recompute it. An explicit `pxt recomp
 
 ## 12. Claims and other races
 
-Writes to one table are serialized. An update whose `where` includes the expected state is a
-compare-and-set; its `num_rows` reports whether it won:
+An update whose `where` includes the expected state is a compare-and-set; its `num_rows` reports
+whether it won:
 
 ```python
 status = assignments.update(
@@ -161,5 +152,5 @@ if status.num_rows == 0:
     raise HTTPException(409, 'already claimed')
 ```
 
-`add_update_route` takes no such condition, so a claim needs a custom handler. Reading the row first
-and updating it afterwards is a race.
+Reading the row first and updating it afterwards is a race. If an update route cannot express the
+condition (`pxt guide serving`), write a custom handler.

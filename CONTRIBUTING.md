@@ -17,7 +17,7 @@ This repo is an agent **plugin**: one skill (the content core) wrapped with comm
 
 ```
 pixeltable-skill/
-├── skills/pixeltable-skill/   # THE skill; do not split
+├── skills/pixeltable-skill/   # THE skill (name: pixeltable); do not split
 │   ├── SKILL.md               # Core instructions (<500 lines)
 │   └── references/            # Detailed reference (loaded on demand)
 ├── commands/                  # Slash commands (Markdown): /pixeltable:scaffold, add-provider
@@ -26,6 +26,8 @@ pixeltable-skill/
 ├── scripts/validate_plugin.py # Manifest + frontmatter validator
 ├── install.sh                 # Standalone skill installer
 ├── plugin.json                # Portable Agent Plugins manifest
+├── gemini-extension.json      # Gemini CLI extension + gallery listing
+├── GEMINI.md                  # Gemini CLI context (points at skills/)
 ├── .plugin/ .cursor-plugin/   # Vendor-neutral + Cursor manifests (npx plugins)
 ├── .claude-plugin/            # Claude Code plugin + marketplace metadata
 ├── .codex-plugin/             # Codex compatibility manifest
@@ -36,7 +38,7 @@ pixeltable-skill/
 Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claude Code + Cursor) or `npx skills add pixeltable/pixeltable-skill` (skill only, 40+ agents). Keep both working.
 
 ### Conventions
-- Plugin identity is `pixeltable` (commands render as `/pixeltable:<name>`); keep root `plugin.json` and all compatibility manifest versions in sync.
+- Plugin identity is `pixeltable` (commands render as `/pixeltable:<name>`); keep root `plugin.json`, `gemini-extension.json`, and all compatibility manifest versions in sync.
 - Hooks are **pure Python** (`hooks/*.py`, 3.9+), no Node/Bun/TypeScript. The `hooks.json` command tries `python`, `python3`, then `py -3`, because a python.org install on Windows ships no `python3.exe`.
 - Run `python3 scripts/validate_plugin.py` before submitting structural changes.
 
@@ -46,7 +48,14 @@ Install paths: `npx plugins add pixeltable/pixeltable-skill` (full plugin, Claud
 - Add missing patterns for common use cases
 - Update provider examples for new Pixeltable releases
 - Keep `SKILL.md` concise: detailed content goes in `references/`
-- `SKILL.md` should stay under 500 lines
+- `skills/pixeltable-skill/SKILL.md` should stay under 500 lines
+- Do not add a second skill under `skills/`, including in a nested folder. `npx skills`
+  discovers every `SKILL.md` there and ships it as its own skill. Job names (video search,
+  agent memory, ...) belong in the SKILL.md `description` and the manifest keywords.
+- `description` in SKILL.md and `commands/*.md` is a **single-line quoted string**
+  (<= 1024 chars); SkillKit treats `description: >` as the literal `>`.
+- Do not rename `skills/pixeltable-skill` to match `name: pixeltable` without a coordinated
+  move of `pxt skills install`, the public skills index, and the docs/release stub.
 
 ## Guidelines
 

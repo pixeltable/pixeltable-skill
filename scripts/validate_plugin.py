@@ -2,15 +2,18 @@
 """Validate the Pixeltable plugin layout. Pure stdlib; no third-party deps.
 
 Checks:
-  1. All JSON manifests parse.
+  1. All JSON manifests parse (including gemini-extension.json).
   2. Portable and compatibility manifests agree and component pointers resolve.
-  3. Every skills/<name>/SKILL.md has `name` and `description` frontmatter.
-  4. Listed command/agent files in .claude-plugin/plugin.json exist.
+  3. The only skill is skills/pixeltable-skill/SKILL.md, with `name: pixeltable` and a
+     `description` (Agent Skills spec).
+  4. Listed command/agent files in .claude-plugin/plugin.json exist and cover commands/*.md.
+     Skill and command descriptions are single-line quoted strings.
   5-9. Versions agree, doc code blocks pass the hook's error checks, documented modules exist,
      SKILL.md stays under 500 lines, and shell blocks pass -f to `pxt service update`.
 
 Exit non-zero if any check fails. Intended for CI / pre-commit.
 """
+import ast
 import json
 import re
 import sys
@@ -19,6 +22,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 errors = []
 checks = 0
+
+
+def iter_agent_docs():
+    """Markdown agents copy from: skill, agents, commands, and Gemini context."""
+    for root_name in ("skills", "agents", "commands"):
+        yield from sorted((ROOT / root_name).rglob("*.md"))
+    gemini_md = ROOT / "GEMINI.md"
+    if gemini_md.is_file():
+        yield gemini_md
 
 
 def check(cond, msg):
@@ -40,12 +52,66 @@ def load_json(rel):
         return None
 
 
+CANONICAL_SKILL_DIR = "pixeltable-skill"
+CANONICAL_SKILL_NAME = "pixeltable"
+CANONICAL_SKILL_REL = f"{CANONICAL_SKILL_DIR}/SKILL.md"
+
+
+def skill_markdown_files(skills_dir: Path) -> list[Path]:
+    """Every SKILL.md under skills/, including a nested folder.
+
+    `npx skills` discovers these and ships each one as its own skill.
+    """
+    return sorted(p for p in skills_dir.rglob("SKILL.md") if p.is_file())
+
+
+MAX_DESCRIPTION_LENGTH = 1024
+MAX_SKILL_NAME_LENGTH = 64
+
+
 def frontmatter(md_path):
     text = md_path.read_text(encoding="utf-8", errors="ignore")
     if not text.startswith("---"):
         return ""
     end = text.find("\n---", 3)
     return text[3:end] if end != -1 else ""
+
+
+def folded_yaml_field(fm, key):
+    """Return a simple YAML scalar (plain, quoted, or `>` folded). Stdlib only."""
+    lines = fm.splitlines()
+    prefix = f"{key}:"
+    for i, line in enumerate(lines):
+        if not line.startswith(prefix):
+            continue
+        rest = line[len(prefix):].strip()
+        if rest in {">", ">-", "|", "|-"} or rest == "":
+            block = []
+            for cont in lines[i + 1:]:
+                if cont[:1] in {" ", "\t"}:
+                    block.append(cont.strip())
+                elif cont.strip() == "":
+                    block.append("")
+                else:
+                    break
+            while block and block[-1] == "":
+                block.pop()
+            if rest.startswith(">"):
+                return " ".join(part for part in block if part)
+            return "\n".join(block)
+        return rest.strip().strip("\"'")
+    return ""
+
+
+def check_single_line_description(fm, rel):
+    # SkillKit's parser treats `description: >` as the literal string ">".
+    desc_line = next((ln for ln in fm.splitlines() if ln.startswith("description:")), "")
+    desc_rest = desc_line.split(":", 1)[1].strip() if ":" in desc_line else ""
+    check(
+        desc_rest[:1] in {"'", '"'} and desc_rest[-1:] == desc_rest[:1] and "\n" not in desc_rest,
+        f"{rel}: description must be a single-line quoted string "
+        f"(SkillKit reads folded `>` as the literal '>'): {desc_line[:80]!r}",
+    )
 
 
 def main():
@@ -59,6 +125,7 @@ def main():
         ".codex-plugin/plugin.json",
         ".agents/plugins/marketplace.json",
         "package.json",
+        "gemini-extension.json",
     ]
     parsed = {m: load_json(m) for m in manifests}
 
@@ -75,6 +142,39 @@ def main():
         "plugin.json OpenAI interface must match .codex-plugin compatibility metadata",
     )
     check(codex.get("skills") == "./skills/", ".codex-plugin/plugin.json: skills must point to ./skills/")
+
+    gemini = parsed.get("gemini-extension.json") or {}
+    check(gemini.get("name") == "pixeltable", "gemini-extension.json: name must be 'pixeltable'")
+    check(
+        gemini.get("contextFileName") == "GEMINI.md",
+        "gemini-extension.json: contextFileName must be GEMINI.md",
+    )
+    check((ROOT / "GEMINI.md").is_file(), "missing GEMINI.md (Gemini CLI context file)")
+    mcp = gemini.get("mcpServers") or {}
+    cloud = mcp.get("pixeltable-cloud") or {}
+    local = mcp.get("pixeltable") or {}
+    check(
+        cloud.get("httpUrl") == "https://www.pixeltable.com/mcp/cloud",
+        "gemini-extension.json: pixeltable-cloud must use the hosted Cloud MCP httpUrl",
+    )
+    check(
+        "Authorization" not in (cloud.get("headers") or {}),
+        "gemini-extension.json: Cloud MCP OAuth is handled by Gemini CLI; no auth header",
+    )
+    check(local.get("command") == "uvx", "gemini-extension.json: pixeltable MCP must run via uvx")
+    check(
+        "mcp-server-pixeltable-developer" in (local.get("args") or []),
+        "gemini-extension.json: pixeltable MCP must invoke mcp-server-pixeltable-developer",
+    )
+    setting_vars = [s.get("envVar") for s in (gemini.get("settings") or []) if isinstance(s, dict)]
+    check(
+        "PIXELTABLE_HOME" in setting_vars,
+        "gemini-extension.json: settings must declare PIXELTABLE_HOME for the local MCP",
+    )
+    check(
+        not any(isinstance(v, str) and "API_KEY" in v for v in setting_vars),
+        "gemini-extension.json: do not declare an API key (Cloud OAuth is handled by Gemini CLI)",
+    )
 
     marketplace = parsed.get(".agents/plugins/marketplace.json") or {}
     entries = marketplace.get("plugins") or []
@@ -98,24 +198,53 @@ def main():
             if key in data:
                 check((ROOT / data[key]).is_dir(), f"{m}: '{key}' dir not found: {data[key]}")
 
-    # 3. SKILL.md frontmatter
-    skill_files = list((ROOT / "skills").glob("*/SKILL.md"))
-    check(len(skill_files) >= 1, "no skills/*/SKILL.md found")
+    # 3. SKILL.md frontmatter (Agent Skills spec: name, description <= 1024).
+    #    One skill: npx skills discovers every SKILL.md under skills/, including a nested folder.
+    skill_files = skill_markdown_files(ROOT / "skills")
+    found = [sf.relative_to(ROOT / "skills").as_posix() for sf in skill_files]
+    check(
+        found == [CANONICAL_SKILL_REL],
+        f"skills/ must hold only {CANONICAL_SKILL_REL}, found: " + ", ".join(found),
+    )
     for sf in skill_files:
         fm = frontmatter(sf)
         rel = sf.relative_to(ROOT)
-        check("name:" in fm, f"{rel}: missing 'name' in frontmatter")
-        check("description:" in fm, f"{rel}: missing 'description' in frontmatter")
+        name = folded_yaml_field(fm, "name")
+        desc = folded_yaml_field(fm, "description")
+        check(bool(name), f"{rel}: missing 'name' in frontmatter")
+        check(bool(desc), f"{rel}: missing 'description' in frontmatter")
+        check_single_line_description(fm, rel)
+        if name:
+            check(len(name) <= MAX_SKILL_NAME_LENGTH, f"{rel}: name exceeds {MAX_SKILL_NAME_LENGTH} chars")
+            check(name == name.lower(), f"{rel}: name must be lowercase")
+            check(not name.startswith("-") and not name.endswith("-"), f"{rel}: name cannot start or end with a hyphen")
+            check("--" not in name, f"{rel}: name cannot contain consecutive hyphens")
+            check(all(c.isalnum() or c == "-" for c in name), f"{rel}: name may only contain a-z, 0-9, hyphen")
+            check(name == CANONICAL_SKILL_NAME, f"{rel}: name {name!r} must be {CANONICAL_SKILL_NAME!r}")
+        if desc:
+            check(
+                len(desc) <= MAX_DESCRIPTION_LENGTH,
+                f"{rel}: description is {len(desc)} chars, max {MAX_DESCRIPTION_LENGTH}",
+            )
 
-    # 4a. Any command/agent files listed in .claude-plugin/plugin.json must exist
+    # 4a. Command/agent files listed in .claude-plugin/plugin.json must exist,
+    #     and every commands/*.md must be listed so every command installs.
     claude = parsed.get(".claude-plugin/plugin.json") or {}
     for key in ("commands", "agents"):
         for rel in claude.get(key, []):
             check((ROOT / rel).is_file(), f".claude-plugin/plugin.json: {key} file not found: {rel}")
+    listed_cmds = set(claude.get("commands") or [])
+    disk_cmds = {f"./commands/{p.name}" for p in (ROOT / "commands").glob("*.md")}
+    check(
+        listed_cmds == disk_cmds,
+        ".claude-plugin/plugin.json commands must match commands/*.md: "
+        + f"missing={sorted(disk_cmds - listed_cmds)} extra={sorted(listed_cmds - disk_cmds)}",
+    )
 
     # 4b. Auto-discovered commands have a `description`; agents have `name` + `description`
     for cmd in (ROOT / "commands").glob("*.md"):
         check("description:" in frontmatter(cmd), f"commands/{cmd.name}: missing 'description'")
+        check_single_line_description(frontmatter(cmd), f"commands/{cmd.name}")
     agent_files = list((ROOT / "agents").glob("*.md"))
     for ag in agent_files:
         fm = frontmatter(ag)
@@ -137,6 +266,7 @@ def main():
         ".claude-plugin/marketplace.json": lambda d: (d.get("metadata") or {}).get("version"),
         ".codex-plugin/plugin.json": lambda d: d.get("version"),
         "package.json": lambda d: d.get("version"),
+        "gemini-extension.json": lambda d: d.get("version"),
     }
     for rel, getter in version_getters.items():
         data = parsed.get(rel)
@@ -171,26 +301,28 @@ def main():
     except ImportError as e:  # pragma: no cover - the hook is part of the repo
         errors.append(f"cannot import hook checks: {e}")
         CHECKS = []
-    doc_roots = ["skills", "agents", "commands"]
     fence = re.compile(r"^```(?:python|py)\n(.*?)^```", re.DOTALL | re.MULTILINE)
-    for root_name in doc_roots:
-        for md in sorted((ROOT / root_name).rglob("*.md")):
-            body = md.read_text(encoding="utf-8", errors="ignore")
-            for block in fence.findall(body):
-                for entry in CHECKS:
-                    pattern, severity, message, gate = entry
-                    if severity != "error":
-                        continue
-                    if gate is not None and not gate.search(block):
-                        continue
-                    hit = pattern.search(block)
-                    check(
-                        hit is None,
-                        f"{md.relative_to(ROOT)}: a python block matches a hook 'error' check "
-                        f"({hit.group(0).strip()!r} -- {message.split('.')[0]})"
-                        if hit
-                        else "",
-                    )
+    for md in iter_agent_docs():
+        body = md.read_text(encoding="utf-8", errors="ignore")
+        for block in fence.findall(body):
+            try:
+                ast.parse(block)
+            except SyntaxError as e:
+                errors.append(f"{md.relative_to(ROOT)}: python block syntax error: {e}")
+            for entry in CHECKS:
+                pattern, severity, message, gate = entry
+                if severity != "error":
+                    continue
+                if gate is not None and not gate.search(block):
+                    continue
+                hit = pattern.search(block)
+                check(
+                    hit is None,
+                    f"{md.relative_to(ROOT)}: a python block matches a hook 'error' check "
+                    f"({hit.group(0).strip()!r} -- {message.split('.')[0]})"
+                    if hit
+                    else "",
+                )
 
     # 7. Documented pixeltable modules must be real, and not the deprecated shim.
     KNOWN_MODULES = {
@@ -202,14 +334,13 @@ def main():
         "whisperx", "yolox",
     }
     mod_ref = re.compile(r"pixeltable\.functions\.(\w+)")
-    for root_name in doc_roots:
-        for md in sorted((ROOT / root_name).rglob("*.md")):
-            body = md.read_text(encoding="utf-8", errors="ignore")
-            for mod in sorted(set(mod_ref.findall(body))):
-                check(
-                    mod in KNOWN_MODULES,
-                    f"{md.relative_to(ROOT)}: unknown module pixeltable.functions.{mod}",
-                )
+    for md in iter_agent_docs():
+        body = md.read_text(encoding="utf-8", errors="ignore")
+        for mod in sorted(set(mod_ref.findall(body))):
+            check(
+                mod in KNOWN_MODULES,
+                f"{md.relative_to(ROOT)}: unknown module pixeltable.functions.{mod}",
+            )
 
     # 8. AGENTS.md caps SKILL.md length; nothing enforced it until now.
     for sf in skill_files:
@@ -218,16 +349,15 @@ def main():
 
     # 9. An agent has no TTY, and a pending `pxt service update` without -f exits 3 there.
     shell_fence = re.compile(r"^```(?:bash|sh|shell)\n(.*?)^```", re.DOTALL | re.MULTILINE)
-    for root_name in doc_roots:
-        for md in sorted((ROOT / root_name).rglob("*.md")):
-            for block in shell_fence.findall(md.read_text(encoding="utf-8", errors="ignore")):
-                for line in block.splitlines():
-                    command = line.split("#", 1)[0]
-                    if re.search(r"\bpxt service update\b", command):
-                        check(
-                            re.search(r"\s-(?:f|n)\b|--force\b|--dry-run\b", command) is not None,
-                            f"{md.relative_to(ROOT)}: `pxt service update` without -f: {command.strip()!r}",
-                        )
+    for md in iter_agent_docs():
+        for block in shell_fence.findall(md.read_text(encoding="utf-8", errors="ignore")):
+            for line in block.splitlines():
+                command = line.split("#", 1)[0]
+                if re.search(r"\bpxt service update\b", command):
+                    check(
+                        re.search(r"\s-(?:f|n)\b|--force\b|--dry-run\b", command) is not None,
+                        f"{md.relative_to(ROOT)}: `pxt service update` without -f: {command.strip()!r}",
+                    )
 
     if errors:
         print(f"FAIL ({len(errors)} of {checks} checks):", file=sys.stderr)

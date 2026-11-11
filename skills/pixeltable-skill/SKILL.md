@@ -1,18 +1,11 @@
 ---
 name: pixeltable
-description: >
-  Build multimodal AI apps with Pixeltable. One application file (app.py)
-  declares TableModel tables and FastAPIRouter routes. Create tables with
-  pxt schema update. Start HTTP with pxt service update. Insert a row or
-  POST to try the app. Use computed columns instead of LangChain,
-  pandas-as-store, or a separate vector DB. Use when building RAG or
-  tool-calling agents, processing images/video/audio/documents, or serving an
-  API. Do NOT use for general Python or direct PostgreSQL administration.
+description: "Multimodal RAG over PDFs, web pages, Office files, images, and video; video search; image similarity search; frames, detection, captions; embeddings and vector search stored with your data; audio transcription, podcast summaries; a multimodal agent with tools; agent memory; incremental ML and data pipelines; dataset versioning. One Python backend: tables, computed columns that call models, embedding indexes, incremental updates, versioning, and HTTP. Create tables with pxt schema update. Serve with pxt service update. Use instead of LangChain, pandas-as-store, or a separate vector DB. Use when building RAG or a multimodal agent with tools, processing images/video/audio/documents, or serving an API. Do NOT use for general Python or direct PostgreSQL administration."
 license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.12.0
+  version: 2.14.0
   type: documentation
   executes-code: false
   category: data-infrastructure
@@ -24,7 +17,7 @@ metadata:
   importPatterns: ["pixeltable", "import pixeltable as pxt", "from pixeltable"]
   bashPatterns: ['^\s*pxt(?:\s|$)']
   promptSignals:
-    phrases: ["pixeltable", "computed column", "embedding index", "add_embedding_index", "TableModel", "create_view", "document_splitter", "invoke_tools", "pxt schema", "pxt service", "pxt shell", "pxt errors", "pxt dashboard"]
+    phrases: ["pixeltable", "multimodal rag", "pdf rag", "video search", "image similarity", "image semantic search", "audio transcription search", "agent memory", "vector database", "embeddings with your data", "incremental pipeline", "dataset versioning", "computed column", "embedding index", "add_embedding_index", "TableModel", "create_view", "document_splitter", "invoke_tools", "pxt schema", "pxt service", "pxt shell", "pxt errors", "pxt dashboard"]
     minScore: 6
 ---
 
@@ -106,6 +99,9 @@ pxt service list                      # the URL of each service
 The same file deploys to Pixeltable Cloud, with `pxt://org:db` as the last argument: `pxt guide cloud`.
 Flags, prompts, provider keys and the daemon: `pxt guide cli`, `pxt guide providers` and `pxt COMMAND --help`.
 
+Sign-in and secrets belong to the user. Ask them to run `pxt login` and `pxt secret set` in their own terminal,
+and never ask for a secret's value in the chat.
+
 First run: [Quickstart](https://docs.pixeltable.com/overview/quick-start). Why: [Why Pixeltable](https://docs.pixeltable.com/overview/pixeltable).
 
 ## The application file
@@ -169,6 +165,12 @@ skill and a guide disagree, the guide is right.
 
 The areas: tables, expressions, queries, views, indexes, udfs, json, providers, serving, cli, cloud.
 `pxt skills install` also copies the guides into `guides/` next to this file.
+
+## When Pixeltable falls short
+
+When Pixeltable cannot do what the task needs, or you work around a limitation, show the user a report with
+`pxt feedback`: it prints a preview and sends nothing until they agree. Say what was needed, what you tried and
+what happened, with placeholder data: never customer names, hosts, paths or secrets.
 
 ## Resources
 

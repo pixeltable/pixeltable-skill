@@ -17,6 +17,11 @@ Show the user what will happen and get a yes before any of these:
   cascades unless given `--no-cascade`);
 - resolving an UNSUPPORTED change by renaming or dropping a column that has data.
 
+A command that `pxt` refuses prints a `next:` line with the command that finishes the job. Run it when it does what
+the user asked; ask first when it drops data, stops or restarts what others use, or recomputes rows the user did not
+mention. A refusal that only the user can lift, such as a plan limit, a payment or a full store, goes to the user:
+do not retry it.
+
 Get the plan without applying it: `pxt schema diff app.py TARGET` (or `pxt schema update ... -n`),
 `pxt recompute ... -n`. `-f` skips the prompt for a plan with the user's approval, or for an additive
 change. It is not a default to add to every command, and it does not belong in a README's

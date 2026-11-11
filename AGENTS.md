@@ -5,7 +5,7 @@ This repo is the Pixeltable Agent Plugin: one skill plus agents, slash commands,
 ## Structure
 
 ```
-skills/pixeltable-skill/
+skills/pixeltable-skill/  # The skill (name: pixeltable)
 ├── SKILL.md
 └── references/
     ├── anti-patterns.md
@@ -18,9 +18,11 @@ commands/                 # /pixeltable:scaffold, add-provider
 agents/                   # pipeline-architect, debugger
 hooks/
 scripts/validate_plugin.py
+gemini-extension.json     # Gemini CLI extension + gallery listing
+GEMINI.md                 # Gemini CLI context; points at skills/, does not copy them
 ```
 
-Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), and `package.json`. Keep name `pixeltable` and versions in sync (`2.12.0`).
+Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), `package.json`, and `gemini-extension.json`. Keep plugin name `pixeltable` and versions in sync (`2.14.0`).
 
 ## Architecture: judgment here, release behavior in core
 
@@ -51,16 +53,19 @@ pixeltable repository, instead of accepting it here.
 
 ## Rules
 
-- Single skill. Do not split it.
+- Single skill. Do not split it, and do not add a task-named skill under `skills/`, including in a nested folder: `npx skills` discovers every `SKILL.md` there, so each one ships as its own skill. Put job names in the `description` and manifest keywords instead. `validate_plugin.py` enforces this.
+- The folder `skills/pixeltable-skill` does not match `name: pixeltable` (Agent Skills spec). Do not rename it until `pxt skills install`, the pixeltable.com skills index, and the docs/release stub can move together.
+- `description` in SKILL.md and `commands/*.md` is a single-line quoted string. SkillKit's parser reads folded YAML (`description: >`) as the literal string `>`.
 - Hooks are pure Python. No Node/Bun/TypeScript. `hooks.json` finds the interpreter itself (`python`, then `python3`, then `py -3`): a python.org install on Windows has no `python3.exe` (#23).
 - SKILL.md teaches the application file. The notebook form is in `pxt guide tables`.
 - Start from `pxt init` then `pxt service example --out app.py` (or `pxt schema example --brief`). Then `pxt schema update app.py my_app`. No template zoo. No starter kit.
 - `if_exists='ignore'` on notebook `create_*` / `add_*`.
 - No LangChain, pandas-as-store, or standalone vector DB patterns.
 - Keep SKILL.md under 500 lines (enforced by `validate_plugin.py`).
-- Fenced ```python blocks in `skills/`, `agents/` and `commands/` must pass the hook's own `error` checks -- the validator imports `CHECKS` and runs them. Quote a wrong form in prose or a traps table, never in a code block.
+- Fenced ```python blocks in `skills/`, `agents/`, `commands/`, and `GEMINI.md` must pass the hook's own `error` checks -- the validator imports `CHECKS` and runs them. Quote a wrong form in prose or a traps table, never in a code block.
+- `GEMINI.md` is Gemini CLI session context. Point it at `skills/pixeltable-skill/`; do not duplicate `SKILL.md`. Gemini loads `skills/*/SKILL.md` on its own.
 - Agent-facing `pxt service update` examples carry `-f`: an agent has no TTY, and without the flag a pending update exits 3.
-- Run `python3 scripts/validate_plugin.py`, `python3 tests/test_hooks.py` and `python3 tests/test_integrations.py` after any change.
+- Run `python3 scripts/validate_plugin.py` and `python3 tests/test_hooks.py` after any change.
 - Re-verify against the current Pixeltable release before a version bump: the record of the last pass is `docs/review-<skill version>.md`.
 
 ## Do not

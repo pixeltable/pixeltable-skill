@@ -90,6 +90,7 @@ def score(text: str) -> float:
 | `python app.py` for models + router | `pxt schema update` then `pxt service update` |
 | Drop + recreate tables as "init" | Edit `app.py`, then `pxt schema update` |
 | Hard-coded `api_key=` | Env or config.toml |
+| A retry loop, `tenacity` or a second client around a model call | Provider calls retry on their own (`pxt guide providers`); rerun failed cells with `pxt recompute ... --errors-only` |
 | `psycopg2` against `~/.pixeltable/pgdata` | SDK / CLI only |
 | Chat history in Redis | A table |
 | `def f(x: str)` to "handle" a nullable column | A non-nullable parameter that receives `None` skips the call and leaves the cell `None`. Annotate `x: str \| None` |

@@ -88,6 +88,18 @@ install_skill() {
   fi
 
   echo "  Installed: $skill_dest/SKILL.md + references/ (5 files) + agents/openai.yaml"
+  local catalog_parent skill_name leftover
+  catalog_parent="$(dirname "$skill_dest")"
+  leftover=""
+  for skill_name in agent-memory audio-transcription-search dataset-versioning image-similarity-search incremental-ml-pipeline multimodal-rag vector-database-alternative video-search; do
+    if [[ -f "$catalog_parent/$skill_name/SKILL.md" ]] && grep -q 'thin catalog skill' "$catalog_parent/$skill_name/SKILL.md"; then
+      leftover="${leftover} ${skill_name}"
+    fi
+  done
+  if [[ -n "${leftover}" ]]; then
+    echo "  Catalog folders still installed from 2.13.0:${leftover}"
+    echo "  Remove those directories. This installer does not delete them."
+  fi
 }
 
 # Direct mode

@@ -52,9 +52,8 @@ change once a table has rows: a wrong choice is fixed by migrating data, not by 
 | What you derive from the row's own values | computed (an assignment) |
 | What depends on the current time, on other rows or on another table | queried (`@pxt.query`) |
 
-Overdue, age, "in the last 2 days", counts, rates, rankings and per-parent totals are queries. A
-stored copy goes stale the moment the clock or the other rows move. `pxtf.timestamp.now()` is
-evaluated when the query runs:
+Overdue, age and "in the last 2 days" are queries too: a stored copy goes stale the moment the clock
+moves. `pxtf.timestamp.now()` is evaluated when the query runs:
 
 ```python
 @pxt.query
@@ -73,8 +72,10 @@ name or capacity, which would go stale on the assignment when the station change
 attributes at query time:
 
 ```python
-Assignments.join(Stations, on=Assignments.station_code == Stations.code).select(
-    Assignments.id, Stations.name, Stations.capacity
+assignments = pxt.get_table('my_app/assignments')
+stations = pxt.get_table('my_app/stations')
+assignments.join(stations, on=assignments.station_code == stations.code).select(
+    assignments.id, stations.name, stations.capacity
 )
 ```
 

@@ -93,4 +93,5 @@ def score(text: str) -> float:
 | A retry loop, `tenacity` or a second client around a model call | Provider calls retry on their own (`pxt guide providers`); rerun failed cells with `pxt recompute ... --errors-only` |
 | `psycopg2` against `~/.pixeltable/pgdata` | SDK / CLI only |
 | Chat history in Redis | A table |
+| Data the app reads back between runs kept in JSON, pickle or NumPy files (embeddings, caches, progress markers) | A table, an embedding index, or a stored computed column. Files are for exports. |
 | `def f(x: str)` to "handle" a nullable column | A non-nullable parameter that receives `None` skips the call and leaves the cell `None`. Annotate `x: str \| None` |

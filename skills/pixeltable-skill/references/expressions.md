@@ -22,8 +22,7 @@ value in every row. `pxt schema check` reports a computed column that references
 
 Before writing a UDF, list what ships: `pxt functions --search crop` searches names and docstrings,
 `pxt functions --on Video` lists the methods and properties of a Video column, and `pxt functions video`
-lists a module. `pxt guide expressions` covers operators, casts, nulls and time, and `pxt guide json` covers Json
-paths and lambdas over Json lists.
+lists a module. `pxt guide expressions` covers operators, casts, nulls and time.
 
 ## Conditionals
 
@@ -51,7 +50,7 @@ class Trips(TableModel, name='trips'):
 - One step: one row's values in, one value out. Five derived values are five columns, not one UDF that
   returns a dict.
 - Never write a UDF for these:
-  - field extraction, arithmetic, formatting or list filtering;
+  - arithmetic or formatting;
   - a loop over frames, chunks or pages, which is an iterator view;
   - loading a model that has a shipped wrapper (`pxtf.huggingface`, `pxtf.whisper`, ...);
   - reading another table: nothing recomputes the column when that table changes. Join at query time.
@@ -70,6 +69,3 @@ t.select(t.trip_id, band=delay_band(t.delay)).limit(5).collect()
 
 Or bind the models and use the class: `import app; app.TableModel.bind_all('my_app')`, then
 `app.Trips.select(...).collect()`. Limit the rows when the expression calls a paid model.
-
-`pxt.eval_udf()` calls one UDF on Python values, with no table. Try a prompt for a provider that way,
-not with the provider's own SDK.

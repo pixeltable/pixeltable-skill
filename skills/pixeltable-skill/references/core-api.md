@@ -151,6 +151,8 @@ Notebook: `pxt.create_view('dir.titled', t.where(t.title != ''), if_exists='igno
 
 Iterator output columns are reserved. Do not redeclare them. `string_splitter` / `document_splitter(..., separators='sentence')` need spaCy. `token_limit` needs `tiktoken`.
 
+`document_splitter` separators depend on the document format. `page` splits only PDFs; `heading` and `paragraph` split only HTML, Markdown and Office files. For PDF text use `page`, `sentence`, `token_limit` or `char_limit`: `paragraph` on a PDF fails the whole insert, and `heading` does nothing. `elements=['image']` needs PDFs and `separators='page'` with no other separator.
+
 ```python
 from pixeltable.functions.document import document_splitter
 from pixeltable.functions.video import frame_iterator
@@ -163,7 +165,7 @@ chunks = pxt.create_view(
     iterator=document_splitter(t.doc, separators='token_limit', limit=300),
     if_exists='ignore',
 )
-# Image elements only with separators='page' on PDFs
+# Image elements: PDFs only, with separators='page' alone
 pages = pxt.create_view(
     'dir.pages', t,
     iterator=document_splitter(t.doc, separators='page', elements=['text', 'image']),
@@ -198,7 +200,7 @@ Every iterator view also gets `pos`. The nine that ship:
 
 | Iterator | Module | Output columns |
 |----------|--------|----------------|
-| `document_splitter` | `functions.document` | subset of `text, image, title, heading, sourceline, page, bounding_box` per `elements=` / `metadata=` |
+| `document_splitter` | `functions.document` | subset of `text, image, title, heading, page` per `elements=` / `metadata=` |
 | `frame_iterator` | `functions.video` | `frame` (unstored), `frame_attrs` (`.time`, `.index`, `.key_frame`, ...) |
 | `video_splitter` | `functions.video` | `segment_start`, `segment_start_pts`, `segment_end`, `segment_end_pts`, `video_segment` |
 | `audio_splitter` | `functions.audio` | `segment_start`, `segment_end`, `audio_segment` |

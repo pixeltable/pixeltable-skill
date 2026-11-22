@@ -5,7 +5,7 @@ license: Apache-2.0
 allowed-tools: []
 metadata:
   author: Pixeltable
-  version: 2.14.1
+  version: 2.14.2
   type: documentation
   executes-code: false
   category: data-infrastructure

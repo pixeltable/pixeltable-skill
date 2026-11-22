@@ -107,7 +107,9 @@ class ValidateAntiPatterns(unittest.TestCase):
         )))
 
     def test_flags_pxt_required(self):
-        self.assertIn("Required", context(self.write("x: pxt.Required[pxt.String]\n")))
+        out = context(self.write("x: pxt.Required[pxt.String]\n"))
+        self.assertIn("Required", out)
+        self.assertIn("0.7.25", out)
 
     def test_flags_add_query_route_one_row(self):
         self.assertIn("one_row", context(self.write(
@@ -128,9 +130,17 @@ class ValidateAntiPatterns(unittest.TestCase):
             "ingest.add_query_route(path='/x', query=q)\n"
         ))
 
-    def test_flags_any_deprecated_iterators_import(self):
-        self.assertIn("deprecated shim", context(self.write(
-            "from pixeltable.iterators import DocumentSplitter\n")))
+    def test_flags_removed_iterators_import(self):
+        out = context(self.write("from pixeltable.iterators import DocumentSplitter\n"))
+        self.assertIn("0.7.25", out)
+        self.assertIn("frame_iterator", out)
+
+    def test_flags_old_row_count_fields(self):
+        out = context(self.write(
+            "import pixeltable as pxt\nn = status.row_count_stats.ins_rows\n"
+        ))
+        self.assertIn("inserted_rows", out)
+        self.assertIn("0.7.25", out)
 
     def test_app_file_checks_are_gated_off_in_notebook_style_code(self):
         """No TableModel in the payload: create_table and add_embedding_index are correct."""

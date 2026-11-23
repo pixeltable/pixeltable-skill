@@ -79,14 +79,14 @@ Work through these phases in order. Each phase ends with a check; start the next
    [expressions.md](references/expressions.md). Before writing one, run `pxt functions --search <task>` and
    `pxt functions --on <Type>`. Python's own operations do not work on a column: no f-strings, `str()`,
    `is None`, `and`, `or` or `not`.
-5. **Get the design clean before any table exists.** Run `pxt schema check app.py`, then `pxt lint` on `app.py`
-   and your scripts (`pxt lint app.py load.py`). A separate model reviews them against the rules that
-   `pxt guide review` prints; keep it on. Fix each finding and run `pxt lint` again, until it reports none or
-   the fix of each remaining finding does not work in this release (say what you tried). A finding stands even
-   when the spec describes the flagged design: step 1 says why. Until this step passes, nothing goes into the
-   project's catalog directory: try a model call with `pxt.eval_udf()`, and try tables in a scratch directory
-   (`pxt schema update app.py my_app_dev`) that you drop afterwards. Insert only a few rows there, never the full
-   data: every inserted row runs the paid model columns again.
+5. **Get the design clean before any table exists.** Run `pxt schema check app.py`, then `pxt lint` on `app.py` and
+   your scripts (`pxt lint app.py load.py`). A separate model reviews them against the rules that `pxt guide review`
+   prints; keep it on. A review takes several minutes: run `pxt lint` with a command timeout of 10 minutes. Fix each
+   finding and run `pxt lint` again, until it reports none or the fix of each remaining finding does not work in this
+   release (say what you tried). A finding stands even when the spec describes the flagged design: step 1 says why.
+   Until this step passes, nothing goes into the project's catalog directory: try a model call with `pxt.eval_udf()`,
+   and try tables in a scratch directory (`pxt schema update app.py my_app_dev`) that you drop afterwards. Insert
+   only a few rows there, never the full data: every inserted row runs the paid model columns again.
 6. **Create the tables and load a small sample.** Run `pxt schema update app.py my_app` and insert a few rows.
    Check `pxt errors`, and compare a few results with an independent calculation. Fix what is wrong now: once
    all the data is in, a change of key, type or nullability is a migration.
@@ -116,7 +116,7 @@ pip install 'pixeltable[serve]'   # Python 3.11+
 pxt init
 pxt service example --out app.py      # then write your design into it
 pxt schema check app.py
-pxt lint app.py                       # phase 5: repeat until it reports no findings
+pxt lint app.py                       # phase 5: allow 10 minutes; repeat until it reports no findings
 pxt schema update app.py my_app       # phase 6: the first table is created here
 pxt service update app.py my_app -f   # -f: an agent has no TTY to answer the prompt
 pxt service list                      # the URL of each service
@@ -236,7 +236,7 @@ skill and a guide disagree, the guide is right.
 | What a function or a command takes | `pxt functions --search <text>`, `pxt functions --on <Type>`, `pxt COMMAND --help` |
 
 The areas: tables, expressions, queries, views, indexes, udfs, json, providers, serving, cli, cloud.
-`pxt skills install` also copies the guides into `guides/` next to this file.
+`pxt guide --path` prints the directory of the guide files, to search them.
 
 ## When Pixeltable falls short
 

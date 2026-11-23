@@ -6,7 +6,7 @@ HTTP routes. Create tables with `pxt schema update`. Serve with `pxt service upd
 
 - Docs: https://docs.pixeltable.com (agent index: https://docs.pixeltable.com/llms.txt)
 - Repo: https://github.com/pixeltable/pixeltable
-- Install: `pip install 'pixeltable[serve]'` (Python 3.11+), import as `import pixeltable as pxt`
+- Install: `pip install 'pixeltable[serve]>=0.7.26'` (Python 3.11+), import as `import pixeltable as pxt`
 
 ## Skill (authoritative)
 

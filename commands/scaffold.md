@@ -13,7 +13,7 @@ Steps:
 
 ```bash
 mkdir myapp && cd myapp
-pip install 'pixeltable[serve]'
+pip install 'pixeltable[serve]>=0.7.26'
 pxt init
 pxt service example --out app.py
 ```

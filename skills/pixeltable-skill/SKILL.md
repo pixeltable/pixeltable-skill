@@ -112,7 +112,7 @@ The catalog contains the user's data. Show the plan and ask before you drop, rev
 One application file (`app.py`) is the backend. The commands follow the phases above:
 
 ```bash
-pip install 'pixeltable[serve]'   # Python 3.11+
+pip install 'pixeltable[serve]>=0.7.26'   # Python 3.11+
 pxt init
 pxt service example --out app.py      # then write your design into it
 pxt schema check app.py
@@ -237,6 +237,8 @@ skill and a guide disagree, the guide is right.
 
 The areas: tables, expressions, queries, views, indexes, udfs, json, providers, serving, cli, cloud.
 `pxt guide --path` prints the directory of the guide files, to search them.
+`pxt guide` and `pxt lint` need Pixeltable 0.7.26 or later; where `pxt guide` is not a command, upgrade:
+`pip install -U 'pixeltable[serve]>=0.7.26'`.
 
 ## When Pixeltable falls short
 

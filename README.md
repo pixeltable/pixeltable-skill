@@ -90,7 +90,8 @@ hooks/                          # Optional pure-Python hooks (Claude Code)
 ```
 
 The skill teaches judgment that holds across Pixeltable releases. How a release behaves is in the agent
-guides that ship with it: `pxt guide AREA` prints one, and `pxt skills install` copies them next to the skill.
+guides that ship with it: `pxt guide AREA` prints one, and `pxt guide --path` prints the directory of the guide
+files.
 
 Client manifests and marketplace metadata live alongside the shared skill so
 each supported installer can discover the format it understands. Gemini CLI

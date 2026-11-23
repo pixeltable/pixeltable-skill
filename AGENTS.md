@@ -22,7 +22,7 @@ gemini-extension.json     # Gemini CLI extension + gallery listing
 GEMINI.md                 # Gemini CLI context; points at skills/, does not copy them
 ```
 
-Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), `package.json`, and `gemini-extension.json`. Keep plugin name `pixeltable` and versions in sync (`2.14.0`).
+Manifests: root `plugin.json` (portable), `.plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/`, `.codex-plugin/` (compatibility), `package.json`, and `gemini-extension.json`. Keep plugin name `pixeltable` and versions in sync (`2.15.0`).
 
 ## Architecture: judgment here, release behavior in core
 
@@ -70,6 +70,6 @@ pixeltable repository, instead of accepting it here.
 
 ## Do not
 
-- Add deprecated APIs (anything under `pixeltable.iterators`, `openai.vision`, `pxt.Required`, positional `.similarity()`)
+- Add removed APIs (`pixeltable.iterators` and `pxt.Required`, gone in 0.7.25), deprecated `openai.vision`, or positional `.similarity()`
 - Point agents at `--template` names, `pixeltable-new`, the starter kit, or a second apply path
 - Let manifest versions drift

@@ -80,7 +80,7 @@ class ValidateAntiPatterns(unittest.TestCase):
 
     def test_similarity_every_valid_modality_is_silent(self):
         """Regression guard: the whitelist once covered only string=, so every other
-        modality was flagged FIX -- contradicting core-api.md, which documents them."""
+        modality was flagged FIX, although Pixeltable accepts each of them."""
         self.assertEqual("", self.write(
             "a = t.body.similarity(string=q)\n"
             "b = t.img.similarity(image=q)\n"

@@ -6,13 +6,14 @@ HTTP routes. Create tables with `pxt schema update`. Serve with `pxt service upd
 
 - Docs: https://docs.pixeltable.com (agent index: https://docs.pixeltable.com/llms.txt)
 - Repo: https://github.com/pixeltable/pixeltable
-- Install: `pip install 'pixeltable[serve]'` (Python 3.11+), import as `import pixeltable as pxt`
+- Install: `pip install 'pixeltable[serve]>=0.7.26'` (Python 3.11+), import as `import pixeltable as pxt`
 
 ## Skill (authoritative)
 
 This extension bundles the Pixeltable skill at `skills/pixeltable-skill/SKILL.md` (and
 `skills/pixeltable-skill/references/`). Gemini CLI loads `skills/*/SKILL.md` automatically.
-Follow that skill for the application file, CLI, providers, serving, and anti-patterns.
+Follow that skill for the application file, the design of tables and pipelines, safe changes,
+and anti-patterns. For how the installed Pixeltable behaves in an area, run `pxt guide AREA`.
 Do not copy those files into this context, and do not invent a second apply path.
 
 Start from `pxt init` then `pxt service example --out app.py` (or `pxt schema example --brief`).
@@ -53,5 +54,5 @@ server is optional.
 - Provider keys come from the environment, `~/.pixeltable/config.toml`, or `pxt secret set` on
   Cloud. Never hard-code or print secrets. Ask the user to run `pxt login` in their own
   terminal.
-- Check signatures against https://docs.pixeltable.com and the skill before inventing
-  parameters; the API evolves between releases.
+- Check signatures with `pxt functions`, `pxt COMMAND --help` and `pxt guide AREA` before
+  inventing parameters; the API evolves between releases.

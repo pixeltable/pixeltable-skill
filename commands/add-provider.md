@@ -9,7 +9,7 @@ Request: `$ARGUMENTS`
 
 Steps:
 
-1. Identify the provider module under `pixeltable.functions.<provider>` (e.g. `openai`, `anthropic`, `gemini`, `groq`, `bedrock`, `together`, `fireworks`, `ollama`, `whisper`). Confirm the exact import, model argument (`model=` on most, `model_id=` on `bedrock` and `huggingface`), extra-parameter dict, and output shape in the `pixeltable` skill (`references/providers.md`) before writing code. Anthropic `messages` requires `max_tokens=`.
+1. Identify the provider module under `pixeltable.functions.<provider>` (e.g. `openai`, `anthropic`, `gemini`, `groq`, `bedrock`, `together`, `fireworks`, `ollama`, `whisper`). Confirm the exact import, model argument, extra-parameter dict, and output shape with `pxt guide providers` and `pxt functions <provider>` before writing code.
 
 2. Add the call as a computed column, extracting the right field from the response. App file (assignment on the model):
 
@@ -38,6 +38,6 @@ t.add_computed_column(
 )
 ```
 
-3. Set API keys via config/env, not hard-coded. API traps: [SKILL.md](../skills/pixeltable-skill/SKILL.md#api-traps). Stack: [anti-patterns.md](../skills/pixeltable-skill/references/anti-patterns.md).
+3. Set API keys via config/env, not hard-coded (`pxt guide providers`). Stack: [anti-patterns.md](../skills/pixeltable-skill/references/anti-patterns.md).
 
 4. After adding, show how to insert a row and `collect()` the result so the user can verify output shape.

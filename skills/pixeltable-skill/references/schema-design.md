@@ -31,8 +31,7 @@ change once a table has rows: a wrong choice is fixed by migrating data, not by 
   either as a String: strings sort and compare as text.
 - Lists are `pxt.Json[list[str]]`, parsed once at insert, not comma- or pipe-separated strings that
   every UDF splits again.
-- Nested payloads are Json typed with a TypedDict, so paths return typed values (see
-  [expressions.md](expressions.md#json)).
+- Nested payloads are Json typed with a TypedDict, so paths return typed values (`pxt guide json`).
 
 ## 4. Nullability
 
